@@ -1,0 +1,23 @@
+# Conversation history (may contain secrets)
+.specstory/
+
+# Environment files
+.env
+.env.local
+.env*.local
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Build output
+.next/
+dist/
+build/
+
+# Misc
+.DS_Store
+*.log

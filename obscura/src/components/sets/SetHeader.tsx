@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { Set } from '@/types'
@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Modal from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
+import { apiFetch } from '@/lib/api'
 
 const visibilityOptions = [
   { value: 'private', label: 'Private' },
@@ -35,6 +36,46 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
+  // Star state
+  const [starred, setStarred] = useState(false)
+  const [starCount, setStarCount] = useState(0)
+
+  // Share link copy feedback
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    apiFetch(`/sets/${set.id}/star`)
+      .then((r) => r.json())
+      .then((data) => {
+        setStarred(data.starred)
+        setStarCount(data.count)
+      })
+      .catch(() => {})
+  }, [set.id])
+
+  async function handleStarToggle() {
+    const wasStarred = starred
+    setStarred(!wasStarred)
+    setStarCount((c) => c + (wasStarred ? -1 : 1))
+    try {
+      const res = await apiFetch(`/sets/${set.id}/star`, { method: 'POST' })
+      const data = await res.json()
+      setStarred(data.starred)
+      setStarCount(data.count)
+    } catch {
+      setStarred(wasStarred)
+      setStarCount((c) => c + (wasStarred ? 1 : -1))
+    }
+  }
+
+  async function copyShareLink() {
+    if (!set.share_token) return
+    const url = `${window.location.origin}/s/${set.share_token}`
+    await navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   function openEdit() {
     setTitle(set.title)
     setDescription(set.description ?? '')
@@ -49,9 +90,8 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
     setSaving(true)
     setError('')
     try {
-      const res = await fetch(`/api/sets/${set.id}`, {
+      const res = await apiFetch(`/sets/${set.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, description, subject, visibility }),
       })
       if (!res.ok) { const j = await res.json(); throw new Error(j.error) }
@@ -68,7 +108,7 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
   async function handleDelete() {
     setDeleting(true)
     try {
-      const res = await fetch(`/api/sets/${set.id}`, { method: 'DELETE' })
+      const res = await apiFetch(`/sets/${set.id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Delete failed')
       router.push('/library')
       router.refresh()
@@ -109,6 +149,36 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {/* Star */}
+            <button
+              onClick={handleStarToggle}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#e7e8e9] bg-white px-3 text-xs font-bold text-[#45474d] hover:bg-[#edeeef] transition-colors"
+            >
+              <span
+                className="material-symbols-outlined text-[16px]"
+                style={{
+                  color: starred ? '#e8b400' : '#c5c6cd',
+                  fontVariationSettings: starred ? "'FILL' 1" : "'FILL' 0",
+                }}
+              >
+                star
+              </span>
+              {starCount}
+            </button>
+
+            {/* Share link (link/public visibility) */}
+            {(set.visibility === 'link' || set.visibility === 'public') && set.share_token && (
+              <button
+                onClick={copyShareLink}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#e7e8e9] bg-white px-3 text-xs font-bold text-[#051125] hover:bg-[#edeeef] transition-colors"
+              >
+                <span className="material-symbols-outlined text-[16px]">
+                  {copied ? 'check' : 'link'}
+                </span>
+                {copied ? 'Copied!' : 'Share link'}
+              </button>
+            )}
+
             {isOwner && (
               <button
                 onClick={openEdit}

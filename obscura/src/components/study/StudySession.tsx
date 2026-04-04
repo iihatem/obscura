@@ -8,6 +8,7 @@ import FlashcardQuiz from './FlashcardQuiz'
 import DiagramQuiz from './DiagramQuiz'
 import ResultsSummary from './ResultsSummary'
 import { cn } from '@/lib/utils'
+import { apiFetch } from '@/lib/api'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -180,9 +181,8 @@ export default function StudySession({ set, cards }: StudySessionProps) {
   const beginStudy = useCallback(async (mode: StudyMode, cardList: Card[]) => {
     setError('')
     try {
-      const res = await fetch('/api/sessions', {
+      const res = await apiFetch('/sessions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ set_id: set.id, mode }),
       })
       if (!res.ok) throw new Error('Could not start session')
@@ -223,9 +223,8 @@ export default function StudySession({ set, cards }: StudySessionProps) {
       if (currentIndex + 1 >= deck.length) {
         // Submit results
         try {
-          await fetch('/api/results', {
+          await apiFetch('/results', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               session_id: sessionId,
               results: newAnswers.map((a) => ({

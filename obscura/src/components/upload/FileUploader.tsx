@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
+import { apiFetch } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 export interface PageData {
@@ -21,7 +22,7 @@ const UploadIcon = () => (
 export default function FileUploader({ onPagesReady }: FileUploaderProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null)
+  const [progress, setProgress] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -56,35 +57,20 @@ export default function FileUploader({ onPagesReady }: FileUploaderProps) {
   }
 
   async function processPdf(file: File) {
-    // Destructure after dynamic import — pdfjs v5 module namespace is frozen,
-    // so we must set workerSrc on the real GlobalWorkerOptions object, not the namespace proxy.
-    const { GlobalWorkerOptions, getDocument } = await import('pdfjs-dist')
-    GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
+    setProgress('Uploading PDF…')
 
-    const arrayBuffer = await file.arrayBuffer()
-    const pdfDoc = await getDocument({ data: arrayBuffer }).promise
-    const numPages = pdfDoc.numPages
+    const form = new FormData()
+    form.append('file', file)
 
-    setProgress({ current: 0, total: numPages })
+    const res = await apiFetch('/upload/pdf', { method: 'POST', body: form })
 
-    const pages: PageData[] = []
-
-    for (let i = 1; i <= numPages; i++) {
-      const page = await pdfDoc.getPage(i)
-      const viewport = page.getViewport({ scale: 1.5 })
-
-      const canvas = document.createElement('canvas')
-      canvas.width = viewport.width
-      canvas.height = viewport.height
-      const ctx = canvas.getContext('2d')!
-
-      await page.render({ canvasContext: ctx, viewport, canvas }).promise
-
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
-      pages.push({ dataUrl, pageIndex: i - 1 })
-
-      setProgress({ current: i, total: numPages })
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}))
+      throw new Error(j.detail ?? 'PDF rendering failed')
     }
+
+    setProgress('Rendering pages…')
+    const { pages } = await res.json() as { pages: PageData[] }
 
     setIsProcessing(false)
     setProgress(null)
@@ -133,24 +119,9 @@ export default function FileUploader({ onPagesReady }: FileUploaderProps) {
         {isProcessing ? (
           <div className="flex flex-col items-center gap-4">
             <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#edeeef] border-t-[#006972]" />
-            {progress ? (
-              <div className="flex flex-col items-center gap-2">
-                <p className="text-sm font-bold text-[#051125]" style={{ fontFamily: 'var(--font-manrope)' }}>
-                  Rendering pages…
-                </p>
-                <p className="text-xs text-[#45474d]">
-                  Page {progress.current} of {progress.total}
-                </p>
-                <div className="w-48 h-1.5 rounded-full bg-[#e7e8e9] overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-[#006972] transition-all duration-300"
-                    style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }}
-                  />
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-[#45474d]">Processing…</p>
-            )}
+            <p className="text-sm font-bold text-[#051125]" style={{ fontFamily: 'var(--font-manrope)' }}>
+              {progress ?? 'Processing…'}
+            </p>
           </div>
         ) : (
           <>

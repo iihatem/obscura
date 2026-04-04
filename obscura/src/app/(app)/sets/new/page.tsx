@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { apiFetch } from '@/lib/api'
 import type { Set } from '@/types'
 
 const visibilityOptions = [
@@ -29,9 +30,8 @@ export default function NewSetPage() {
     setError('')
 
     try {
-      const res = await fetch('/api/sets', {
+      const res = await apiFetch('/sets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, description, subject, visibility }),
       })
       if (!res.ok) {

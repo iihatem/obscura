@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { apiFetch } from '@/lib/api'
 import Button from '@/components/ui/Button'
 import type { SelectedPage } from './PagePicker'
 import type { Label } from '@/types'
@@ -117,9 +118,8 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
           const imageBase64 = page.pageData.dataUrl.slice(commaIdx + 1)
 
           if (page.type === 'diagram') {
-            const res = await fetch('/api/generate/labels', {
+            const res = await apiFetch('/generate/labels', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ imageBase64, setId }),
             })
             if (!res.ok) {
@@ -129,9 +129,8 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
             const { labels } = await res.json()
             updateResult(idx, { status: 'done', labels })
           } else {
-            const res = await fetch('/api/generate/flashcards', {
+            const res = await apiFetch('/generate/flashcards', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ imageBase64, setId }),
             })
             if (!res.ok) {
@@ -217,9 +216,8 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
       let diagramIndex = 0
       for (const card of draftCards) {
         if (card.type === 'flashcard') {
-          const res = await fetch('/api/cards', {
+          const res = await apiFetch('/cards', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ set_id: setId, type: 'flashcard', front: card.front, back: card.back }),
           })
           if (!res.ok) {
@@ -233,9 +231,8 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
           const ext = fileMime === 'image/png' ? 'png' : fileMime === 'image/webp' ? 'webp' : 'jpg'
           const path = `${userId}/${setId}/diagram-${diagramIndex++}.${ext}`
 
-          const uploadRes = await fetch('/api/upload/image', {
+          const uploadRes = await apiFetch('/upload/image', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ dataUrl: card.dataUrl, path }),
           })
           if (!uploadRes.ok) {
@@ -245,9 +242,8 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
           const { publicUrl } = await uploadRes.json()
 
           // 2. Save the diagram card with the permanent image URL
-          const res = await fetch('/api/cards', {
+          const res = await apiFetch('/cards', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               set_id: setId,
               type: 'diagram',

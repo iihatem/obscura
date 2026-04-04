@@ -71,6 +71,11 @@ export interface CardResult {
   answered_at: string
 }
 
+export interface ExploreSet extends Set {
+  owner_display_name: string | null
+  starred_by_me: boolean
+}
+
 export interface SetStar {
   user_id: string
   set_id: string

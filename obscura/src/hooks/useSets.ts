@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { apiFetch } from '@/lib/api'
 import type { Set, Card } from '@/types'
 
 interface SetsState {
@@ -15,7 +16,7 @@ export function useSets() {
   const refresh = useCallback(async () => {
     setState((s) => ({ ...s, loading: true, error: null }))
     try {
-      const res = await fetch('/api/sets')
+      const res = await apiFetch('/sets')
       if (!res.ok) throw new Error('Failed to load sets')
       const data: Set[] = await res.json()
       setState({ sets: data, loading: false, error: null })
@@ -50,7 +51,7 @@ export function useSet(id: string) {
     if (!id) return
     setState((s) => ({ ...s, loading: true, error: null }))
     try {
-      const res = await fetch(`/api/sets/${id}`)
+      const res = await apiFetch(`/sets/${id}`)
       if (!res.ok) throw new Error('Failed to load set')
       const data: { set: Set; cards: Card[] } = await res.json()
       setState({ set: data.set, cards: data.cards, loading: false, error: null })

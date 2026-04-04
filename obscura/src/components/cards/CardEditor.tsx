@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
+import { apiFetch } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import Button from '@/components/ui/Button'
 import type { Card, Label } from '@/types'
@@ -336,11 +337,10 @@ export default function CardEditor({ mode, setId, userId, card, onSave, onDelete
       setSaving(true)
       setError('')
       try {
-        const url = isEditing ? `/api/cards/${card!.id}` : '/api/cards'
+        const url = isEditing ? `/cards/${card!.id}` : '/cards'
         const method = isEditing ? 'PATCH' : 'POST'
-        const res = await fetch(url, {
+        const res = await apiFetch(url, {
           method,
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(isEditing ? body : { set_id: setId, type: mode, ...body }),
         })
         if (!res.ok) {
@@ -362,7 +362,7 @@ export default function CardEditor({ mode, setId, userId, card, onSave, onDelete
     if (!card || !onDelete) return
     setDeleting(true)
     try {
-      const res = await fetch(`/api/cards/${card.id}`, { method: 'DELETE' })
+      const res = await apiFetch(`/cards/${card.id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Delete failed')
       onDelete(card.id)
     } catch (err) {

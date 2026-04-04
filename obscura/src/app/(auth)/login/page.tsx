@@ -4,9 +4,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import Button from '@/components/ui/Button'
-import Input from '@/components/ui/Input'
-import Card from '@/components/ui/Card'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -33,45 +30,79 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col">
-      <header className="px-8 py-6">
-        <span className="text-lg font-semibold tracking-tight text-stone-900">Obscura</span>
+    <div className="min-h-screen bg-[#f8f9fa] flex flex-col">
+      {/* Nav */}
+      <header className="px-8 py-5 flex items-center justify-between">
+        <Link href="/" className="text-xl font-black text-[#051125] tracking-tight" style={{ fontFamily: 'var(--font-manrope)' }}>
+          Obscura AI
+        </Link>
+        <Link href="/signup" className="text-sm text-[#45474d] hover:text-[#051125] transition-colors">
+          Create account →
+        </Link>
       </header>
 
       <main className="flex-1 flex items-center justify-center px-4 pb-16">
         <div className="w-full max-w-sm">
-          <h1 className="text-2xl font-semibold text-stone-900 mb-1">Welcome back</h1>
-          <p className="text-stone-500 text-sm mb-6">Sign in to continue studying</p>
+          {/* Heading */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-extrabold text-[#051125] mb-2" style={{ fontFamily: 'var(--font-manrope)' }}>
+              Welcome back
+            </h1>
+            <p className="text-[#45474d] text-sm">Sign in to continue studying</p>
+          </div>
 
-          <Card padding="lg">
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <Input
-                label="Email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                required
-              />
-              <Input
-                label="Password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                required
-              />
-              {error && <p className="text-sm text-red-600">{error}</p>}
-              <Button type="submit" loading={loading} className="w-full mt-1">
-                Sign in
-              </Button>
+          {/* Card */}
+          <div className="bg-white rounded-xl p-8 border border-[#e7e8e9] shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#051125] via-[#006972] to-[#051125]" />
+
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-[#45474d] mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  required
+                  className="w-full bg-[#f3f4f5] border-none rounded-lg px-4 py-3 text-sm text-[#191c1d] placeholder:text-[#75777d] focus:outline-none focus:ring-2 focus:ring-[#006972]/20 transition-all"
+                  placeholder="you@university.edu"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-[#45474d] mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                  className="w-full bg-[#f3f4f5] border-none rounded-lg px-4 py-3 text-sm text-[#191c1d] placeholder:text-[#75777d] focus:outline-none focus:ring-2 focus:ring-[#006972]/20 transition-all"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              {error && (
+                <p className="text-sm text-[#ba1a1a] bg-[#ffdad6] rounded-lg px-4 py-2">{error}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full scholar-gradient text-white py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 mt-1"
+              >
+                {loading ? 'Signing in...' : 'Sign in'}
+              </button>
             </form>
-          </Card>
+          </div>
 
-          <p className="text-center text-sm text-stone-500 mt-4">
+          <p className="text-center text-sm text-[#45474d] mt-6">
             No account?{' '}
-            <Link href="/signup" className="text-stone-900 font-medium hover:underline">
-              Sign up
+            <Link href="/signup" className="text-[#006972] font-bold hover:underline">
+              Sign up free
             </Link>
           </p>
         </div>

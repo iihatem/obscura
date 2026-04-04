@@ -8,9 +8,15 @@ import DiagramCard from '@/components/cards/DiagramCard'
 import CardEditor from '@/components/cards/CardEditor'
 import Modal from '@/components/ui/Modal'
 import EmptyState from '@/components/ui/EmptyState'
+import Button from '@/components/ui/Button'
+import FileUploader, { type PageData } from '@/components/upload/FileUploader'
+import PagePicker, { type SelectedPage } from '@/components/upload/PagePicker'
+import GenerationProgress from '@/components/upload/GenerationProgress'
 import { cn } from '@/lib/utils'
 
 type TabType = 'flashcard' | 'diagram'
+
+type UploadStep = 'upload' | 'pick' | 'generate'
 
 interface EditorState {
   open: boolean
@@ -31,11 +37,52 @@ const PlusIcon = () => (
   </svg>
 )
 
+const UploadIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="17 8 12 3 7 8" />
+    <line x1="12" y1="3" x2="12" y2="15" />
+  </svg>
+)
+
 export default function SetDetail({ initialSet, initialCards, isOwner, userId }: SetDetailProps) {
   const [set, setSet] = useState<Set>(initialSet)
   const [cards, setCards] = useState<Card[]>(initialCards)
   const [activeTab, setActiveTab] = useState<TabType>('flashcard')
   const [editor, setEditor] = useState<EditorState>({ open: false, mode: 'flashcard', card: null })
+
+  // Upload flow state
+  const [uploadOpen, setUploadOpen] = useState(false)
+  const [uploadStep, setUploadStep] = useState<UploadStep>('upload')
+  const [uploadPages, setUploadPages] = useState<PageData[]>([])
+  const [selectedPages, setSelectedPages] = useState<SelectedPage[]>([])
+
+  function openUpload() {
+    setUploadStep('upload')
+    setUploadPages([])
+    setSelectedPages([])
+    setUploadOpen(true)
+  }
+
+  function closeUpload() {
+    setUploadOpen(false)
+  }
+
+  function handlePagesReady(pages: PageData[]) {
+    setUploadPages(pages)
+    setUploadStep('pick')
+  }
+
+  function handleGenerate(pages: SelectedPage[]) {
+    setSelectedPages(pages)
+    setUploadStep('generate')
+  }
+
+  function handleGenerationDone() {
+    // Reload the page to pick up new cards from DB
+    closeUpload()
+    window.location.reload()
+  }
 
   const flashcards = cards.filter((c): c is FlashCardType => c.type === 'flashcard')
   const diagrams = cards.filter((c): c is DiagramCardType => c.type === 'diagram')
@@ -90,8 +137,9 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
         onUpdate={setSet}
       />
 
-      {/* Tabs */}
+      {/* Tabs + Upload button */}
       <div className="border-b border-stone-200 bg-white px-6 lg:px-8">
+        <div className="flex items-center justify-between">
         <div className="flex gap-0">
           {tabs.map((tab) => (
             <button
@@ -117,6 +165,18 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
               </span>
             </button>
           ))}
+        </div>
+        {isOwner && (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={openUpload}
+            className="mb-1 gap-1.5"
+          >
+            <UploadIcon />
+            Upload PDF
+          </Button>
+        )}
         </div>
       </div>
 
@@ -211,6 +271,37 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
             onSave={handleSave}
             onDelete={editor.card ? handleDelete : undefined}
           />
+        </div>
+      </Modal>
+
+      {/* Upload & AI generation modal */}
+      <Modal
+        open={uploadOpen}
+        onClose={closeUpload}
+        title={
+          uploadStep === 'upload'
+            ? 'Upload PDF or image'
+            : uploadStep === 'pick'
+            ? `${uploadPages.length} page${uploadPages.length !== 1 ? 's' : ''} — pick what to generate`
+            : 'Generating cards…'
+        }
+        className="max-w-4xl w-full"
+      >
+        <div className="mt-2">
+          {uploadStep === 'upload' && (
+            <FileUploader onPagesReady={handlePagesReady} />
+          )}
+          {uploadStep === 'pick' && (
+            <PagePicker pages={uploadPages} onGenerate={handleGenerate} />
+          )}
+          {uploadStep === 'generate' && (
+            <GenerationProgress
+              pages={selectedPages}
+              setId={set.id}
+              userId={userId}
+              onDone={handleGenerationDone}
+            />
+          )}
         </div>
       </Modal>
     </>

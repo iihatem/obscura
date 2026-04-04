@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import type { DiagramCard, Label } from '@/types'
 import type { Grade } from '@/lib/scoring'
 import { gradeAnswer } from '@/lib/scoring'
-import { cn } from '@/lib/utils'
+import { cn, proxyImageUrl } from '@/lib/utils'
 
 interface DiagramQuizProps {
   card: DiagramCard
@@ -85,10 +85,10 @@ export default function DiagramQuiz({ card, onAnswer }: DiagramQuizProps) {
   return (
     <div className="flex flex-col gap-6 w-full max-w-3xl mx-auto">
       {/* Diagram + label overlays */}
-      <div className="relative rounded-xl overflow-hidden border border-stone-200 bg-stone-100">
+      <div className="relative rounded-xl overflow-hidden border border-[#e7e8e9] bg-[#edeeef]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={card.image_url}
+          src={proxyImageUrl(card.image_url)}
           alt="Diagram"
           className="w-full h-auto block max-h-[480px] object-contain"
         />
@@ -149,14 +149,14 @@ export default function DiagramQuiz({ card, onAnswer }: DiagramQuizProps) {
 
       {/* Hint text */}
       {!submitted && (
-        <p className="text-xs text-stone-400 text-center">
+        <p className="text-xs text-[#75777d] text-center">
           Type labels into each box · Enter to advance focus · All {labels.length} labels required
         </p>
       )}
 
       {/* After submit: grade legend */}
       {submitted && (
-        <div className="flex items-center justify-center gap-4 text-xs text-stone-500">
+        <div className="flex items-center justify-center gap-4 text-xs text-[#45474d]">
           <span className="flex items-center gap-1">
             <span className="w-3 h-3 rounded-sm bg-emerald-500 inline-block" />
             Correct ({labelGrades.filter((g) => g === 'correct').length})
@@ -177,16 +177,18 @@ export default function DiagramQuiz({ card, onAnswer }: DiagramQuizProps) {
         {!submitted ? (
           <button
             onClick={handleSubmit}
-            className="rounded-lg bg-stone-900 px-5 py-2 text-sm font-medium text-white hover:bg-stone-800 transition-colors"
+            className="flex items-center gap-2 rounded-lg scholar-gradient px-6 py-2.5 text-sm font-bold text-white hover:opacity-90 active:scale-95 transition-all"
           >
             Submit
+            <span className="material-symbols-outlined text-[16px]">check</span>
           </button>
         ) : (
           <button
             onClick={handleContinue}
-            className="rounded-lg bg-stone-900 px-5 py-2 text-sm font-medium text-white hover:bg-stone-800 transition-colors"
+            className="flex items-center gap-2 rounded-lg scholar-gradient px-6 py-2.5 text-sm font-bold text-white hover:opacity-90 active:scale-95 transition-all"
           >
-            Continue →
+            Continue
+            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
           </button>
         )}
       </div>

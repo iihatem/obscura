@@ -101,16 +101,16 @@ function ModePicker({
           className={cn(
             'flex items-center gap-4 rounded-xl border-2 p-5 text-left transition-all',
             opt.disabled
-              ? 'cursor-not-allowed border-stone-100 bg-stone-50 opacity-50'
+              ? 'cursor-not-allowed border-[#e1e3e4] bg-[#f3f4f5] opacity-50'
               : loading === opt.mode
-              ? 'border-stone-900 bg-stone-900'
-              : 'border-stone-200 bg-white hover:border-stone-400 hover:shadow-sm'
+              ? 'border-[#051125] bg-[#051125]'
+              : 'border-[#e7e8e9] bg-white hover:border-[#006972]/40 hover:shadow-sm'
           )}
         >
           <span
             className={cn(
               'shrink-0',
-              loading === opt.mode ? 'text-white' : opt.disabled ? 'text-stone-300' : 'text-stone-600'
+              loading === opt.mode ? 'text-white' : opt.disabled ? 'text-[#c5c6cd]' : 'text-[#006972]'
             )}
           >
             {opt.icon}
@@ -118,16 +118,17 @@ function ModePicker({
           <div className="flex-1 min-w-0">
             <p
               className={cn(
-                'text-sm font-semibold',
-                loading === opt.mode ? 'text-white' : 'text-stone-900'
+                'text-sm font-bold',
+                loading === opt.mode ? 'text-white' : 'text-[#051125]'
               )}
+              style={{ fontFamily: 'var(--font-manrope)' }}
             >
               {opt.label}
             </p>
             <p
               className={cn(
                 'text-xs',
-                loading === opt.mode ? 'text-stone-300' : 'text-stone-500'
+                loading === opt.mode ? 'text-[#c1c6d6]' : 'text-[#45474d]'
               )}
             >
               {opt.description}
@@ -135,10 +136,10 @@ function ModePicker({
           </div>
           <span
             className={cn(
-              'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium',
+              'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold',
               loading === opt.mode
                 ? 'bg-white/20 text-white'
-                : 'bg-stone-100 text-stone-600'
+                : 'bg-[#edeeef] text-[#45474d]'
             )}
           >
             {opt.count}
@@ -290,16 +291,19 @@ export default function StudySession({ set, cards }: StudySessionProps) {
     ]
 
     return (
-      <div className="p-6 lg:p-8 max-w-lg">
+      <div className="p-8 lg:p-12 max-w-lg">
         <Link
           href={`/sets/${set.id}`}
-          className="text-xs text-stone-400 hover:text-stone-600 transition-colors"
+          className="text-xs font-medium text-[#45474d] hover:text-[#051125] transition-colors flex items-center gap-1"
         >
-          ← {set.title}
+          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+          {set.title}
         </Link>
-        <h1 className="text-xl font-semibold text-stone-900 mt-3 mb-1">How do you want to study?</h1>
-        <p className="text-sm text-stone-500 mb-6">Pick a mode to start your session.</p>
-        {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+        <h1 className="text-3xl font-extrabold text-[#051125] mt-4 mb-1" style={{ fontFamily: 'var(--font-manrope)' }}>
+          How do you want to study?
+        </h1>
+        <p className="text-sm text-[#45474d] mb-8">Pick a mode to start your session.</p>
+        {error && <p className="text-sm text-[#ba1a1a] bg-[#ffdad6] rounded-lg px-4 py-2 mb-4">{error}</p>}
         <ModePicker options={modeOptions} onSelect={handleModeSelect} loading={loadingMode} />
       </div>
     )
@@ -307,7 +311,7 @@ export default function StudySession({ set, cards }: StudySessionProps) {
 
   if (phase === 'results') {
     return (
-      <div className="p-6 lg:p-8">
+      <div className="p-8 lg:p-12">
         <ResultsSummary set={set} answers={answers} onRetryMissed={handleRetryMissed} />
       </div>
     )
@@ -319,23 +323,34 @@ export default function StudySession({ set, cards }: StudySessionProps) {
 
   return (
     <div className="flex flex-col min-h-full">
-      {/* Progress bar + nav */}
-      <div className="border-b border-stone-200 bg-white px-6 py-3 lg:px-8">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-stone-500">
-            {currentIndex + 1} / {deck.length}
-          </span>
-          <Link
-            href={`/sets/${set.id}`}
-            className="text-xs text-stone-400 hover:text-stone-600 transition-colors"
-          >
-            Exit
-          </Link>
+      {/* Progress header */}
+      <div className="bg-[#f8f9fa]/80 backdrop-blur-md border-b border-[#c5c6cd]/20 px-6 py-4 lg:px-8">
+        <div className="flex items-end justify-between mb-3">
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#006972]">
+              Current Module
+            </span>
+            <h1 className="text-xl font-extrabold text-[#051125] tracking-tight" style={{ fontFamily: 'var(--font-manrope)' }}>
+              {set.title}
+            </h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-semibold text-[#45474d]">
+              Card <span className="text-[#051125]">{currentIndex + 1}</span> of {deck.length}
+            </span>
+            <Link
+              href={`/sets/${set.id}`}
+              className="text-xs font-medium text-[#45474d] hover:text-[#051125] transition-colors flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-[16px]">close</span>
+              Exit
+            </Link>
+          </div>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-stone-100">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-[#e7e8e9]">
           <div
-            className="h-full bg-stone-900 transition-all duration-300"
-            style={{ width: `${progress}%` }}
+            className="h-full bg-[#006972] transition-all duration-300 rounded-full"
+            style={{ width: `${progress}%`, boxShadow: '0 0 10px rgba(0,105,114,0.3)' }}
           />
         </div>
       </div>

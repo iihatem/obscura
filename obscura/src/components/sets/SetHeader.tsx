@@ -83,35 +83,51 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
 
   return (
     <>
-      <div className="border-b border-stone-200 bg-white px-6 py-5 lg:px-8">
+      <div className="bg-[#f8f9fa]/80 backdrop-blur-md border-b border-[#c5c6cd]/20 px-6 py-5 lg:px-8">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              {set.subject && <Badge>{set.subject}</Badge>}
-              <Badge variant={visVariant}>{visLabel}</Badge>
-              <span className="text-xs text-stone-400">{cardCount} cards</span>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              {set.subject && (
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#006972]">
+                  {set.subject}
+                </span>
+              )}
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#75777d]">
+                {visLabel}
+              </span>
+              <span className="text-xs text-[#45474d]">{cardCount} cards</span>
             </div>
-            <h1 className="text-xl font-semibold text-stone-900 truncate">{set.title}</h1>
+            <h1
+              className="text-2xl font-extrabold text-[#051125] truncate tracking-tight"
+              style={{ fontFamily: 'var(--font-manrope)' }}
+            >
+              {set.title}
+            </h1>
             {set.description && (
-              <p className="mt-1 text-sm text-stone-500 line-clamp-2">{set.description}</p>
+              <p className="mt-1 text-sm text-[#45474d] line-clamp-2">{set.description}</p>
             )}
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
             {isOwner && (
-              <Button variant="secondary" size="sm" onClick={openEdit}>
+              <button
+                onClick={openEdit}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#e7e8e9] bg-white px-3 text-xs font-bold text-[#051125] hover:bg-[#edeeef] transition-colors"
+              >
+                <span className="material-symbols-outlined text-[16px]">edit</span>
                 Edit
-              </Button>
+              </button>
             )}
             <Link
               href={`/sets/${set.id}/study`}
               className={cn(
-                'inline-flex h-8 items-center rounded-lg px-3 text-xs font-medium transition-colors',
+                'inline-flex h-9 items-center gap-1.5 rounded-lg px-4 text-xs font-bold transition-all',
                 cardCount === 0
-                  ? 'pointer-events-none bg-stone-100 text-stone-400'
-                  : 'bg-stone-900 text-white hover:bg-stone-800'
+                  ? 'pointer-events-none bg-[#edeeef] text-[#45474d]'
+                  : 'scholar-gradient text-white hover:opacity-90 shadow-lg shadow-[#051125]/20'
               )}
             >
+              <span className="material-symbols-outlined text-[16px]">play_arrow</span>
               Study
             </Link>
           </div>
@@ -133,12 +149,12 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
             required
           />
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-stone-700">Description</label>
+            <label className="text-xs font-bold uppercase tracking-widest text-[#45474d]">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
-              className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-900 resize-none"
+              className="w-full rounded-lg bg-[#f3f4f5] border-none px-3 py-2 text-sm text-[#191c1d] placeholder:text-[#75777d] focus:outline-none focus:ring-2 focus:ring-[#006972]/20 resize-none"
               placeholder="What is this set about?"
             />
           </div>
@@ -149,7 +165,7 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
             placeholder="e.g. Anatomy, Physiology"
           />
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-stone-700">Visibility</label>
+            <label className="text-xs font-bold uppercase tracking-widest text-[#45474d]">Visibility</label>
             <div className="grid grid-cols-3 gap-2">
               {visibilityOptions.map((opt) => (
                 <button
@@ -157,10 +173,10 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
                   type="button"
                   onClick={() => setVisibility(opt.value)}
                   className={cn(
-                    'rounded-lg border px-3 py-2 text-sm font-medium transition-colors',
+                    'rounded-lg border px-3 py-2 text-sm font-bold transition-colors',
                     visibility === opt.value
-                      ? 'border-stone-900 bg-stone-900 text-white'
-                      : 'border-stone-200 text-stone-600 hover:border-stone-300'
+                      ? 'border-[#051125] bg-[#051125] text-white'
+                      : 'border-[#e7e8e9] text-[#45474d] hover:border-[#006972]/40'
                   )}
                 >
                   {opt.label}
@@ -169,13 +185,13 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
             </div>
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-[#ba1a1a] bg-[#ffdad6] rounded-lg px-4 py-2">{error}</p>}
 
           <div className="flex items-center justify-between pt-1">
             {!deleteConfirm ? (
               <button
                 onClick={() => setDeleteConfirm(true)}
-                className="text-xs text-stone-400 hover:text-red-600 transition-colors"
+                className="text-xs text-[#45474d] hover:text-[#ba1a1a] transition-colors"
               >
                 Delete set
               </button>

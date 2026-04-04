@@ -14,7 +14,7 @@ export default function AppShell({ profile, children }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen overflow-hidden bg-stone-50">
+    <div className="flex h-screen overflow-hidden bg-[#f3f4f5]">
       <Sidebar
         profile={profile}
         open={sidebarOpen}

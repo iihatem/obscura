@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import type { DiagramCard as DiagramCardType } from '@/types'
-import { cn } from '@/lib/utils'
+import { cn, proxyImageUrl } from '@/lib/utils'
 
 interface DiagramCardProps {
   card: DiagramCardType
@@ -23,7 +23,7 @@ export default function DiagramCard({ card, onEdit, onDelete, isOwner, className
       {/* Image with label overlays */}
       <div className="relative aspect-video bg-stone-100">
         <Image
-          src={card.image_url}
+          src={proxyImageUrl(card.image_url)}
           alt="Diagram"
           fill
           className="object-contain"

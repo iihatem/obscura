@@ -4,7 +4,7 @@ load_dotenv()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import sets, cards, generate, upload, sessions, results, image, explore
+from routers import sets, cards, generate, upload, sessions, results, image, explore, profile
 
 app = FastAPI(title="Obscura API")
 
@@ -24,6 +24,7 @@ app.include_router(sessions.router)
 app.include_router(results.router)
 app.include_router(image.router)
 app.include_router(explore.router)
+app.include_router(profile.router)
 
 
 @app.get("/health")

@@ -110,11 +110,12 @@ export default function Sidebar({ profile, open, onClose }: SidebarProps) {
               </span>
             </div>
             <Link
-              href="#"
+              href="/profile"
+              onClick={onClose}
               className="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-[#191c1d] transition-colors text-sm"
             >
-              <span className="material-symbols-outlined text-[18px]">help_outline</span>
-              Help
+              <span className="material-symbols-outlined text-[18px]">manage_accounts</span>
+              Profile
             </Link>
             <button
               onClick={handleSignOut}

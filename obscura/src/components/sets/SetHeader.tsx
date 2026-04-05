@@ -10,6 +10,7 @@ import Input from '@/components/ui/Input'
 import Modal from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
 import { apiFetch } from '@/lib/api'
+import { useToast } from '@/components/ui/Toast'
 
 const visibilityOptions = [
   { value: 'private', label: 'Private' },
@@ -26,6 +27,7 @@ interface SetHeaderProps {
 
 export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHeaderProps) {
   const router = useRouter()
+  const { toast } = useToast()
   const [editOpen, setEditOpen] = useState(false)
   const [title, setTitle] = useState(set.title)
   const [description, setDescription] = useState(set.description ?? '')
@@ -98,6 +100,7 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
       const updated: Set = await res.json()
       onUpdate(updated)
       setEditOpen(false)
+      toast('Set saved')
     } catch (err) {
       setError((err as Error).message)
     } finally {

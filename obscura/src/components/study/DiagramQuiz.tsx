@@ -34,7 +34,40 @@ function aggregateGrades(grades: Grade[]): Grade {
 }
 
 export default function DiagramQuiz({ card, onAnswer }: DiagramQuizProps) {
+  if (card.labels.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-5 py-16 text-center w-full max-w-3xl mx-auto">
+        <div className="relative rounded-xl overflow-hidden border border-[#e7e8e9] bg-[#edeeef] w-full">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={proxyImageUrl(card.image_url)}
+            alt="Diagram"
+            className="w-full h-auto block max-h-[320px] object-contain opacity-50"
+          />
+        </div>
+        <span className="material-symbols-outlined text-[40px] text-[#c5c6cd]">label_off</span>
+        <div>
+          <p className="font-bold text-[#051125]" style={{ fontFamily: 'var(--font-manrope)' }}>
+            No labels on this diagram
+          </p>
+          <p className="text-sm text-[#45474d] mt-1">This card has no label boxes to fill in.</p>
+        </div>
+        <button
+          onClick={() => onAnswer('empty', [])}
+          className="inline-flex items-center gap-2 rounded-lg border border-[#e7e8e9] bg-white px-5 py-2.5 text-sm font-bold text-[#051125] hover:bg-[#f3f4f5] transition-colors"
+        >
+          Skip
+          <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+        </button>
+      </div>
+    )
+  }
+  return <DiagramQuizInner card={card} onAnswer={onAnswer} />
+}
+
+function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
   const { labels } = card
+
   const [answers, setAnswers] = useState<string[]>(() => labels.map(() => ''))
   const [submitted, setSubmitted] = useState(false)
   const [labelGrades, setLabelGrades] = useState<Grade[]>([])

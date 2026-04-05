@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { apiFetch } from '@/lib/api'
 import Button from '@/components/ui/Button'
+import { useToast } from '@/components/ui/Toast'
 import type { SelectedPage } from './PagePicker'
 import type { Label } from '@/types'
 
@@ -84,6 +85,8 @@ const statusLabel: Record<PageStatus, string> = {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
+const CHUNK_SIZE = 3
+
 export default function GenerationProgress({ pages, setId, userId, onDone }: GenerationProgressProps) {
   const [results, setResults] = useState<PageResult[]>(
     pages.map((page) => ({ page, status: 'pending' }))
@@ -93,6 +96,7 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const ran = useRef(false)
+  const { toast } = useToast()
 
   const updateResult = useCallback((pageIndex: number, patch: Partial<PageResult>) => {
     setResults((prev) =>
@@ -102,52 +106,61 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
     )
   }, [])
 
+  const processPage = useCallback(async (page: SelectedPage) => {
+    const idx = page.pageData.pageIndex
+    updateResult(idx, { status: 'generating' })
+    try {
+      const commaIdx = page.pageData.dataUrl.indexOf(',')
+      const imageBase64 = page.pageData.dataUrl.slice(commaIdx + 1)
+
+      if (page.type === 'diagram') {
+        const res = await apiFetch('/generate/labels', {
+          method: 'POST',
+          body: JSON.stringify({ imageBase64, setId }),
+        })
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}))
+          throw new Error(j.error ?? 'Label generation failed')
+        }
+        const { labels } = await res.json()
+        updateResult(idx, { status: 'done', labels })
+      } else {
+        const res = await apiFetch('/generate/flashcards', {
+          method: 'POST',
+          body: JSON.stringify({ imageBase64, setId }),
+        })
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}))
+          throw new Error(j.error ?? 'Flashcard generation failed')
+        }
+        const { cards } = await res.json()
+        updateResult(idx, { status: 'done', cards })
+      }
+    } catch (err) {
+      updateResult(idx, { status: 'error', error: (err as Error).message })
+    }
+  }, [setId, updateResult])
+
   useEffect(() => {
     if (ran.current) return
     ran.current = true
 
     async function runAll() {
-      for (const page of pages) {
-        const idx = page.pageData.pageIndex
-
-        try {
-          updateResult(idx, { status: 'generating' })
-
-          // Extract base64 from the data URL — sent directly to Claude, no Supabase needed
-          const commaIdx = page.pageData.dataUrl.indexOf(',')
-          const imageBase64 = page.pageData.dataUrl.slice(commaIdx + 1)
-
-          if (page.type === 'diagram') {
-            const res = await apiFetch('/generate/labels', {
-              method: 'POST',
-              body: JSON.stringify({ imageBase64, setId }),
-            })
-            if (!res.ok) {
-              const j = await res.json().catch(() => ({}))
-              throw new Error(j.error ?? 'Label generation failed')
-            }
-            const { labels } = await res.json()
-            updateResult(idx, { status: 'done', labels })
-          } else {
-            const res = await apiFetch('/generate/flashcards', {
-              method: 'POST',
-              body: JSON.stringify({ imageBase64, setId }),
-            })
-            if (!res.ok) {
-              const j = await res.json().catch(() => ({}))
-              throw new Error(j.error ?? 'Flashcard generation failed')
-            }
-            const { cards } = await res.json()
-            updateResult(idx, { status: 'done', cards })
-          }
-        } catch (err) {
-          updateResult(idx, { status: 'error', error: (err as Error).message })
-        }
+      // Process in chunks of CHUNK_SIZE concurrently
+      for (let i = 0; i < pages.length; i += CHUNK_SIZE) {
+        const chunk = pages.slice(i, i + CHUNK_SIZE)
+        await Promise.all(chunk.map(processPage))
       }
     }
 
     runAll()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function retryPage(pageIndex: number) {
+    const page = pages.find((p) => p.pageData.pageIndex === pageIndex)
+    if (!page) return
+    await processPage(page)
+  }
 
   const allDone = results.every((r) => r.status === 'done' || r.status === 'error')
   const successCount = results.filter((r) => r.status === 'done').length
@@ -257,9 +270,12 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
           }
         }
       }
+      toast(`Saved ${draftCards.length} card${draftCards.length !== 1 ? 's' : ''} to set`)
       onDone(draftCards)
     } catch (err) {
-      setSaveError((err as Error).message)
+      const msg = (err as Error).message
+      setSaveError(msg)
+      toast(msg, 'error')
     } finally {
       setSaving(false)
     }
@@ -338,6 +354,14 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
               </p>
               {r.status === 'error' && r.error && (
                 <p className="text-xs text-red-600 truncate">{r.error}</p>
+              )}
+              {r.status === 'error' && (
+                <button
+                  onClick={() => retryPage(r.page.pageData.pageIndex)}
+                  className="text-xs text-[#006972] font-medium hover:underline"
+                >
+                  Retry
+                </button>
               )}
               {r.status === 'done' && r.page.type === 'diagram' && (
                 <p className="text-xs text-stone-400">{r.labels?.length ?? 0} labels detected</p>

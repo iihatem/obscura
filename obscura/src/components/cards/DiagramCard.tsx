@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import type { DiagramCard as DiagramCardType } from '@/types'
 import { cn, proxyImageUrl } from '@/lib/utils'
 
@@ -20,14 +19,15 @@ export default function DiagramCard({ card, onEdit, onDelete, isOwner, className
         className
       )}
     >
-      {/* Image with label overlays */}
-      <div className="relative aspect-video bg-stone-100">
-        <Image
+      {/* Image with label overlays.
+          Must be w-full h-auto (natural aspect ratio) — no object-contain or fixed height —
+          so overlay % coordinates align with Claude's output which is % of image dimensions. */}
+      <div className="relative bg-stone-100">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src={proxyImageUrl(card.image_url)}
           alt="Diagram"
-          fill
-          className="object-contain"
-          unoptimized
+          className="w-full h-auto block"
         />
         {/* Label boxes */}
         {card.labels.map((lbl, i) => (

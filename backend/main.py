@@ -2,11 +2,22 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import sets, cards, generate, upload, sessions, results, image, explore, profile
 
-app = FastAPI(title="Obscura API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Preload PaddleOCR models at startup to avoid cold-start latency on first request.
+    # Model files are cached in ~/.paddlex after the first download (~15 MB total).
+    from routers.generate import get_paddle_ocr
+    get_paddle_ocr()
+    yield
+
+
+app = FastAPI(title="Obscura API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

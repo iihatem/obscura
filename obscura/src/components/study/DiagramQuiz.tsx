@@ -42,7 +42,7 @@ export default function DiagramQuiz({ card, onAnswer }: DiagramQuizProps) {
           <img
             src={proxyImageUrl(card.image_url)}
             alt="Diagram"
-            className="w-full h-auto block max-h-[320px] object-contain opacity-50"
+            className="w-full h-auto block opacity-50"
           />
         </div>
         <span className="material-symbols-outlined text-[40px] text-[#c5c6cd]">label_off</span>
@@ -117,13 +117,16 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-3xl mx-auto">
-      {/* Diagram + label overlays */}
+      {/* Diagram + label overlays
+          IMPORTANT: the overlay <div>s are positioned as % of THIS container.
+          The img must render at its natural aspect ratio (w-full h-auto) with NO
+          object-contain / max-height, otherwise letterboxing shifts the coordinates. */}
       <div className="relative rounded-xl overflow-hidden border border-[#e7e8e9] bg-[#edeeef]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={proxyImageUrl(card.image_url)}
           alt="Diagram"
-          className="w-full h-auto block max-h-[480px] object-contain"
+          className="w-full h-auto block"
         />
 
         {/* Overlay boxes */}

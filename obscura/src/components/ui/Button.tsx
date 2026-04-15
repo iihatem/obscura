@@ -4,9 +4,9 @@ import { forwardRef, type ButtonHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 
 const variants = {
-  primary: 'bg-stone-900 text-white hover:bg-stone-800 focus-visible:ring-stone-900',
-  secondary: 'bg-stone-100 text-stone-900 hover:bg-stone-200 focus-visible:ring-stone-400',
-  ghost: 'text-stone-700 hover:bg-stone-100 focus-visible:ring-stone-400',
+  primary: 'bg-[#2A3741] text-[#E6E6E2] hover:bg-[#3A4E5A] focus-visible:ring-[#2A3741]',
+  secondary: 'bg-[#E6E6E2] text-[#2A3741] hover:bg-[#D8D8D4] focus-visible:ring-[#60888A]',
+  ghost: 'text-[#4A5558] hover:bg-[#E1E1DD] focus-visible:ring-[#60888A]',
   danger: 'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-600',
 }
 

@@ -2,55 +2,55 @@
 
 /* ─── Stitch Design System ─────────────────────────────────────────────────── */
 @theme {
-  /* Color palette */
-  --color-primary:                   #051125;
-  --color-primary-container:         #1b263b;
-  --color-on-primary:                #ffffff;
-  --color-on-primary-container:      #828da7;
-  --color-primary-fixed:             #d7e2ff;
-  --color-primary-fixed-dim:         #bbc6e2;
-  --color-on-primary-fixed:          #101b30;
-  --color-on-primary-fixed-variant:  #3c475d;
-  --color-inverse-primary:           #bbc6e2;
+  /* Color palette — Obscura brand */
+  --color-primary:                   #2A3741;
+  --color-primary-container:         #3A4E5A;
+  --color-on-primary:                #E6E6E2;
+  --color-on-primary-container:      #8A9FA0;
+  --color-primary-fixed:             #C8D8DA;
+  --color-primary-fixed-dim:         #A8BEC0;
+  --color-on-primary-fixed:          #1A2830;
+  --color-on-primary-fixed-variant:  #3A5055;
+  --color-inverse-primary:           #A8BEC0;
 
-  --color-secondary:                 #006972;
-  --color-secondary-container:       #9ff0fb;
+  --color-secondary:                 #60888A;
+  --color-secondary-container:       #B8D0D1;
   --color-on-secondary:              #ffffff;
-  --color-on-secondary-container:    #066f79;
-  --color-secondary-fixed:           #9ff0fb;
-  --color-secondary-fixed-dim:       #82d3de;
-  --color-on-secondary-fixed:        #001f23;
-  --color-on-secondary-fixed-variant:#004f56;
+  --color-on-secondary-container:    #2A4E50;
+  --color-secondary-fixed:           #B8D0D1;
+  --color-secondary-fixed-dim:       #92B4B6;
+  --color-on-secondary-fixed:        #0A2426;
+  --color-on-secondary-fixed-variant:#2A5458;
 
-  --color-tertiary:                  #0b111c;
-  --color-tertiary-container:        #202632;
-  --color-on-tertiary:               #ffffff;
-  --color-on-tertiary-container:     #878d9c;
-  --color-tertiary-fixed:            #dde2f3;
-  --color-tertiary-fixed-dim:        #c1c6d6;
-  --color-on-tertiary-fixed:         #161c27;
-  --color-on-tertiary-fixed-variant: #414754;
+  --color-tertiary:                  #1E2A32;
+  --color-tertiary-container:        #2E3E48;
+  --color-on-tertiary:               #E6E6E2;
+  --color-on-tertiary-container:     #7A8A8C;
+  --color-tertiary-fixed:            #C0D0D2;
+  --color-tertiary-fixed-dim:        #A0B8BA;
+  --color-on-tertiary-fixed:         #162028;
+  --color-on-tertiary-fixed-variant: #3A4C54;
 
-  --color-surface:                   #f8f9fa;
-  --color-surface-bright:            #f8f9fa;
-  --color-surface-dim:               #d9dadb;
-  --color-surface-container-lowest:  #ffffff;
-  --color-surface-container-low:     #f3f4f5;
-  --color-surface-container:         #edeeef;
-  --color-surface-container-high:    #e7e8e9;
-  --color-surface-container-highest: #e1e3e4;
-  --color-surface-variant:           #e1e3e4;
-  --color-surface-tint:              #545e76;
-  --color-on-surface:                #191c1d;
-  --color-on-surface-variant:        #45474d;
-  --color-inverse-surface:           #2e3132;
-  --color-inverse-on-surface:        #f0f1f2;
+  --color-surface:                   #E6E6E2;
+  --color-surface-bright:            #EEEEED;
+  --color-surface-dim:               #C0C0BC;
+  --color-surface-container-lowest:  #F5F5F3;
+  --color-surface-container-low:     #EAEAE6;
+  --color-surface-container:         #E1E1DD;
+  --color-surface-container-high:    #D8D8D4;
+  --color-surface-container-highest: #CFCFCB;
+  --color-surface-variant:           #CFCFCB;
+  --color-surface-tint:              #60888A;
+  --color-on-surface:                #1E2528;
+  --color-on-surface-variant:        #4A5558;
+  --color-inverse-surface:           #2A3741;
+  --color-inverse-on-surface:        #E6E6E2;
 
-  --color-background:                #f8f9fa;
-  --color-on-background:             #191c1d;
+  --color-background:                #E6E6E2;
+  --color-on-background:             #1E2528;
 
-  --color-outline:                   #75777d;
-  --color-outline-variant:           #c5c6cd;
+  --color-outline:                   #6A7A7C;
+  --color-outline-variant:           #BABAB6;
 
   --color-error:                     #ba1a1a;
   --color-error-container:           #ffdad6;
@@ -83,7 +83,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ─── Utility classes ────────────────────────────────────────────────────────*/
 .scholar-gradient {
-  background: linear-gradient(135deg, #051125 0%, #1b263b 100%);
+  background: linear-gradient(135deg, #2A3741 0%, #3A4E5A 100%);
 }
 
 .glass-effect {

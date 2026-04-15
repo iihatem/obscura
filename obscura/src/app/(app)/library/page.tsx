@@ -48,7 +48,7 @@ export default async function LibraryPage() {
       </section>
 
       {/* ── AI Spotlight Banner ───────────────────────────────────── */}
-      {sets.length > 0 && (
+      {/* {sets.length > 0 && (
         <section className="relative overflow-hidden rounded-xl scholar-gradient p-10 text-white flex justify-between items-center group">
           <div className="relative z-10 space-y-4 max-w-lg">
             <span className="inline-block px-3 py-1 bg-[#006972]/30 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-widest border border-white/10">
@@ -73,7 +73,7 @@ export default async function LibraryPage() {
             <span className="material-symbols-outlined" style={{ fontSize: '12rem' }}>psychology</span>
           </div>
         </section>
-      )}
+      )} */}
 
       {/* ── Grid ─────────────────────────────────────────────────── */}
       <SetGrid sets={sets} />

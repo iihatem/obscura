@@ -45,23 +45,27 @@ export default function Sidebar({ profile, open, onClose }: SidebarProps) {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-slate-50 border-r-0',
+          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[#E6E6E2] border-r-0',
           'transition-transform duration-200 ease-in-out',
           'md:relative md:translate-x-0',
           open ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         {/* Wordmark */}
-        <div className="mb-10 px-8 pt-6">
-          <h1
-            className="font-black text-xl text-[#051125] tracking-tight"
-            style={{ fontFamily: 'var(--font-manrope)' }}
-          >
-            Obscura AI
-          </h1>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-[#45474d] opacity-60 mt-0.5">
-            The Digital Curator
-          </p>
+        <div className="mb-10 px-8 pt-6 flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/frog.svg" alt="Obscura logo" className="w-9 h-9 shrink-0 rounded-md" />
+          <div>
+            <h1
+              className="font-black text-xl text-[#2A3741] tracking-tight leading-none"
+              style={{ fontFamily: 'var(--font-manrope)' }}
+            >
+              Obscura AI
+            </h1>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-[#45474d] opacity-60 mt-0.5">
+              The Digital Curator
+            </p>
+          </div>
         </div>
 
         {/* Nav */}
@@ -76,8 +80,8 @@ export default function Sidebar({ profile, open, onClose }: SidebarProps) {
                 className={cn(
                   'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 active:translate-x-1',
                   active
-                    ? 'bg-[#006972]/10 text-[#006972] font-bold'
-                    : 'text-slate-600 hover:bg-slate-200'
+                    ? 'bg-[#60888A]/15 text-[#60888A] font-bold'
+                    : 'text-[#4A5558] hover:bg-[#D8D8D4]'
                 )}
               >
                 <span className="material-symbols-outlined text-[20px]">{icon}</span>
@@ -100,26 +104,26 @@ export default function Sidebar({ profile, open, onClose }: SidebarProps) {
           </Link>
 
           {/* Divider + user actions */}
-          <div className="pt-4 border-t border-slate-200/50 space-y-1">
+          <div className="pt-4 border-t border-[#CFCFCB]/60 space-y-1">
             <div className="flex items-center gap-3 px-4 py-2">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#051125] text-xs font-semibold text-white">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2A3741] text-xs font-semibold text-[#E6E6E2]">
                 {initials}
               </div>
-              <span className="truncate text-sm font-medium text-[#191c1d]">
+              <span className="truncate text-sm font-medium text-[#1E2528]">
                 {profile?.display_name ?? 'You'}
               </span>
             </div>
             <Link
               href="/profile"
               onClick={onClose}
-              className="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-[#191c1d] transition-colors text-sm"
+              className="flex items-center gap-3 px-4 py-2 text-[#6A7A7C] hover:text-[#1E2528] transition-colors text-sm"
             >
               <span className="material-symbols-outlined text-[18px]">manage_accounts</span>
               Profile
             </Link>
             <button
               onClick={handleSignOut}
-              className="w-full flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-[#191c1d] transition-colors text-sm"
+              className="w-full flex items-center gap-3 px-4 py-2 text-[#6A7A7C] hover:text-[#1E2528] transition-colors text-sm"
             >
               <span className="material-symbols-outlined text-[18px]">logout</span>
               Logout

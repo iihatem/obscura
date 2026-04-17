@@ -242,7 +242,8 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
           const mimeMatch = card.dataUrl.match(/^data:([^;,]+)/)
           const fileMime = mimeMatch?.[1] ?? 'image/jpeg'
           const ext = fileMime === 'image/png' ? 'png' : fileMime === 'image/webp' ? 'webp' : 'jpg'
-          const path = `${userId}/${setId}/diagram-${diagramIndex++}.${ext}`
+          const path = `${userId}/${setId}/diagram-${crypto.randomUUID()}.${ext}`
+          diagramIndex++
 
           const uploadRes = await apiFetch('/upload/image', {
             method: 'POST',

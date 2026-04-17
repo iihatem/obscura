@@ -18,6 +18,7 @@ interface PageResult {
   error?: string
   // Diagram pages
   labels?: Label[]
+  croppedDataUrl?: string   // cropped diagram image returned by the backend
   // Flashcard pages
   cards?: { front: string; back: string }[]
 }
@@ -122,8 +123,11 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
           const j = await res.json().catch(() => ({}))
           throw new Error(j.error ?? 'Label generation failed')
         }
-        const { labels } = await res.json()
-        updateResult(idx, { status: 'done', labels })
+        const { labels, croppedImageBase64 } = await res.json()
+        const croppedDataUrl = croppedImageBase64
+          ? `data:image/jpeg;base64,${croppedImageBase64}`
+          : undefined
+        updateResult(idx, { status: 'done', labels, croppedDataUrl })
       } else {
         const res = await apiFetch('/generate/flashcards', {
           method: 'POST',
@@ -173,7 +177,7 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
         cards.push({
           type: 'diagram',
           id: draftId(),
-          dataUrl: r.page.pageData.dataUrl,
+          dataUrl: r.croppedDataUrl ?? r.page.pageData.dataUrl,
           labels: r.labels.map((l) => ({ ...l, id: draftId() })),
         })
       } else if (r.page.type === 'flashcard' && r.cards) {

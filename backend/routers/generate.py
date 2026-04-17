@@ -97,6 +97,86 @@ def _crop_b64(pil_image: Image.Image, x1: int, y1: int, x2: int, y2: int) -> str
     return base64.b64encode(buf.getvalue()).decode()
 
 
+def _union_boxes(boxes: list[tuple]) -> tuple:
+    """Return the smallest bounding box enclosing all supplied boxes."""
+    return (
+        min(b[0] for b in boxes),
+        min(b[1] for b in boxes),
+        max(b[2] for b in boxes),
+        max(b[3] for b in boxes),
+    )
+
+
+def _pil_to_b64(pil_image: Image.Image, quality: int = 95) -> str:
+    """Encode a PIL image as JPEG base64."""
+    buf = io.BytesIO()
+    pil_image.save(buf, format="JPEG", quality=quality)
+    return base64.b64encode(buf.getvalue()).decode()
+
+
+def _extract_diagram_crop(
+    pil_image: Image.Image,
+    image_b64: str,
+    mime: str,
+    client: Anthropic,
+) -> tuple[Image.Image, str]:
+    """
+    Ask Claude to locate the main diagram/illustration within a slide and return
+    a cropped PIL image + its JPEG base64.
+
+    Adds 1 % padding on each side so arrows and leader lines aren't clipped.
+    Falls back to the full image if no clear region is found or the crop is tiny.
+    """
+    img_w, img_h = pil_image.size
+
+    message = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=256,
+        messages=[{
+            "role": "user",
+            "content": [
+                {"type": "image", "source": {"type": "base64", "media_type": mime, "data": image_b64}},
+                {"type": "text", "text": (
+                    "This is a lecture slide. Find the bounding box of the main diagram, "
+                    "illustration, or figure — the graphical/visual content only. "
+                    "Exclude slide titles, headings, bullet-point text, captions, and logos. "
+                    "Return ONLY JSON: {\"x\": <0-100>, \"y\": <0-100>, \"width\": <0-100>, \"height\": <0-100>} "
+                    "where all values are percentages of the image dimensions (x,y = top-left corner). "
+                    "If there is no distinct diagram region, return null."
+                )},
+            ],
+        }],
+    )
+
+    raw = "".join(b.text for b in message.content if b.type == "text")
+    try:
+        data = json.loads(_strip_fences(raw))
+        if not data or not isinstance(data, dict):
+            raise ValueError("no region")
+
+        # Parse + add 1 % padding on each side
+        x  = max(0.0,   data["x"]   / 100 - 0.01)
+        y  = max(0.0,   data["y"]   / 100 - 0.01)
+        x2 = min(1.0,  (data["x"] + data["width"])  / 100 + 0.01)
+        y2 = min(1.0,  (data["y"] + data["height"]) / 100 + 0.01)
+
+        px1, py1 = int(x * img_w),  int(y * img_h)
+        px2, py2 = int(x2 * img_w), int(y2 * img_h)
+
+        # Skip if the crop is too small or is basically the whole image
+        if (px2 - px1) < 80 or (py2 - py1) < 80:
+            raise ValueError("crop too small")
+        if (px2 - px1) > img_w * 0.95 and (py2 - py1) > img_h * 0.95:
+            raise ValueError("crop is full image — no benefit")
+
+        cropped = pil_image.crop((px1, py1, px2, py2))
+        return cropped, _pil_to_b64(cropped)
+
+    except Exception:
+        # Fallback: use the full image as-is
+        return pil_image, image_b64
+
+
 # ── Schema ────────────────────────────────────────────────────────────────────
 
 class GenerateBody(BaseModel):
@@ -114,6 +194,14 @@ async def generate_labels(body: GenerateBody, current_user=Depends(get_current_u
     mime = _detect_mime(body.imageBase64)
     image_bytes = base64.b64decode(body.imageBase64)
     pil_image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+
+    # ── Stage 0: Crop to the diagram region within the slide ─────────────────
+    # Claude detects the bounding box of the illustration and we crop to it so
+    # that slide titles, captions, and body text are excluded from OCR entirely.
+    client = get_anthropic()
+    pil_image, working_b64 = _extract_diagram_crop(pil_image, body.imageBase64, mime, client)
+    working_mime = "image/jpeg"   # crop is always re-encoded as JPEG
+
     img_w, img_h = pil_image.size
     img_array = np.array(pil_image)
 
@@ -144,15 +232,17 @@ async def generate_labels(body: GenerateBody, current_user=Depends(get_current_u
 
     # ── Fallback: no boxes detected — let Claude do full-image localization ───
     if not orig_boxes:
-        return _claude_full_image_labels(body.imageBase64, mime)
+        result = _claude_full_image_labels(working_b64, working_mime)
+        result["croppedImageBase64"] = working_b64
+        return result
 
-    # ── Stage 2: Claude reads text from each crop (single API call) ───────────
+    # ── Stage 2: Claude identifies complete labels and maps them to regions ─────
     #
-    # We send the original image for context, followed by each numbered crop.
-    # Claude returns a JSON array of strings (one per crop, null if unreadable).
-    # This eliminates Claude's spatial-estimation weakness entirely.
+    # We send the cropped diagram image plus every numbered crop.
+    # Claude returns complete label texts and which region indices belong to each,
+    # handling any OCR fragments that were split across multiple boxes.
 
-    # Cap at 50 regions — more usually means noise on a typical diagram
+    # Cap at 50 regions — beyond that we're likely picking up noise
     if len(orig_boxes) > 50:
         orig_boxes = orig_boxes[:50]
         padded_boxes = padded_boxes[:50]
@@ -161,18 +251,18 @@ async def generate_labels(body: GenerateBody, current_user=Depends(get_current_u
         {
             "type": "text",
             "text": (
-                "Below is a medical/educational diagram followed by cropped regions "
-                "extracted from it by a text detector."
+                "Below is a medical/educational diagram followed by text regions "
+                "extracted from it by an OCR detector (numbered from 0)."
             ),
         },
         {
             "type": "image",
-            "source": {"type": "base64", "media_type": mime, "data": body.imageBase64},
+            "source": {"type": "base64", "media_type": working_mime, "data": working_b64},
         },
     ]
 
     for i, (px1, py1, px2, py2) in enumerate(padded_boxes):
-        content.append({"type": "text", "text": f"Region {i + 1}:"})
+        content.append({"type": "text", "text": f"Region {i}:"})
         content.append({
             "type": "image",
             "source": {
@@ -182,48 +272,65 @@ async def generate_labels(body: GenerateBody, current_user=Depends(get_current_u
             },
         })
 
-    n = len(orig_boxes)
     content.append({
         "type": "text",
         "text": (
-            f"For each of the {n} numbered regions above, provide the exact text label shown "
-            "in that cropped image. Use the full diagram for context when a crop is ambiguous. "
-            f"Return ONLY a JSON array of {n} strings in order. "
-            "Use null for any region that contains no readable text or is a non-text element. "
+            "Identify every text label that is part of the diagram itself — "
+            "meaning labels pointing to or naming anatomical structures, components, or parts directly on the illustration. "
+            "Ignore anything that is slide or document text: titles, headings, captions, footnotes, "
+            "figure numbers, page numbers, copyright notices, or any body text that describes the diagram from outside it. "
+            "A single label may be split across multiple regions — combine those fragments into the full label text. "
+            "For each complete diagram label: "
+            "(1) write the exact full text as it appears in the diagram, "
+            "(2) list the region indices (0-based) whose crops contain parts of that label. "
+            "Only include labels that correspond to at least one region. "
+            'Return ONLY a JSON array, e.g. [{"label": "aortic semilunar valve (open)", "regions": [0, 1, 2]}]. '
             "No explanation, no markdown."
         ),
     })
 
-    client = get_anthropic()
     message = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=1024,
+        max_tokens=2048,
         messages=[{"role": "user", "content": content}],
     )
 
     raw = "".join(b.text for b in message.content if b.type == "text")
     try:
-        texts: list = json.loads(_strip_fences(raw))
-        if not isinstance(texts, list):
-            texts = []
+        items: list = json.loads(_strip_fences(raw))
+        if not isinstance(items, list):
+            items = []
     except Exception:
-        texts = []
+        items = []
 
-    # ── Merge: PaddleOCR boxes + Claude text ─────────────────────────────────
+    # ── Build labels: union the OCR boxes for each label's regions ────────────
     labels = []
-    for i, (ox1, oy1, ox2, oy2) in enumerate(orig_boxes):
-        text = texts[i] if i < len(texts) else None
-        if not text or not isinstance(text, str) or not text.strip():
+    for item in items:
+        if not isinstance(item, dict):
             continue
+        label_text = item.get("label", "").strip()
+        region_indices = item.get("regions", [])
+        if not label_text or not isinstance(region_indices, list):
+            continue
+
+        boxes = [
+            orig_boxes[idx]
+            for idx in region_indices
+            if isinstance(idx, int) and 0 <= idx < len(orig_boxes)
+        ]
+        if not boxes:
+            continue
+
+        ox1, oy1, ox2, oy2 = _union_boxes(boxes)
         labels.append({
-            "label": text.strip(),
+            "label":  label_text,
             "x":      round(ox1 / img_w * 100, 3),
             "y":      round(oy1 / img_h * 100, 3),
             "width":  round((ox2 - ox1) / img_w * 100, 3),
             "height": round((oy2 - oy1) / img_h * 100, 3),
         })
 
-    return {"labels": labels}
+    return {"labels": labels, "croppedImageBase64": working_b64}
 
 
 # ── Claude-only fallback (no PaddleOCR boxes available) ──────────────────────

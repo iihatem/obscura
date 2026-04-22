@@ -1,0 +1,10 @@
+[build]
+  base    = "obscura"
+  command = "npm run build"
+  publish = "obscura/.next"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

@@ -19,5 +19,14 @@ export async function apiFetch(path: string, options: RequestInit = {}): Promise
     ...(options.headers as Record<string, string> ?? {}),
   }
 
-  return fetch(`${API_URL}${path}`, { ...options, headers })
+  const res = await fetch(`${API_URL}${path}`, { ...options, headers })
+
+  // HF Spaces returns HTML when the space is sleeping/starting up.
+  // Detect this and throw a clear error rather than a JSON parse crash.
+  const contentType = res.headers.get('content-type') ?? ''
+  if (!contentType.includes('application/json') && !res.ok) {
+    throw new Error('The API server is starting up. Please wait a moment and try again.')
+  }
+
+  return res
 }

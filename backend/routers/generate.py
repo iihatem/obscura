@@ -9,9 +9,20 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from anthropic import Anthropic
 from lib.auth import get_current_user
+from prompts.config import (
+    CROP_DETECT, LABEL_CONTEXT, LABEL_ASSEMBLY,
+    FULL_IMAGE_SYSTEM, FULL_IMAGE_USER,
+    FLASHCARD_SYSTEM, FLASHCARD_USER,
+)
 
 # Skip PaddleOCR's network connectivity check on every init
 os.environ.setdefault("PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK", "True")
+
+# Max base64 payload accepted (~20 MB raw image → ~27 MB base64)
+_MAX_B64_BYTES = 27 * 1024 * 1024
+
+# Claude API timeout in seconds
+_CLAUDE_TIMEOUT = 60.0
 
 router = APIRouter(prefix="/generate", tags=["generate"])
 
@@ -41,7 +52,7 @@ def get_paddle_ocr():
     try:
         from paddleocr import PaddleOCR
         _paddle_ocr = PaddleOCR(
-            lang="en",
+            lang=os.environ.get("PADDLE_LANG", "en"),
             # Disable heavyweight document preprocessing — not needed for diagrams
             use_doc_orientation_classify=False,
             use_doc_unwarping=False,
@@ -132,18 +143,12 @@ def _extract_diagram_crop(
     message = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=256,
+        timeout=_CLAUDE_TIMEOUT,
         messages=[{
             "role": "user",
             "content": [
                 {"type": "image", "source": {"type": "base64", "media_type": mime, "data": image_b64}},
-                {"type": "text", "text": (
-                    "This is a lecture slide. Find the bounding box of the main diagram, "
-                    "illustration, or figure — the graphical/visual content only. "
-                    "Exclude slide titles, headings, bullet-point text, captions, and logos. "
-                    "Return ONLY JSON: {\"x\": <0-100>, \"y\": <0-100>, \"width\": <0-100>, \"height\": <0-100>} "
-                    "where all values are percentages of the image dimensions (x,y = top-left corner). "
-                    "If there is no distinct diagram region, return null."
-                )},
+                {"type": "text", "text": CROP_DETECT},
             ],
         }],
     )
@@ -190,6 +195,8 @@ class GenerateBody(BaseModel):
 async def generate_labels(body: GenerateBody, current_user=Depends(get_current_user)):
     if not body.imageBase64 or not body.setId:
         raise HTTPException(status_code=400, detail="imageBase64 and setId are required")
+    if len(body.imageBase64) > _MAX_B64_BYTES:
+        raise HTTPException(status_code=400, detail="Image too large (max 20 MB)")
 
     mime = _detect_mime(body.imageBase64)
     image_bytes = base64.b64decode(body.imageBase64)
@@ -248,13 +255,7 @@ async def generate_labels(body: GenerateBody, current_user=Depends(get_current_u
         padded_boxes = padded_boxes[:50]
 
     content: list = [
-        {
-            "type": "text",
-            "text": (
-                "Below is a medical/educational diagram followed by text regions "
-                "extracted from it by an OCR detector (numbered from 0)."
-            ),
-        },
+        {"type": "text", "text": LABEL_CONTEXT},
         {
             "type": "image",
             "source": {"type": "base64", "media_type": working_mime, "data": working_b64},
@@ -272,26 +273,12 @@ async def generate_labels(body: GenerateBody, current_user=Depends(get_current_u
             },
         })
 
-    content.append({
-        "type": "text",
-        "text": (
-            "Identify every text label that is part of the diagram itself — "
-            "meaning labels pointing to or naming anatomical structures, components, or parts directly on the illustration. "
-            "Ignore anything that is slide or document text: titles, headings, captions, footnotes, "
-            "figure numbers, page numbers, copyright notices, or any body text that describes the diagram from outside it. "
-            "A single label may be split across multiple regions — combine those fragments into the full label text. "
-            "For each complete diagram label: "
-            "(1) write the exact full text as it appears in the diagram, "
-            "(2) list the region indices (0-based) whose crops contain parts of that label. "
-            "Only include labels that correspond to at least one region. "
-            'Return ONLY a JSON array, e.g. [{"label": "aortic semilunar valve (open)", "regions": [0, 1, 2]}]. '
-            "No explanation, no markdown."
-        ),
-    })
+    content.append({"type": "text", "text": LABEL_ASSEMBLY})
 
     message = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=2048,
+        timeout=_CLAUDE_TIMEOUT,
         messages=[{"role": "user", "content": content}],
     )
 
@@ -344,18 +331,13 @@ def _claude_full_image_labels(image_b64: str, mime: str) -> dict:
     message = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=2048,
-        system=(
-            "You analyze educational diagrams and return the exact location of every text label.\n"
-            "Return ONLY a raw JSON array — no markdown fences, no explanation.\n"
-            "Each element: {label, x, y, width, height} where coordinates are percentages "
-            "of image dimensions (0–100). x, y = top-left corner. "
-            "Cover each label tightly with ~0.5% padding per side."
-        ),
+        timeout=_CLAUDE_TIMEOUT,
+        system=FULL_IMAGE_SYSTEM,
         messages=[{
             "role": "user",
             "content": [
                 {"type": "image", "source": {"type": "base64", "media_type": mime, "data": image_b64}},
-                {"type": "text", "text": "Return all text label locations as JSON."},
+                {"type": "text", "text": FULL_IMAGE_USER},
             ],
         }],
     )
@@ -375,6 +357,8 @@ def _claude_full_image_labels(image_b64: str, mime: str) -> dict:
 async def generate_flashcards(body: GenerateBody, current_user=Depends(get_current_user)):
     if not body.imageBase64 or not body.setId:
         raise HTTPException(status_code=400, detail="imageBase64 and setId are required")
+    if len(body.imageBase64) > _MAX_B64_BYTES:
+        raise HTTPException(status_code=400, detail="Image too large (max 20 MB)")
 
     mime = _detect_mime(body.imageBase64)
     client = get_anthropic()
@@ -382,18 +366,13 @@ async def generate_flashcards(body: GenerateBody, current_user=Depends(get_curre
     message = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=4096,
-        system=(
-            "You are a medical education assistant. Extract high-yield facts from this page and generate "
-            "flashcard Q&A pairs. Return ONLY a raw JSON array, no markdown. "
-            "Each element: {front: string, back: string}. Front should be a specific question. "
-            "Back should be a concise answer. Generate between 3-8 cards per page depending on content density. "
-            "Focus on facts a student would need to memorize."
-        ),
+        timeout=_CLAUDE_TIMEOUT,
+        system=FLASHCARD_SYSTEM,
         messages=[{
             "role": "user",
             "content": [
                 {"type": "image", "source": {"type": "base64", "media_type": mime, "data": body.imageBase64}},
-                {"type": "text", "text": "Generate flashcard Q&A pairs from this page."},
+                {"type": "text", "text": FLASHCARD_USER},
             ],
         }],
     )

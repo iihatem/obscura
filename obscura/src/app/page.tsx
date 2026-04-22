@@ -335,7 +335,7 @@ export default function HomePage() {
           </div>
         </div>
         <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-[#BABAB6]/20 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-xs text-[#6A7A7C]">© 2024 Obscura AI. All rights reserved. Built for curious minds.</p>
+          <p className="text-xs text-[#6A7A7C]">© 2024 Obscura. All rights reserved. Built for curious minds.</p>
         </div>
       </footer>
     </div>

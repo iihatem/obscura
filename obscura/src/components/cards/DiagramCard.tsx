@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import type { DiagramCard as DiagramCardType } from '@/types'
 import { cn, proxyImageUrl } from '@/lib/utils'
 
@@ -12,6 +13,8 @@ interface DiagramCardProps {
 }
 
 export default function DiagramCard({ card, onEdit, onDelete, isOwner, className }: DiagramCardProps) {
+  const [imgLoaded, setImgLoaded] = useState(false)
+
   return (
     <div
       className={cn(
@@ -23,17 +26,22 @@ export default function DiagramCard({ card, onEdit, onDelete, isOwner, className
           Must be w-full h-auto (natural aspect ratio) — no object-contain or fixed height —
           so overlay % coordinates align with Claude's output which is % of image dimensions. */}
       <div className="relative bg-stone-100">
+        {/* Skeleton shown while image loads */}
+        {!imgLoaded && (
+          <div className="w-full aspect-video animate-pulse bg-stone-200" />
+        )}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={proxyImageUrl(card.image_url)}
           alt="Diagram"
-          className="w-full h-auto block"
+          className={cn('w-full h-auto block', !imgLoaded && 'hidden')}
+          onLoad={() => setImgLoaded(true)}
         />
         {/* Label boxes */}
         {card.labels.map((lbl, i) => (
           <div
             key={i}
-            className="absolute border-2 border-sky-400/80 bg-sky-400/10 flex items-end"
+            className="absolute border-2 border-stone-900 bg-black flex items-end"
             style={{
               left: `${lbl.x}%`,
               top: `${lbl.y}%`,
@@ -41,7 +49,7 @@ export default function DiagramCard({ card, onEdit, onDelete, isOwner, className
               height: `${lbl.height}%`,
             }}
           >
-            <span className="bg-sky-500 text-white text-[9px] font-medium px-1 leading-tight truncate max-w-full">
+            <span className="bg-stone-900 text-white text-[9px] font-medium px-1 leading-tight truncate max-w-full">
               {lbl.label}
             </span>
           </div>

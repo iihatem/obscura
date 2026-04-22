@@ -60,7 +60,7 @@ export default function Sidebar({ profile, open, onClose }: SidebarProps) {
               className="font-black text-xl text-[#2A3741] tracking-tight leading-none"
               style={{ fontFamily: 'var(--font-manrope)' }}
             >
-              Obscura AI
+              Obscura
             </h1>
             <p className="text-[10px] uppercase tracking-[0.2em] text-[#45474d] opacity-60 mt-0.5">
               The Digital Curator
@@ -100,7 +100,7 @@ export default function Sidebar({ profile, open, onClose }: SidebarProps) {
             className="w-full scholar-gradient text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-lg text-sm"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
-            New Upload
+            New Set
           </Link>
 
           {/* Divider + user actions */}

@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import type { ExploreSet } from '@/types'
 import { apiFetch } from '@/lib/api'
+import { proxyImageUrl } from '@/lib/utils'
 
 function Spinner({ className = 'h-4 w-4' }: { className?: string }) {
   return (
@@ -38,6 +39,16 @@ function ExploreSetCard({
 
   return (
     <div className="flex flex-col gap-4 rounded-xl bg-white p-6 border border-[#e7e8e9] shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+      {/* Thumbnail */}
+      {set.thumbnail_url && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={proxyImageUrl(set.thumbnail_url)}
+          alt=""
+          className="w-full h-28 object-cover rounded-lg bg-[#edeeef]"
+        />
+      )}
+
       {/* Subject + star */}
       <div className="flex items-start justify-between gap-2">
         <div>

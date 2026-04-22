@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import SetGrid from '@/components/sets/SetGrid'
+import RecentSessionSpotlight from '@/components/sets/RecentSessionSpotlight'
 import type { Set } from '@/types'
 
 export default async function LibraryPage() {
@@ -19,6 +20,22 @@ export default async function LibraryPage() {
     .order('updated_at', { ascending: false })
 
   const sets: Set[] = data ?? []
+
+  // Fetch the first diagram image per set for thumbnail previews
+  const setIds = sets.map((s) => s.id)
+  const thumbMap: Record<string, string> = {}
+  if (setIds.length > 0) {
+    const { data: thumbData } = await (supabase.from('cards') as any)
+      .select('set_id, image_url')
+      .in('set_id', setIds)
+      .eq('type', 'diagram')
+      .not('image_url', 'is', null)
+      .order('position', { ascending: true })
+    for (const card of thumbData ?? []) {
+      if (!thumbMap[card.set_id]) thumbMap[card.set_id] = card.image_url
+    }
+  }
+  const setsWithThumbs = sets.map((s) => ({ ...s, thumbnail_url: thumbMap[s.id] ?? null }))
 
   return (
     <div className="p-8 lg:p-12 space-y-12">
@@ -47,36 +64,11 @@ export default async function LibraryPage() {
         </div>
       </section>
 
-      {/* ── AI Spotlight Banner ───────────────────────────────────── */}
-      {/* {sets.length > 0 && (
-        <section className="relative overflow-hidden rounded-xl scholar-gradient p-10 text-white flex justify-between items-center group">
-          <div className="relative z-10 space-y-4 max-w-lg">
-            <span className="inline-block px-3 py-1 bg-[#006972]/30 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-widest border border-white/10">
-              AI Spotlight
-            </span>
-            <h3 className="text-2xl font-bold" style={{ fontFamily: 'var(--font-manrope)' }}>
-              {sets[0]?.title ?? 'Your Latest Set'}
-            </h3>
-            <p className="text-white/70 text-sm leading-relaxed">
-              Your AI Curator is ready to generate supplementary practice questions for your most recent collection.
-            </p>
-            <div className="flex gap-4 pt-4">
-              <Link
-                href={`/sets/${sets[0]?.id}`}
-                className="bg-[#9ff0fb] text-[#051125] px-6 py-2 rounded-lg font-bold text-sm hover:scale-105 transition-transform active:scale-95"
-              >
-                Open Set
-              </Link>
-            </div>
-          </div>
-          <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none">
-            <span className="material-symbols-outlined" style={{ fontSize: '12rem' }}>psychology</span>
-          </div>
-        </section>
-      )} */}
+      {/* ── Recent Session Spotlight ──────────────────────────────── */}
+      <RecentSessionSpotlight />
 
       {/* ── Grid ─────────────────────────────────────────────────── */}
-      <SetGrid sets={sets} />
+      <SetGrid sets={setsWithThumbs} searchable />
     </div>
   )
 }

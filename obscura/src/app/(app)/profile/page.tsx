@@ -14,6 +14,16 @@ interface ProfileData {
   cards_studied: number
 }
 
+export interface SessionHistoryItem {
+  id: string
+  set_id: string
+  set_title: string
+  mode: 'flashcard' | 'diagram' | 'mixed'
+  completed_at: string
+  total_cards: number
+  score_pct: number
+}
+
 function StatCard({ icon, label, value }: { icon: string; label: string; value: number | string }) {
   return (
     <div className="bg-white rounded-xl border border-[#e7e8e9] p-6 flex flex-col gap-3">
@@ -28,10 +38,28 @@ function StatCard({ icon, label, value }: { icon: string; label: string; value: 
   )
 }
 
+const modeLabel: Record<string, string> = {
+  flashcard: 'Flashcards',
+  diagram: 'Diagrams',
+  mixed: 'Mixed',
+}
+
+function relativeDate(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const days = Math.floor(diff / 86_400_000)
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  if (days < 30) return `${days}d ago`
+  const months = Math.floor(days / 30)
+  if (months < 12) return `${months}mo ago`
+  return `${Math.floor(months / 12)}y ago`
+}
+
 export default function ProfilePage() {
   const { toast } = useToast()
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [sessions, setSessions] = useState<SessionHistoryItem[]>([])
 
   // Edit state
   const [editing, setEditing] = useState(false)
@@ -47,6 +75,11 @@ export default function ProfilePage() {
       })
       .catch(() => toast('Failed to load profile', 'error'))
       .finally(() => setLoading(false))
+
+    apiFetch('/sessions/history')
+      .then((r) => r.ok ? r.json() : [])
+      .then((history: SessionHistoryItem[]) => setSessions(history))
+      .catch(() => {})
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSave() {
@@ -182,6 +215,41 @@ export default function ProfilePage() {
           <StatCard icon="school" label="Cards studied" value={profile.cards_studied} />
         </div>
       </section>
+
+      {/* Recent sessions */}
+      {sessions.length > 0 && (
+        <section className="space-y-4">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-[#45474d]">Recent sessions</h3>
+          <div className="flex flex-col gap-2">
+            {sessions.map((s) => (
+              <div
+                key={s.id}
+                className="bg-white rounded-xl border border-[#e7e8e9] px-5 py-4 flex items-center justify-between gap-4"
+              >
+                <div className="min-w-0">
+                  <p className="font-bold text-sm text-[#051125] truncate" style={{ fontFamily: 'var(--font-manrope)' }}>
+                    {s.set_title}
+                  </p>
+                  <p className="text-xs text-[#75777d] mt-0.5">
+                    {modeLabel[s.mode]} · {s.total_cards} cards · {relativeDate(s.completed_at)}
+                  </p>
+                </div>
+                <div className="shrink-0 flex flex-col items-end gap-1">
+                  <span
+                    className="text-lg font-extrabold"
+                    style={{
+                      fontFamily: 'var(--font-manrope)',
+                      color: s.score_pct >= 80 ? '#16a34a' : s.score_pct >= 50 ? '#d97706' : '#dc2626',
+                    }}
+                  >
+                    {s.score_pct}%
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   )
 }

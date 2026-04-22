@@ -264,6 +264,7 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
       >
         <div className="mt-2">
           <CardEditor
+            key={editor.card?.id ?? 'new'}
             mode={editor.mode}
             setId={set.id}
             userId={userId}

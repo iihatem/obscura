@@ -44,7 +44,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
           className="text-xl font-black text-[#051125] tracking-tight"
           style={{ fontFamily: 'var(--font-manrope)' }}
         >
-          Obscura AI
+          Obscura
         </Link>
         <div className="flex items-center gap-3">
           <Link href="/login" className="text-sm text-[#45474d] hover:text-[#051125] transition-colors font-medium">

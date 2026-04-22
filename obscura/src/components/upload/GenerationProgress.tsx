@@ -540,6 +540,42 @@ interface DiagramReviewCardProps {
 function DiagramReviewCard({ card, onUpdateLabel, onDeleteLabel, onDelete, onLabelDrag }: DiagramReviewCardProps) {
   const containerRef = useRef<HTMLDivElement>(null)
 
+  function startResize(
+    e: React.MouseEvent,
+    corner: 'tl' | 'tr' | 'bl' | 'br',
+    label: DraftLabel,
+  ) {
+    e.preventDefault()
+    e.stopPropagation()
+    const container = containerRef.current
+    if (!container) return
+    const rect = container.getBoundingClientRect()
+    const startX = e.clientX
+    const startY = e.clientY
+    const { x: lx, y: ly, width: lw, height: lh } = label
+    const MIN = 2
+
+    function onMove(ev: MouseEvent) {
+      const dx = ((ev.clientX - startX) / rect.width) * 100
+      const dy = ((ev.clientY - startY) / rect.height) * 100
+      let nx = lx, ny = ly, nw = lw, nh = lh
+      if (corner === 'br') {
+        nw = Math.max(MIN, lw + dx); nh = Math.max(MIN, lh + dy)
+      } else if (corner === 'bl') {
+        nx = Math.min(lx + lw - MIN, Math.max(0, lx + dx)); nw = lw - (nx - lx); nh = Math.max(MIN, lh + dy)
+      } else if (corner === 'tr') {
+        ny = Math.min(ly + lh - MIN, Math.max(0, ly + dy)); nh = lh - (ny - ly); nw = Math.max(MIN, lw + dx)
+      } else {
+        nx = Math.min(lx + lw - MIN, Math.max(0, lx + dx)); ny = Math.min(ly + lh - MIN, Math.max(0, ly + dy))
+        nw = lw - (nx - lx); nh = lh - (ny - ly)
+      }
+      onUpdateLabel(label.id, 'x', nx); onUpdateLabel(label.id, 'y', ny)
+      onUpdateLabel(label.id, 'width', nw); onUpdateLabel(label.id, 'height', nh)
+    }
+    function onUp() { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+    document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp)
+  }
+
   return (
     <div className="group relative rounded-xl border border-stone-200 bg-white p-4">
       <button
@@ -553,26 +589,41 @@ function DiagramReviewCard({ card, onUpdateLabel, onDeleteLabel, onDelete, onLab
       </button>
 
       <div className="flex flex-col gap-3 lg:flex-row">
-        {/* Image with draggable label boxes — shown from local data URL, no upload needed */}
+        {/* Image with draggable + resizable label boxes */}
         <div
           ref={containerRef}
-          className="relative flex-shrink-0 select-none overflow-hidden rounded-lg bg-stone-100 lg:w-96"
+          className="relative flex-shrink-0 select-none rounded-lg bg-stone-100 lg:w-96"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={card.dataUrl} alt="Diagram" className="w-full" draggable={false} />
+          <img src={card.dataUrl} alt="Diagram" className="w-full h-auto block rounded-lg" draggable={false} />
           {card.labels.map((label) => (
             <div
               key={label.id}
               onMouseDown={(e) => onLabelDrag(e, label, containerRef)}
-              className="absolute cursor-move rounded border-2 border-violet-500 bg-violet-500/20 hover:bg-violet-500/30 transition-colors"
+              className="absolute cursor-move border-2 border-stone-900 bg-black"
               style={{
                 left: `${label.x}%`,
                 top: `${label.y}%`,
                 width: `${label.width}%`,
                 height: `${label.height}%`,
               }}
-              title={label.label}
-            />
+            >
+              {/* Corner resize handles */}
+              {(['tl','tr','bl','br'] as const).map((c) => (
+                <div
+                  key={c}
+                  onMouseDown={(e) => startResize(e, c, label)}
+                  className="absolute w-2.5 h-2.5 bg-white border border-stone-700 rounded-sm z-10"
+                  style={{
+                    cursor: `${c === 'tl' ? 'nw' : c === 'tr' ? 'ne' : c === 'bl' ? 'sw' : 'se'}-resize`,
+                    top:    c === 'tl' || c === 'tr' ? -5 : undefined,
+                    bottom: c === 'bl' || c === 'br' ? -5 : undefined,
+                    left:   c === 'tl' || c === 'bl' ? -5 : undefined,
+                    right:  c === 'tr' || c === 'br' ? -5 : undefined,
+                  }}
+                />
+              ))}
+            </div>
           ))}
         </div>
 

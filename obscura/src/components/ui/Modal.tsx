@@ -43,7 +43,8 @@ export default function Modal({
       onClick={handleClick}
       onClose={onClose}
       className={cn(
-        'w-full max-w-md rounded-xl border border-stone-200 bg-white p-0 shadow-lg',
+        'fixed inset-0 m-auto w-full max-w-md max-h-[90vh] overflow-y-auto',
+        'rounded-xl border border-stone-200 bg-white p-0 shadow-lg',
         'backdrop:bg-black/40',
         'open:animate-in open:fade-in-0 open:zoom-in-95',
         className

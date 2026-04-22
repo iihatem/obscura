@@ -1,3 +1,6 @@
+'use client'
+
+import { useState } from 'react'
 import type { Set } from '@/types'
 import SetCard from './SetCard'
 import EmptyState from '@/components/ui/EmptyState'
@@ -13,9 +16,19 @@ const StackIcon = () => (
 interface SetGridProps {
   sets: Set[]
   emptyAction?: { label: string; href?: string; onClick?: () => void }
+  searchable?: boolean
 }
 
-export default function SetGrid({ sets, emptyAction }: SetGridProps) {
+export default function SetGrid({ sets, emptyAction, searchable }: SetGridProps) {
+  const [query, setQuery] = useState('')
+
+  const filtered = query.trim()
+    ? sets.filter((s) =>
+        s.title.toLowerCase().includes(query.toLowerCase()) ||
+        (s.subject ?? '').toLowerCase().includes(query.toLowerCase())
+      )
+    : sets
+
   if (sets.length === 0) {
     return (
       <EmptyState
@@ -28,10 +41,39 @@ export default function SetGrid({ sets, emptyAction }: SetGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {sets.map((set) => (
-        <SetCard key={set.id} set={set} />
-      ))}
+    <div className="space-y-6">
+      {searchable && (
+        <div className="relative max-w-sm">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#75777d] pointer-events-none">
+            search
+          </span>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search sets…"
+            className="w-full pl-9 pr-4 h-10 rounded-lg bg-white border border-[#e7e8e9] text-sm text-[#191c1d] placeholder:text-[#75777d] focus:outline-none focus:ring-2 focus:ring-[#006972]/20 focus:border-[#006972] transition-colors"
+          />
+          {query && (
+            <button
+              onClick={() => setQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#75777d] hover:text-[#051125] transition-colors"
+            >
+              <span className="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {filtered.length === 0 ? (
+        <p className="text-sm text-[#75777d] font-medium">No sets match "{query}"</p>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filtered.map((set) => (
+            <SetCard key={set.id} set={set} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

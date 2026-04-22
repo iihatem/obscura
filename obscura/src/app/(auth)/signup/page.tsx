@@ -30,7 +30,17 @@ export default function SignupPage() {
     })
 
     if (signUpError) {
-      setError(signUpError.message)
+      const msg = signUpError.message.toLowerCase()
+      const isPaused =
+        msg.includes('project is paused') ||
+        msg.includes('503') ||
+        msg.includes('failed to fetch') ||
+        msg.includes('networkerror')
+      setError(
+        isPaused
+          ? 'The database is currently paused (free tier). Visit the Supabase dashboard to resume it, then try again.'
+          : signUpError.message
+      )
       setLoading(false)
       return
     }
@@ -57,7 +67,7 @@ export default function SignupPage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/frog.svg" alt="Obscura logo" className="w-7 h-7 rounded-md" />
             <span className="text-xl font-black text-[#2A3741] tracking-tight" style={{ fontFamily: 'var(--font-manrope)' }}>
-              Obscura AI
+              Obscura
             </span>
           </Link>
         </header>
@@ -87,7 +97,7 @@ export default function SignupPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/frog.svg" alt="Obscura logo" className="w-7 h-7 rounded-md" />
           <span className="text-xl font-black text-[#2A3741] tracking-tight" style={{ fontFamily: 'var(--font-manrope)' }}>
-            Obscura AI
+            Obscura
           </span>
         </Link>
         <Link href="/login" className="text-sm text-[#4A5558] hover:text-[#2A3741] transition-colors">

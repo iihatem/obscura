@@ -33,6 +33,21 @@ async def list_public_sets(current_user=Depends(get_current_user)):
         )
         starred_ids = {row["set_id"] for row in (stars_resp.data or [])}
 
+    # Fetch first diagram card image per set for thumbnails
+    thumb_map: dict[str, str] = {}
+    if set_ids:
+        cards_resp = (
+            db.table("cards")
+            .select("set_id, image_url")
+            .in_("set_id", set_ids)
+            .eq("type", "diagram")
+            .order("position", desc=False)
+            .execute()
+        )
+        for card in cards_resp.data or []:
+            if card.get("image_url") and card["set_id"] not in thumb_map:
+                thumb_map[card["set_id"]] = card["image_url"]
+
     # Flatten the profiles join and attach star state
     result = []
     for s in sets:
@@ -43,6 +58,7 @@ async def list_public_sets(current_user=Depends(get_current_user)):
                 **s,
                 "owner_display_name": display_name,
                 "starred_by_me": s["id"] in starred_ids,
+                "thumbnail_url": thumb_map.get(s["id"]),
             }
         )
 

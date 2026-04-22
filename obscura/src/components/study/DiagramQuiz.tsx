@@ -12,17 +12,10 @@ interface DiagramQuizProps {
 }
 
 const gradeStyle: Record<Grade, string> = {
-  correct: 'border-emerald-400 bg-emerald-500/80',
-  close: 'border-amber-400 bg-amber-500/80',
-  wrong: 'border-red-400 bg-red-500/80',
-  empty: 'border-stone-500 bg-stone-700/80',
-}
-
-const gradeTextStyle: Record<Grade, string> = {
-  correct: 'text-emerald-900',
-  close: 'text-amber-900',
-  wrong: 'text-red-100',
-  empty: 'text-stone-300',
+  correct: 'border-emerald-500 bg-emerald-400/35',
+  close: 'border-amber-500 bg-amber-400/35',
+  wrong: 'border-red-500 bg-red-400/35',
+  empty: 'border-red-500 bg-red-400/35',
 }
 
 function aggregateGrades(grades: Grade[]): Grade {
@@ -71,6 +64,8 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
   const [answers, setAnswers] = useState<string[]>(() => labels.map(() => ''))
   const [submitted, setSubmitted] = useState(false)
   const [labelGrades, setLabelGrades] = useState<Grade[]>([])
+  const [hintActive, setHintActive] = useState(false)
+  const [hintCount, setHintCount] = useState(0)
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
   // Reset when card changes
@@ -78,6 +73,8 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
     setAnswers(labels.map(() => ''))
     setSubmitted(false)
     setLabelGrades([])
+    setHintActive(false)
+    setHintCount(0)
     inputRefs.current = []
     // Focus first input after mount
     setTimeout(() => inputRefs.current[0]?.focus(), 50)
@@ -136,10 +133,12 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
             <div
               key={i}
               className={cn(
-                'absolute border-2 flex flex-col overflow-hidden',
+                'absolute border-2 flex flex-col overflow-hidden transition-colors',
                 submitted && grade
                   ? gradeStyle[grade]
-                  : 'border-stone-700 bg-black/80'
+                  : hintActive
+                    ? 'border-stone-400 bg-black/20'
+                    : 'border-stone-900 bg-black'
               )}
               style={{
                 left: `${label.x}%`,
@@ -148,21 +147,7 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
                 height: `${label.height}%`,
               }}
             >
-              {submitted ? (
-                <div className="flex flex-col justify-between h-full p-0.5">
-                  <span
-                    className={cn(
-                      'text-[10px] font-medium leading-tight truncate',
-                      gradeTextStyle[grade ?? 'empty']
-                    )}
-                  >
-                    {answers[i] || '—'}
-                  </span>
-                  <span className="text-[9px] text-white/80 leading-tight truncate">
-                    {label.label}
-                  </span>
-                </div>
-              ) : (
+              {submitted ? null : (
                 <input
                   ref={(el) => { inputRefs.current[i] = el }}
                   value={answers[i]}
@@ -186,7 +171,7 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
       {/* Hint text */}
       {!submitted && (
         <p className="text-xs text-[#75777d] text-center">
-          Type labels into each box · Enter to advance focus · All {labels.length} labels required
+          Type labels into each box · Enter to advance · Use Hint to peek at the diagram
         </p>
       )}
 
@@ -211,13 +196,33 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
       {/* Action buttons */}
       <div className="flex justify-end gap-3">
         {!submitted ? (
-          <button
-            onClick={handleSubmit}
-            className="flex items-center gap-2 rounded-lg scholar-gradient px-6 py-2.5 text-sm font-bold text-white hover:opacity-90 active:scale-95 transition-all"
-          >
-            Submit
-            <span className="material-symbols-outlined text-[16px]">check</span>
-          </button>
+          <>
+            <button
+              onClick={() => setHintActive((h) => {
+                if (!h) setHintCount((c) => c + 1)
+                return !h
+              })}
+              className={cn(
+                'flex items-center gap-2 rounded-lg border px-5 py-2.5 text-sm font-bold transition-all active:scale-95',
+                hintActive
+                  ? 'border-amber-300 bg-amber-50 text-amber-700'
+                  : 'border-[#e7e8e9] bg-white text-[#051125] hover:bg-[#f3f4f5]'
+              )}
+            >
+              <span className="material-symbols-outlined text-[16px]">lightbulb</span>
+              Hint
+              {hintCount > 0 && (
+                <span className="text-[11px] font-medium opacity-60">{hintCount}×</span>
+              )}
+            </button>
+            <button
+              onClick={handleSubmit}
+              className="flex items-center gap-2 rounded-lg scholar-gradient px-6 py-2.5 text-sm font-bold text-white hover:opacity-90 active:scale-95 transition-all"
+            >
+              Submit
+              <span className="material-symbols-outlined text-[16px]">check</span>
+            </button>
+          </>
         ) : (
           <button
             onClick={handleContinue}

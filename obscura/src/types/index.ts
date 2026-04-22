@@ -51,6 +51,7 @@ export interface Set {
   star_count: number
   created_at: string
   updated_at: string
+  thumbnail_url?: string | null
 }
 
 export interface StudySession {
@@ -74,6 +75,7 @@ export interface CardResult {
 export interface ExploreSet extends Set {
   owner_display_name: string | null
   starred_by_me: boolean
+  thumbnail_url?: string | null
 }
 
 export interface SetStar {

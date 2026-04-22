@@ -1,0 +1,32 @@
+1. What aspects of this design solution align with your needs or expectations?
+The diagram quiz mechanic of typing labels into blacked-out boxes is exactly how active recall should work for visual subjects. The study mode picker gives useful control without overcomplicating things, and the PDF-to-quiz pipeline removes the biggest friction point of manually creating study materials.
+
+---
+
+2. Are there any features or functionalities missing that you would expect to see?
+Progress tracking showing which labels I consistently get wrong is missing. I'd also expect spaced repetition so cards I miss come back sooner. There's also no way to add a diagram manually without going through the full PDF upload flow.
+
+---
+
+3. How easy or challenging is it to navigate through this interface?
+Pretty easy overall. The sidebar is simple and the flow from library to set to study is logical. The "New Upload" label is a bit confusing though, and first-time users might need some onboarding to get the hang of it.
+
+---
+
+4. Is the layout intuitive and conducive to completing your tasks efficiently?
+Mostly yes. The Study button is always visible and easy to reach. The one issue is that diagram cards in the library don't show a preview of the actual image, so it's hard to tell which diagram is which just by looking.
+
+---
+
+5. What do you think about the hint feature in this design?
+It works well. The 20% opacity gives you just enough of a nudge without giving the answer away. A usage counter would be a nice addition so you can track how much you're leaning on it.
+
+---
+
+6. What are your overall impressions of this design compared to your current experiences?
+It's a step up from tools like Anki for visual subjects since it works with the actual diagram rather than a text description. The main thing missing compared to more mature study tools is performance tracking and spaced repetition.
+
+---
+
+7. Do you have any suggestions for enhancing the usability or user-friendliness of this design?
+A short onboarding flow would help a lot since the upload pipeline isn't immediately obvious. Adding a thumbnail preview of the diagram image on library cards would also make it much easier to find what you're looking for.

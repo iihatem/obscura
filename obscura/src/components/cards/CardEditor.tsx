@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { apiFetch } from '@/lib/api'
-import { cn } from '@/lib/utils'
+import { cn, proxyImageUrl } from '@/lib/utils'
 import Button from '@/components/ui/Button'
 import type { Card, Label } from '@/types'
 
@@ -101,6 +100,7 @@ function DiagramEditor({
   const [uploadError, setUploadError] = useState('')
   const [isDragOver, setIsDragOver] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const imgContainerRef = useRef<HTMLDivElement>(null)
 
   const [labels, setLabels] = useState<LabelRow[]>(
     initialLabels.map((l, i) => ({ ...l, _key: i }))
@@ -124,7 +124,7 @@ function DiagramEditor({
   function addLabel() {
     setLabels((prev) => [
       ...prev,
-      { _key: nextKey.current++, label: '', x: 0, y: 0, width: 20, height: 10 },
+      { _key: nextKey.current++, label: '', x: 5, y: 5, width: 20, height: 10 },
     ])
   }
 
@@ -136,6 +136,63 @@ function DiagramEditor({
 
   function removeLabel(key: number) {
     setLabels((prev) => prev.filter((l) => l._key !== key))
+  }
+
+  function handleLabelDrag(e: React.MouseEvent<HTMLDivElement>, lbl: LabelRow) {
+    e.preventDefault()
+    e.stopPropagation()
+    const container = imgContainerRef.current
+    if (!container) return
+    const rect = container.getBoundingClientRect()
+    const startX = e.clientX
+    const startY = e.clientY
+    const startLX = lbl.x
+    const startLY = lbl.y
+
+    function onMove(ev: MouseEvent) {
+      const dx = ((ev.clientX - startX) / rect.width) * 100
+      const dy = ((ev.clientY - startY) / rect.height) * 100
+      updateLabel(lbl._key, 'x', Math.max(0, Math.min(100 - lbl.width, startLX + dx)))
+      updateLabel(lbl._key, 'y', Math.max(0, Math.min(100 - lbl.height, startLY + dy)))
+    }
+    function onUp() {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
+
+  function handleLabelResize(e: React.MouseEvent, corner: 'tl' | 'tr' | 'bl' | 'br', lbl: LabelRow) {
+    e.preventDefault()
+    e.stopPropagation()
+    const container = imgContainerRef.current
+    if (!container) return
+    const rect = container.getBoundingClientRect()
+    const startX = e.clientX
+    const startY = e.clientY
+    const { x: lx, y: ly, width: lw, height: lh } = lbl
+    const MIN = 2
+
+    function onMove(ev: MouseEvent) {
+      const dx = ((ev.clientX - startX) / rect.width) * 100
+      const dy = ((ev.clientY - startY) / rect.height) * 100
+      let nx = lx, ny = ly, nw = lw, nh = lh
+      if (corner === 'br') {
+        nw = Math.max(MIN, lw + dx); nh = Math.max(MIN, lh + dy)
+      } else if (corner === 'bl') {
+        nx = Math.min(lx + lw - MIN, Math.max(0, lx + dx)); nw = lw - (nx - lx); nh = Math.max(MIN, lh + dy)
+      } else if (corner === 'tr') {
+        ny = Math.min(ly + lh - MIN, Math.max(0, ly + dy)); nh = lh - (ny - ly); nw = Math.max(MIN, lw + dx)
+      } else {
+        nx = Math.min(lx + lw - MIN, Math.max(0, lx + dx)); ny = Math.min(ly + lh - MIN, Math.max(0, ly + dy))
+        nw = lw - (nx - lx); nh = lh - (ny - ly)
+      }
+      updateLabel(lbl._key, 'x', nx); updateLabel(lbl._key, 'y', ny)
+      updateLabel(lbl._key, 'width', nw); updateLabel(lbl._key, 'height', nh)
+    }
+    function onUp() { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+    document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp)
   }
 
   async function handleSave() {
@@ -184,119 +241,130 @@ function DiagramEditor({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Dropzone */}
-      <div
-        className={cn(
-          'relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 text-center transition-colors cursor-pointer',
-          isDragOver
-            ? 'border-stone-400 bg-stone-50'
-            : 'border-stone-200 hover:border-stone-300'
-        )}
-        onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
-        onDragLeave={() => setIsDragOver(false)}
-        onDrop={handleDrop}
-        onClick={() => fileRef.current?.click()}
-      >
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
-        />
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
+      />
 
-        {previewSrc ? (
-          <div className="relative w-full aspect-video">
-            <Image
-              src={previewSrc}
+      {previewSrc ? (
+        /* ── Image with overlay labels ────────────────────────────── */
+        <div className="flex flex-col gap-2">
+          {/* Change image row */}
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="text-xs text-stone-400 hover:text-stone-600 underline"
+            >
+              Change image
+            </button>
+          </div>
+
+          {/* Image + label overlays */}
+          <div
+            ref={imgContainerRef}
+            className="relative select-none rounded-lg bg-stone-100"
+            onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
+            onDragLeave={() => setIsDragOver(false)}
+            onDrop={handleDrop}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={pendingFile ? previewSrc : proxyImageUrl(previewSrc)}
               alt="Diagram preview"
-              fill
-              className="object-contain rounded-lg"
-              unoptimized
+              className="w-full h-auto block rounded-lg"
+              draggable={false}
             />
+            {labels.map((lbl) => (
+              <div
+                key={lbl._key}
+                onMouseDown={(e) => handleLabelDrag(e, lbl)}
+                className="absolute cursor-move border-2 border-stone-900 bg-black flex items-end"
+                style={{
+                  left: `${lbl.x}%`,
+                  top: `${lbl.y}%`,
+                  width: `${lbl.width}%`,
+                  height: `${lbl.height}%`,
+                }}
+                title={lbl.label}
+              >
+                {lbl.label && (
+                  <span className="bg-stone-900 text-white text-[9px] font-medium px-1 leading-tight truncate max-w-full">
+                    {lbl.label}
+                  </span>
+                )}
+                {/* Corner resize handles */}
+                {(['tl','tr','bl','br'] as const).map((c) => (
+                  <div
+                    key={c}
+                    onMouseDown={(e) => handleLabelResize(e, c, lbl)}
+                    className="absolute w-2.5 h-2.5 bg-white border border-stone-700 rounded-sm z-10"
+                    style={{
+                      cursor: `${c === 'tl' ? 'nw' : c === 'tr' ? 'ne' : c === 'bl' ? 'sw' : 'se'}-resize`,
+                      top:    c === 'tl' || c === 'tr' ? -5 : undefined,
+                      bottom: c === 'bl' || c === 'br' ? -5 : undefined,
+                      left:   c === 'tl' || c === 'bl' ? -5 : undefined,
+                      right:  c === 'tr' || c === 'br' ? -5 : undefined,
+                    }}
+                  />
+                ))}
+              </div>
+            ))}
           </div>
-        ) : (
-          <div className="flex flex-col items-center gap-2">
-            <svg className="text-stone-300" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <polyline points="21 15 16 10 5 21" />
-            </svg>
-            <p className="text-sm text-stone-500">Drop an image or click to browse</p>
-            <p className="text-xs text-stone-400">PNG, JPG, WebP</p>
-          </div>
-        )}
-      </div>
-
-      {previewSrc && (
-        <button
-          type="button"
+        </div>
+      ) : (
+        /* ── Empty dropzone ───────────────────────────────────────── */
+        <div
+          className={cn(
+            'flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition-colors cursor-pointer',
+            isDragOver ? 'border-stone-400 bg-stone-50' : 'border-stone-200 hover:border-stone-300'
+          )}
+          onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
+          onDragLeave={() => setIsDragOver(false)}
+          onDrop={handleDrop}
           onClick={() => fileRef.current?.click()}
-          className="self-start text-xs text-stone-400 hover:text-stone-600 underline"
         >
-          Change image
-        </button>
+          <svg className="text-stone-300" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+          <p className="mt-2 text-sm text-stone-500">Drop an image or click to browse</p>
+          <p className="text-xs text-stone-400">PNG, JPG, WebP</p>
+        </div>
       )}
 
-      {/* Labels */}
+      {/* Labels list */}
       <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-stone-700">Labels</p>
-          <span className="text-xs text-stone-400 italic">AI detection coming soon</span>
+        <p className="text-sm font-medium text-stone-700">Labels</p>
+        <div className="flex flex-col gap-1.5">
+          {labels.map((lbl) => (
+            <div key={lbl._key} className="group/lbl flex items-center gap-2">
+              <div className="h-2.5 w-2.5 rounded-full bg-sky-400 shrink-0" />
+              <input
+                value={lbl.label}
+                onChange={(e) => updateLabel(lbl._key, 'label', e.target.value)}
+                placeholder="Label text…"
+                className="flex-1 rounded border border-stone-200 bg-stone-50 px-2 py-1 text-sm text-stone-800 focus:outline-none focus:ring-1 focus:ring-stone-400"
+              />
+              <button
+                onClick={() => removeLabel(lbl._key)}
+                className="hidden text-stone-300 hover:text-red-500 group-hover/lbl:block transition-colors"
+                aria-label="Remove label"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+          ))}
+          {labels.length === 0 && (
+            <p className="text-xs text-stone-400 italic">No labels — drag boxes on the image after adding one.</p>
+          )}
         </div>
-
-        {labels.length > 0 && (
-          <div className="rounded-lg border border-stone-200 overflow-hidden">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-stone-100 bg-stone-50">
-                  <th className="px-2 py-1.5 text-left font-medium text-stone-500">Label</th>
-                  <th className="px-2 py-1.5 text-center font-medium text-stone-500 w-14">X %</th>
-                  <th className="px-2 py-1.5 text-center font-medium text-stone-500 w-14">Y %</th>
-                  <th className="px-2 py-1.5 text-center font-medium text-stone-500 w-14">W %</th>
-                  <th className="px-2 py-1.5 text-center font-medium text-stone-500 w-14">H %</th>
-                  <th className="w-8" />
-                </tr>
-              </thead>
-              <tbody>
-                {labels.map((lbl) => (
-                  <tr key={lbl._key} className="border-b border-stone-100 last:border-0">
-                    <td className="px-2 py-1">
-                      <input
-                        value={lbl.label}
-                        onChange={(e) => updateLabel(lbl._key, 'label', e.target.value)}
-                        placeholder="e.g. Hippocampus"
-                        className="w-full bg-transparent outline-none placeholder:text-stone-300"
-                      />
-                    </td>
-                    {(['x', 'y', 'width', 'height'] as const).map((field) => (
-                      <td key={field} className="px-2 py-1">
-                        <input
-                          type="number"
-                          min={0}
-                          max={100}
-                          value={lbl[field]}
-                          onChange={(e) => updateLabel(lbl._key, field, Number(e.target.value))}
-                          className="w-full bg-transparent text-center outline-none"
-                        />
-                      </td>
-                    ))}
-                    <td className="px-2 py-1 text-center">
-                      <button
-                        onClick={() => removeLabel(lbl._key)}
-                        className="text-stone-300 hover:text-red-500 transition-colors"
-                        aria-label="Remove label"
-                      >
-                        ✕
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
         <button
           type="button"
           onClick={addLabel}

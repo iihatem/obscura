@@ -23,7 +23,17 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      setError(error.message)
+      const msg = error.message.toLowerCase()
+      const isPaused =
+        msg.includes('project is paused') ||
+        msg.includes('503') ||
+        msg.includes('failed to fetch') ||
+        msg.includes('networkerror')
+      setError(
+        isPaused
+          ? 'The database is currently paused (free tier). Visit the Supabase dashboard to resume it, then try again.'
+          : error.message
+      )
       setLoading(false)
     } else {
       router.push(redirect ?? '/library')
@@ -39,7 +49,7 @@ export default function LoginPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/frog.svg" alt="Obscura logo" className="w-7 h-7 rounded-md" />
           <span className="text-xl font-black text-[#2A3741] tracking-tight" style={{ fontFamily: 'var(--font-manrope)' }}>
-            Obscura AI
+            Obscura
           </span>
         </Link>
         <Link href="/signup" className="text-sm text-[#4A5558] hover:text-[#2A3741] transition-colors">

@@ -12,8 +12,8 @@ export default function ExploreLoading() {
       <Skeleton className="h-10 w-80 max-w-full rounded-lg" />
       {/* Subject chips */}
       <div className="flex gap-2">
-        {[64, 48, 72, 56, 64].map((w, i) => (
-          <Skeleton key={i} className="h-7 rounded-full" style={{ width: w }} />
+        {['w-16', 'w-12', 'w-20', 'w-14', 'w-16'].map((w, i) => (
+          <Skeleton key={i} className={`h-7 rounded-full ${w}`} />
         ))}
       </div>
       {/* Grid */}

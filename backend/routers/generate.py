@@ -15,8 +15,6 @@ from prompts.config import (
     FLASHCARD_SYSTEM, FLASHCARD_USER,
 )
 
-# Skip PaddleOCR's network connectivity check on every init
-os.environ.setdefault("PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK", "True")
 
 # Max base64 payload accepted (~20 MB raw image → ~27 MB base64)
 _MAX_B64_BYTES = 27 * 1024 * 1024
@@ -38,31 +36,27 @@ def get_anthropic() -> Anthropic:
     return _anthropic
 
 
-_paddle_ocr = None
-_paddle_available: bool | None = None  # None = untried
+_easyocr_reader = None
+_easyocr_available: bool | None = None
 
 
-def get_paddle_ocr():
-    """Lazy singleton. Returns None (permanently) if paddleocr is not installed."""
-    global _paddle_ocr, _paddle_available
-    if _paddle_available is False:
+def get_ocr():
+    """Lazy singleton. Returns None (permanently) if easyocr is not installed."""
+    global _easyocr_reader, _easyocr_available
+    if _easyocr_available is False:
         return None
-    if _paddle_ocr is not None:
-        return _paddle_ocr
+    if _easyocr_reader is not None:
+        return _easyocr_reader
     try:
-        from paddleocr import PaddleOCR
-        _paddle_ocr = PaddleOCR(
-            lang=os.environ.get("PADDLE_LANG", "en"),
-            # Disable heavyweight document preprocessing — not needed for diagrams
-            use_doc_orientation_classify=False,
-            use_doc_unwarping=False,
-            use_textline_orientation=False,
-        )
-        _paddle_available = True
+        import easyocr
+        lang = os.environ.get("OCR_LANG", "en")
+        _easyocr_reader = easyocr.Reader([lang], gpu=False, verbose=False)
+        _easyocr_available = True
+        print("[generate] EasyOCR loaded successfully")
     except Exception as e:
-        print(f"[generate] PaddleOCR unavailable, falling back to Claude-only: {e}")
-        _paddle_available = False
-    return _paddle_ocr
+        print(f"[generate] EasyOCR unavailable, falling back to Claude-only: {e}")
+        _easyocr_available = False
+    return _easyocr_reader
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -212,30 +206,27 @@ async def generate_labels(body: GenerateBody, current_user=Depends(get_current_u
     img_w, img_h = pil_image.size
     img_array = np.array(pil_image)
 
-    # ── Stage 1: PaddleOCR — pixel-precise text region detection ─────────────
+    # ── Stage 1: EasyOCR — pixel-precise text region detection ──────────────
     orig_boxes: list[tuple[int, int, int, int]] = []   # (x1,y1,x2,y2) no padding
     padded_boxes: list[tuple[int, int, int, int]] = []  # (x1,y1,x2,y2) with padding
 
-    ocr = get_paddle_ocr()
+    ocr = get_ocr()
     if ocr is not None:
         try:
-            results = list(ocr.predict(img_array))
-            if results:
-                r = results[0]
-                polys: list = r.get("dt_polys", []) or []
-                for poly in polys:
-                    poly_arr = np.array(poly, dtype=float)
-                    if poly_arr.shape != (4, 2):
-                        continue
-                    orig, padded = _poly_to_bbox(poly_arr, img_w, img_h, pad=3)
-                    ox1, oy1, ox2, oy2 = orig
-                    # Skip degenerate boxes
-                    if (ox2 - ox1) < 4 or (oy2 - oy1) < 4:
-                        continue
-                    orig_boxes.append(orig)
-                    padded_boxes.append(padded)
+            results = ocr.readtext(img_array, detail=1)
+            for item in results:
+                poly = item[0]  # [[x1,y1],[x2,y2],[x3,y3],[x4,y4]]
+                poly_arr = np.array(poly, dtype=float)
+                if poly_arr.ndim != 2 or poly_arr.shape[1] != 2:
+                    continue
+                orig, padded = _poly_to_bbox(poly_arr, img_w, img_h, pad=3)
+                ox1, oy1, ox2, oy2 = orig
+                if (ox2 - ox1) < 4 or (oy2 - oy1) < 4:
+                    continue
+                orig_boxes.append(orig)
+                padded_boxes.append(padded)
         except Exception as e:
-            print(f"[generate] PaddleOCR predict failed: {e}")
+            print(f"[generate] EasyOCR failed: {e}")
 
     # ── Fallback: no boxes detected — let Claude do full-image localization ───
     if not orig_boxes:

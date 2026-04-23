@@ -12,8 +12,8 @@ from routers import sets, cards, generate, upload, sessions, results, image, exp
 async def lifespan(app: FastAPI):
     # Preload PaddleOCR models at startup to avoid cold-start latency on first request.
     # Model files are cached in ~/.paddlex after the first download (~15 MB total).
-    from routers.generate import get_paddle_ocr
-    get_paddle_ocr()
+    from routers.generate import get_ocr
+    get_ocr()
     yield
 
 

@@ -17,5 +17,7 @@ export function genId(): string {
 export function proxyImageUrl(storageUrl: string): string {
   const match = storageUrl.match(/\/storage\/v1\/object\/(?:public|sign)\/card-images\/(.+)/)
   if (!match) return storageUrl
-  return `/api/image?path=${encodeURIComponent(match[1])}`
+  // Strip any query string (e.g. signed URL tokens) — the path alone is enough
+  const storagePath = match[1].split('?')[0]
+  return `/api/image/${storagePath}`
 }

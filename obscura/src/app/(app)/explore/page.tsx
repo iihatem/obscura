@@ -89,12 +89,6 @@ function ExploreSetCard({
           <span className="material-symbols-outlined text-[15px]">quiz</span>
           {set.card_count} {set.card_count === 1 ? 'card' : 'cards'}
         </div>
-        {set.owner_display_name && (
-          <div className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[15px]">person</span>
-            {set.owner_display_name}
-          </div>
-        )}
       </div>
 
       {/* Copy to library */}

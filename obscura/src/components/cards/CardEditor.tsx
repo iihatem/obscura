@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { apiFetch } from '@/lib/api'
 import { cn, proxyImageUrl } from '@/lib/utils'
 import Button from '@/components/ui/Button'
@@ -202,20 +201,26 @@ function DiagramEditor({
       setUploading(true)
       setUploadError('')
       try {
-        const supabase = createClient()
         const ext = pendingFile.name.split('.').pop() ?? 'jpg'
         const path = `${userId}/${Date.now()}.${ext}`
 
-        const { error: uploadErr } = await supabase.storage
-          .from('card-images')
-          .upload(path, pendingFile, { upsert: false })
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = () => reject(new Error('Failed to read file'))
+          reader.readAsDataURL(pendingFile)
+        })
 
-        if (uploadErr) throw new Error(uploadErr.message)
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('card-images')
-          .getPublicUrl(path)
-
+        const uploadRes = await fetch('/api/upload/image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dataUrl, path }),
+        })
+        if (!uploadRes.ok) {
+          const j = await uploadRes.json().catch(() => ({}))
+          throw new Error(j.error ?? 'Upload failed')
+        }
+        const { publicUrl } = await uploadRes.json()
         finalUrl = publicUrl
       } catch (err) {
         setUploadError((err as Error).message)

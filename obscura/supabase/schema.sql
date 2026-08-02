@@ -225,7 +225,11 @@ create policy "generation_usage_select_own" on public.generation_usage
 -- The insert and the limit check happen in a single statement so that
 -- concurrent requests can't both read "29 used" and both proceed.
 create or replace function public.claim_generation(p_user_id uuid, p_limit int)
-returns int as $$
+returns int
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
 declare
   v_count int;
 begin
@@ -242,7 +246,15 @@ begin
 
   return v_count;
 end;
-$$ language plpgsql security definer;
+$$;
+
+-- Functions are executable by PUBLIC by default. Left open, any logged-in user
+-- could call this with someone else's id and burn their daily allowance.
+-- Only the backend (service role) may claim generations.
+revoke all on function public.claim_generation(uuid, int) from public;
+revoke all on function public.claim_generation(uuid, int) from anon;
+revoke all on function public.claim_generation(uuid, int) from authenticated;
+grant execute on function public.claim_generation(uuid, int) to service_role;
 
 -- Storage buckets (run in Supabase dashboard Storage section or via API)
 -- bucket: card-images, public: false, allowed mime types: image/jpeg image/png image/webp

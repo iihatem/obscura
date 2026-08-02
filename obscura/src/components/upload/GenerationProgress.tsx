@@ -107,6 +107,15 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
     )
   }, [])
 
+  /**
+   * FastAPI reports failures as `detail`, so quota and API-key messages from the
+   * backend surface verbatim rather than collapsing to a generic string.
+   */
+  async function errorMessage(res: Response, fallback: string): Promise<string> {
+    const body = await res.json().catch(() => ({}))
+    return body.detail ?? body.error ?? fallback
+  }
+
   const processPage = useCallback(async (page: SelectedPage) => {
     const idx = page.pageData.pageIndex
     updateResult(idx, { status: 'generating' })
@@ -119,10 +128,7 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
           method: 'POST',
           body: JSON.stringify({ imageBase64, setId }),
         })
-        if (!res.ok) {
-          const j = await res.json().catch(() => ({}))
-          throw new Error(j.error ?? 'Label generation failed')
-        }
+        if (!res.ok) throw new Error(await errorMessage(res, 'Label generation failed'))
         const { labels, croppedImageBase64 } = await res.json()
         const croppedDataUrl = croppedImageBase64
           ? `data:image/jpeg;base64,${croppedImageBase64}`
@@ -133,10 +139,7 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
           method: 'POST',
           body: JSON.stringify({ imageBase64, setId }),
         })
-        if (!res.ok) {
-          const j = await res.json().catch(() => ({}))
-          throw new Error(j.error ?? 'Flashcard generation failed')
-        }
+        if (!res.ok) throw new Error(await errorMessage(res, 'Flashcard generation failed'))
         const { cards } = await res.json()
         updateResult(idx, { status: 'done', cards })
       }

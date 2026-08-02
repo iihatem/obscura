@@ -200,6 +200,50 @@ create policy "stars_select" on public.set_stars for select using (true);
 create policy "stars_insert" on public.set_stars for insert with check (user_id = auth.uid());
 create policy "stars_delete" on public.set_stars for delete using (user_id = auth.uid());
 
+-- ── AI generation quota ──────────────────────────────────────────────────────
+-- One row per user per UTC day, capping how many Claude generations a single
+-- account can trigger against the server-owned API key. Users who supply their
+-- own key bypass this entirely and are never metered here.
+
+create table public.generation_usage (
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  day date not null default (now() at time zone 'utc')::date,
+  count int not null default 0,
+  primary key (user_id, day)
+);
+
+alter table public.generation_usage enable row level security;
+
+-- Rows are written server-side with the service role, which bypasses RLS.
+-- Users only need read access to show their own remaining allowance.
+create policy "generation_usage_select_own" on public.generation_usage
+  for select using (user_id = auth.uid());
+
+-- Atomically claim one generation against the caller's daily allowance.
+-- Returns the new count, or null if the limit was already reached.
+--
+-- The insert and the limit check happen in a single statement so that
+-- concurrent requests can't both read "29 used" and both proceed.
+create or replace function public.claim_generation(p_user_id uuid, p_limit int)
+returns int as $$
+declare
+  v_count int;
+begin
+  if p_limit <= 0 then
+    return null;
+  end if;
+
+  insert into public.generation_usage as gu (user_id, day, count)
+  values (p_user_id, (now() at time zone 'utc')::date, 1)
+  on conflict (user_id, day) do update
+    set count = gu.count + 1
+    where gu.count < p_limit
+  returning gu.count into v_count;
+
+  return v_count;
+end;
+$$ language plpgsql security definer;
+
 -- Storage buckets (run in Supabase dashboard Storage section or via API)
 -- bucket: card-images, public: false, allowed mime types: image/jpeg image/png image/webp
 -- RLS policy: authenticated users can upload to their own folder ({user_id}/*)

@@ -1,7 +1,7 @@
 [build]
   base    = "obscura"
   command = "npm run build"
-  publish = ".next"
+  publish = "obscura/.next"
 
 [build.environment]
   NODE_VERSION = "20"

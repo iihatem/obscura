@@ -8,8 +8,8 @@ Upload a PDF or image, and Obscura automatically generates flashcards and intera
 
 ## Features
 
-- **PDF → Flashcards**: Upload any PDF; each page is processed by Claude to extract high-yield Q&A pairs
-- **Diagram labelling**: A hybrid OCR pipeline (PaddleOCR + Claude) detects every text label on a diagram and creates fill-in-the-blank exercises with pixel-precise bounding boxes
+- **PDF → Flashcards**: Embedded PDF text is sent to Claude for high-yield Q&A generation; scanned pages fall back to Claude vision
+- **Diagram labelling**: OCR detects label text and pixel-precise boxes, then one Claude vision call filters and assembles the diagram labels
 - **Study sessions**: Flashcard and diagram quiz modes with per-card grading (correct / close / wrong)
 - **Public library**: Browse and search sets shared by other users; star sets you like, fork them to your account
 - **Sharing**: Shareable links for any set
@@ -34,11 +34,11 @@ Upload a PDF or image, and Obscura automatically generates flashcards and intera
 
 ### Diagram label pipeline
 
-1. **PaddleOCR** runs text detection on the uploaded image, returning pixel-level polygon bounding boxes for every text region
-2. Each bounding box is cropped from the original image
-3. A **single Claude API call** receives the full image for context plus all numbered crops; Claude returns the exact text in each crop as a JSON array
-4. Boxes and text are merged and normalized to `%`-based coordinates (relative to image dimensions) so overlay `<div>`s align correctly at any rendered size
-5. Fallback: if PaddleOCR finds no regions, Claude localizes labels from the full image directly
+1. OCR runs on the original image, returning recognized text, confidence, and pixel-level polygon boxes
+2. Boxes are normalized to compact `%`-based structured data
+3. A **single Claude API call** receives the image plus the OCR JSON and returns the diagram-label region mappings
+4. Region boxes are merged into final labels, preserving OCR spatial precision
+5. Fallback: if OCR finds no regions, the same single Claude call localizes labels from the full image directly
 
 ### Study scoring
 
@@ -152,6 +152,9 @@ The app is available at [http://localhost:3000](http://localhost:3000).
 | Variable | Description |
 |---|---|
 | `ANTHROPIC_API_KEY` | Anthropic API key for Claude |
+| `ANTHROPIC_PRIMARY_MODEL` | Primary generation model (default: `claude-sonnet-4-6`) |
+| `OPENAI_API_KEY` | Independent key used only when the Anthropic primary fails |
+| `OPENAI_FALLBACK_MODEL` | OpenAI retry model (default: `gpt-5-mini`; blank disables fallback) |
 | `SUPABASE_URL` | Supabase project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (bypasses RLS for server-side ops) |
 

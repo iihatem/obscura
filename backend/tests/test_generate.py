@@ -19,6 +19,52 @@ from tests.conftest import make_anthropic_response, _make_jpeg_b64
 # ════════════════════════════════════════════════════════════════════════════
 
 class TestHelpers:
+    def test_openai_fallback_converts_anthropic_image_blocks(self):
+        from routers.generate import _openai_fallback
+
+        openai_client = MagicMock()
+        openai_client.chat.completions.create.return_value.choices = [
+            MagicMock(message=MagicMock(content='[{"label":"A","regions":[0]}]'))
+        ]
+        kwargs = {
+            "system": "Return JSON",
+            "max_tokens": 100,
+            "messages": [{"role": "user", "content": [
+                {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": "abc"}},
+                {"type": "text", "text": "OCR regions: []"},
+            ]}],
+        }
+
+        with patch("routers.generate.get_openai", return_value=openai_client):
+            message = _openai_fallback(kwargs, "gpt-5-mini")
+
+        call = openai_client.chat.completions.create.call_args.kwargs
+        assert call["model"] == "gpt-5-mini"
+        assert call["max_completion_tokens"] == 100
+        assert call["messages"][1]["content"][0]["image_url"]["url"] == "data:image/jpeg;base64,abc"
+        assert message.content[0].text.startswith("[")
+
+    def test_retries_rate_limit_with_openai(self, monkeypatch):
+        import httpx
+        from anthropic import RateLimitError
+        from routers.generate import _create_message_with_fallback
+
+        monkeypatch.delenv("ANTHROPIC_PRIMARY_MODEL", raising=False)
+        monkeypatch.delenv("OPENAI_FALLBACK_MODEL", raising=False)
+        response = httpx.Response(429, request=httpx.Request("POST", "https://api.anthropic.com/v1/messages"))
+        error = RateLimitError("rate limited", response=response, body={})
+        expected = make_anthropic_response("[]")
+        client = MagicMock()
+        client.messages.create.side_effect = error
+
+        with patch("routers.generate._openai_fallback", return_value=expected) as fallback:
+            message, model = _create_message_with_fallback(client, max_tokens=10, messages=[])
+
+        assert message is expected
+        assert model == "openai:gpt-5-mini"
+        assert client.messages.create.call_args.kwargs["model"] == "claude-sonnet-4-6"
+        assert fallback.call_args.args[1] == "gpt-5-mini"
+
     def test_detect_mime_jpeg(self):
         from routers.generate import _detect_mime
         b64 = _make_jpeg_b64()
@@ -84,16 +130,12 @@ class TestLabelsContract:
     """POST /generate/labels must return {labels: [...], croppedImageBase64: str}."""
 
     def test_returns_correct_shape(self, client, jpeg_b64):
-        label_json = json.dumps([{"label": "Aorta", "regions": [0]}])
-        crop_json = json.dumps({"x": 10, "y": 10, "width": 80, "height": 80})
+        label_json = json.dumps([{"label": "Aorta", "x": 10, "y": 10, "width": 20, "height": 5}])
 
         with patch("routers.generate.get_anthropic") as mock_client_fn:
             mock_client = MagicMock()
             mock_client_fn.return_value = mock_client
-            mock_client.messages.create.side_effect = [
-                make_anthropic_response(crop_json),   # Stage 0: crop detection
-                make_anthropic_response(label_json),  # Stage 2: label assembly
-            ]
+            mock_client.messages.create.return_value = make_anthropic_response(label_json)
 
             resp = client.post("/generate/labels", json={"imageBase64": jpeg_b64, "setId": "set-1"})
 
@@ -107,20 +149,16 @@ class TestLabelsContract:
 
     def test_label_has_required_fields(self, client, jpeg_b64):
         label_json = json.dumps([{"label": "Femur", "regions": [0]}])
-        crop_json = json.dumps({"x": 5, "y": 5, "width": 90, "height": 90})
 
         # Provide a minimal PaddleOCR result so Stage 1 runs
         fake_poly = [[10, 20], [80, 20], [80, 30], [10, 30]]
-        fake_ocr_result = [{"dt_polys": [fake_poly]}]
+        fake_ocr_result = [{"dt_polys": [fake_poly], "rec_texts": ["Femur"], "rec_scores": [0.99]}]
 
         with patch("routers.generate.get_anthropic") as mock_client_fn, \
              patch("routers.generate.get_paddle_ocr") as mock_ocr_fn:
             mock_client = MagicMock()
             mock_client_fn.return_value = mock_client
-            mock_client.messages.create.side_effect = [
-                make_anthropic_response(crop_json),
-                make_anthropic_response(label_json),
-            ]
+            mock_client.messages.create.return_value = make_anthropic_response(label_json)
             mock_ocr = MagicMock()
             mock_ocr.predict.return_value = iter(fake_ocr_result)
             mock_ocr_fn.return_value = mock_ocr
@@ -148,15 +186,11 @@ class TestLabelsContract:
         fallback_labels = json.dumps([
             {"label": "Tibia", "x": 10.0, "y": 20.0, "width": 15.0, "height": 5.0}
         ])
-        crop_json = "null"  # No crop region found
 
         with patch("routers.generate.get_anthropic") as mock_client_fn:
             mock_client = MagicMock()
             mock_client_fn.return_value = mock_client
-            mock_client.messages.create.side_effect = [
-                make_anthropic_response(crop_json),      # Stage 0: no crop
-                make_anthropic_response(fallback_labels), # Fallback full-image
-            ]
+            mock_client.messages.create.return_value = make_anthropic_response(fallback_labels)
 
             resp = client.post("/generate/labels", json={"imageBase64": jpeg_b64, "setId": "set-1"})
 
@@ -189,6 +223,24 @@ class TestFlashcardsContract:
         resp = client.post("/generate/flashcards", json={"imageBase64": large_b64, "setId": "set-1"})
         assert resp.status_code == 400
 
+    def test_uses_extracted_text_without_sending_image(self, client, jpeg_b64):
+        cards_json = json.dumps([{"front": "Question?", "back": "Answer"}])
+        extracted = "Useful lecture content about anatomy and physiology. " * 4
+
+        with patch("routers.generate.get_anthropic") as mock_client_fn:
+            mock_client = MagicMock()
+            mock_client_fn.return_value = mock_client
+            mock_client.messages.create.return_value = make_anthropic_response(cards_json)
+            resp = client.post("/generate/flashcards", json={
+                "imageBase64": jpeg_b64, "setId": "set-1", "extractedText": extracted,
+            })
+
+        assert resp.status_code == 200
+        assert resp.json()["source"] == "text"
+        content = mock_client.messages.create.call_args.kwargs["messages"][0]["content"]
+        assert isinstance(content, str)
+        assert extracted.strip() in content
+
 
 # ════════════════════════════════════════════════════════════════════════════
 # T062 – Coordinate validity: labels must be 0–100 % and non-degenerate
@@ -202,18 +254,14 @@ class TestCoordinateValidity:
 
     def test_label_coordinates_are_valid_percentages(self, client, jpeg_b64):
         fake_poly = [[10, 20], [80, 20], [80, 30], [10, 30]]
-        fake_ocr_result = [{"dt_polys": [fake_poly]}]
+        fake_ocr_result = [{"dt_polys": [fake_poly], "rec_texts": ["Humerus"], "rec_scores": [0.99]}]
         label_json = json.dumps([{"label": "Humerus", "regions": [0]}])
-        crop_json = json.dumps({"x": 0, "y": 0, "width": 100, "height": 100})
 
         with patch("routers.generate.get_anthropic") as mock_client_fn, \
              patch("routers.generate.get_paddle_ocr") as mock_ocr_fn:
             mock_client = MagicMock()
             mock_client_fn.return_value = mock_client
-            mock_client.messages.create.side_effect = [
-                make_anthropic_response(crop_json),
-                make_anthropic_response(label_json),
-            ]
+            mock_client.messages.create.return_value = make_anthropic_response(label_json)
             mock_ocr = MagicMock()
             mock_ocr.predict.return_value = iter(fake_ocr_result)
             mock_ocr_fn.return_value = mock_ocr

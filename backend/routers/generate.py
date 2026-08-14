@@ -3,16 +3,19 @@ import base64
 import io
 import json
 import re
+from typing import Optional
+from types import SimpleNamespace
 import numpy as np
 from PIL import Image
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from anthropic import Anthropic
+from anthropic import Anthropic, APIConnectionError, APIStatusError, APITimeoutError
+from openai import OpenAI, OpenAIError
 from lib.auth import get_current_user
 from prompts.config import (
     CROP_DETECT, LABEL_CONTEXT, LABEL_ASSEMBLY,
     FULL_IMAGE_SYSTEM, FULL_IMAGE_USER,
-    FLASHCARD_SYSTEM, FLASHCARD_USER,
+    FLASHCARD_SYSTEM, FLASHCARD_USER, FLASHCARD_TEXT_USER,
 )
 
 # Skip PaddleOCR's network connectivity check on every init
@@ -24,11 +27,16 @@ _MAX_B64_BYTES = 27 * 1024 * 1024
 # Claude API timeout in seconds
 _CLAUDE_TIMEOUT = 60.0
 
+_DEFAULT_PRIMARY_MODEL = "claude-sonnet-4-6"
+_DEFAULT_FALLBACK_MODEL = "gpt-5-mini"
+_FALLBACK_STATUS_CODES = {400, 401, 403, 404, 408, 409, 413, 422, 429, 500, 502, 503, 504, 529}
+
 router = APIRouter(prefix="/generate", tags=["generate"])
 
 # ── Singletons ────────────────────────────────────────────────────────────────
 
 _anthropic: Anthropic | None = None
+_openai: OpenAI | None = None
 
 
 def get_anthropic() -> Anthropic:
@@ -36,6 +44,81 @@ def get_anthropic() -> Anthropic:
     if _anthropic is None:
         _anthropic = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     return _anthropic
+
+
+def get_openai() -> OpenAI | None:
+    """Return the optional cross-provider fallback client."""
+    global _openai
+    key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if not key:
+        return None
+    if _openai is None:
+        _openai = OpenAI(api_key=key, timeout=_CLAUDE_TIMEOUT)
+    return _openai
+
+
+def _openai_fallback(kwargs: dict, model: str):
+    client = get_openai()
+    if client is None:
+        raise RuntimeError("OPENAI_API_KEY is not configured")
+
+    messages = []
+    system = kwargs.get("system")
+    if system:
+        messages.append({"role": "system", "content": system})
+
+    for message in kwargs.get("messages", []):
+        content = message.get("content", "")
+        if isinstance(content, str):
+            converted = content
+        else:
+            converted = []
+            for block in content:
+                if block.get("type") == "text":
+                    converted.append({"type": "text", "text": block["text"]})
+                elif block.get("type") == "image":
+                    source = block["source"]
+                    converted.append({
+                        "type": "image_url",
+                        "image_url": {"url": f"data:{source['media_type']};base64,{source['data']}"},
+                    })
+        messages.append({"role": message.get("role", "user"), "content": converted})
+
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        max_completion_tokens=kwargs.get("max_tokens", 2048),
+    )
+    text = response.choices[0].message.content or ""
+    return SimpleNamespace(content=[SimpleNamespace(type="text", text=text)])
+
+
+def _create_message_with_fallback(client: Anthropic, **kwargs):
+    """Call Anthropic first, then retry eligible failures through OpenAI."""
+    primary = os.environ.get("ANTHROPIC_PRIMARY_MODEL", _DEFAULT_PRIMARY_MODEL).strip()
+    fallback = os.environ.get("OPENAI_FALLBACK_MODEL", _DEFAULT_FALLBACK_MODEL).strip()
+    primary_error: Exception | None = None
+
+    try:
+        return client.messages.create(model=primary, **kwargs), primary
+    except (APIConnectionError, APITimeoutError) as exc:
+        if not fallback or fallback == primary:
+            raise
+        print(f"[generate] {primary} unavailable ({type(exc).__name__}); retrying with OpenAI {fallback}")
+        primary_error = exc
+    except APIStatusError as exc:
+        if not fallback or fallback == primary or exc.status_code not in _FALLBACK_STATUS_CODES:
+            raise
+        print(f"[generate] {primary} returned HTTP {exc.status_code}; retrying with OpenAI {fallback}")
+        primary_error = exc
+
+    try:
+        return _openai_fallback(kwargs, fallback), f"openai:{fallback}"
+    except RuntimeError:
+        raise primary_error
+    except OpenAIError as exc:
+        print(f"[generate] OpenAI fallback failed: {type(exc).__name__}")
+        raise HTTPException(status_code=502, detail="Both AI providers are currently unavailable.") from exc
 
 
 _paddle_ocr = None
@@ -140,8 +223,8 @@ def _extract_diagram_crop(
     """
     img_w, img_h = pil_image.size
 
-    message = client.messages.create(
-        model="claude-sonnet-4-6",
+    message, _ = _create_message_with_fallback(
+        client,
         max_tokens=256,
         timeout=_CLAUDE_TIMEOUT,
         messages=[{
@@ -187,6 +270,7 @@ def _extract_diagram_crop(
 class GenerateBody(BaseModel):
     imageBase64: str
     setId: str
+    extractedText: Optional[str] = None
 
 
 # ── /labels endpoint ──────────────────────────────────────────────────────────
@@ -202,19 +286,17 @@ async def generate_labels(body: GenerateBody, current_user=Depends(get_current_u
     image_bytes = base64.b64decode(body.imageBase64)
     pil_image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
-    # ── Stage 0: Crop to the diagram region within the slide ─────────────────
-    # Claude detects the bounding box of the illustration and we crop to it so
-    # that slide titles, captions, and body text are excluded from OCR entirely.
     client = get_anthropic()
-    pil_image, working_b64 = _extract_diagram_crop(pil_image, body.imageBase64, mime, client)
-    working_mime = "image/jpeg"   # crop is always re-encoded as JPEG
+    # Normalize the saved/reviewed diagram to JPEG without changing its geometry.
+    working_b64 = _pil_to_b64(pil_image)
+    working_mime = "image/jpeg"
 
     img_w, img_h = pil_image.size
     img_array = np.array(pil_image)
 
     # ── Stage 1: PaddleOCR — pixel-precise text region detection ─────────────
     orig_boxes: list[tuple[int, int, int, int]] = []   # (x1,y1,x2,y2) no padding
-    padded_boxes: list[tuple[int, int, int, int]] = []  # (x1,y1,x2,y2) with padding
+    ocr_regions: list[dict] = []
 
     ocr = get_paddle_ocr()
     if ocr is not None:
@@ -223,17 +305,26 @@ async def generate_labels(body: GenerateBody, current_user=Depends(get_current_u
             if results:
                 r = results[0]
                 polys: list = r.get("dt_polys", []) or []
-                for poly in polys:
+                texts: list = r.get("rec_texts", []) or []
+                scores: list = r.get("rec_scores", []) or []
+                for i, poly in enumerate(polys):
+                    text = str(texts[i]).strip() if i < len(texts) else ""
+                    confidence = float(scores[i]) if i < len(scores) else None
+                    if not text or (confidence is not None and confidence < 0.2):
+                        continue
                     poly_arr = np.array(poly, dtype=float)
                     if poly_arr.shape != (4, 2):
                         continue
-                    orig, padded = _poly_to_bbox(poly_arr, img_w, img_h, pad=3)
+                    orig, _ = _poly_to_bbox(poly_arr, img_w, img_h, pad=3)
                     ox1, oy1, ox2, oy2 = orig
                     # Skip degenerate boxes
                     if (ox2 - ox1) < 4 or (oy2 - oy1) < 4:
                         continue
                     orig_boxes.append(orig)
-                    padded_boxes.append(padded)
+                    ocr_regions.append({
+                        "text": text,
+                        "confidence": round(confidence, 3) if confidence is not None else None,
+                    })
         except Exception as e:
             print(f"[generate] PaddleOCR predict failed: {e}")
 
@@ -243,16 +334,23 @@ async def generate_labels(body: GenerateBody, current_user=Depends(get_current_u
         result["croppedImageBase64"] = working_b64
         return result
 
-    # ── Stage 2: Claude identifies complete labels and maps them to regions ─────
-    #
-    # We send the cropped diagram image plus every numbered crop.
-    # Claude returns complete label texts and which region indices belong to each,
-    # handling any OCR fragments that were split across multiple boxes.
-
-    # Cap at 50 regions — beyond that we're likely picking up noise
+    # One Claude call receives the image plus compact OCR text/coordinates.
     if len(orig_boxes) > 50:
         orig_boxes = orig_boxes[:50]
-        padded_boxes = padded_boxes[:50]
+        ocr_regions = ocr_regions[:50]
+
+    structured_regions = []
+    for i, ((x1, y1, x2, y2), region) in enumerate(zip(orig_boxes, ocr_regions)):
+        structured_regions.append({
+            "index": i,
+            **region,
+            "bbox": {
+                "x": round(x1 / img_w * 100, 3),
+                "y": round(y1 / img_h * 100, 3),
+                "width": round((x2 - x1) / img_w * 100, 3),
+                "height": round((y2 - y1) / img_h * 100, 3),
+            },
+        })
 
     content: list = [
         {"type": "text", "text": LABEL_CONTEXT},
@@ -262,21 +360,11 @@ async def generate_labels(body: GenerateBody, current_user=Depends(get_current_u
         },
     ]
 
-    for i, (px1, py1, px2, py2) in enumerate(padded_boxes):
-        content.append({"type": "text", "text": f"Region {i}:"})
-        content.append({
-            "type": "image",
-            "source": {
-                "type": "base64",
-                "media_type": "image/jpeg",
-                "data": _crop_b64(pil_image, px1, py1, px2, py2),
-            },
-        })
-
+    content.append({"type": "text", "text": "OCR regions:\n" + json.dumps(structured_regions)})
     content.append({"type": "text", "text": LABEL_ASSEMBLY})
 
-    message = client.messages.create(
-        model="claude-sonnet-4-6",
+    message, used_model = _create_message_with_fallback(
+        client,
         max_tokens=2048,
         timeout=_CLAUDE_TIMEOUT,
         messages=[{"role": "user", "content": content}],
@@ -317,7 +405,7 @@ async def generate_labels(body: GenerateBody, current_user=Depends(get_current_u
             "height": round((oy2 - oy1) / img_h * 100, 3),
         })
 
-    return {"labels": labels, "croppedImageBase64": working_b64}
+    return {"labels": labels, "croppedImageBase64": working_b64, "model": used_model}
 
 
 # ── Claude-only fallback (no PaddleOCR boxes available) ──────────────────────
@@ -328,8 +416,8 @@ def _claude_full_image_labels(image_b64: str, mime: str) -> dict:
     Less spatially accurate than the hybrid pipeline but always produces output.
     """
     client = get_anthropic()
-    message = client.messages.create(
-        model="claude-sonnet-4-6",
+    message, used_model = _create_message_with_fallback(
+        client,
         max_tokens=2048,
         timeout=_CLAUDE_TIMEOUT,
         system=FULL_IMAGE_SYSTEM,
@@ -348,10 +436,10 @@ def _claude_full_image_labels(image_b64: str, mime: str) -> dict:
             labels = []
     except Exception:
         labels = []
-    return {"labels": labels}
+    return {"labels": labels, "model": used_model}
 
 
-# ── /flashcards endpoint (unchanged) ─────────────────────────────────────────
+# ── /flashcards endpoint ─────────────────────────────────────────────────────
 
 @router.post("/flashcards")
 async def generate_flashcards(body: GenerateBody, current_user=Depends(get_current_user)):
@@ -360,20 +448,27 @@ async def generate_flashcards(body: GenerateBody, current_user=Depends(get_curre
     if len(body.imageBase64) > _MAX_B64_BYTES:
         raise HTTPException(status_code=400, detail="Image too large (max 20 MB)")
 
-    mime = _detect_mime(body.imageBase64)
     client = get_anthropic()
 
-    message = client.messages.create(
-        model="claude-sonnet-4-6",
+    extracted_text = (body.extractedText or "").strip()
+    use_text = len(re.sub(r"\s+", "", extracted_text)) >= 80
+    if use_text:
+        content = FLASHCARD_TEXT_USER.format(text=extracted_text[:30000])
+    else:
+        mime = _detect_mime(body.imageBase64)
+        content = [
+            {"type": "image", "source": {"type": "base64", "media_type": mime, "data": body.imageBase64}},
+            {"type": "text", "text": FLASHCARD_USER},
+        ]
+
+    message, used_model = _create_message_with_fallback(
+        client,
         max_tokens=4096,
         timeout=_CLAUDE_TIMEOUT,
         system=FLASHCARD_SYSTEM,
         messages=[{
             "role": "user",
-            "content": [
-                {"type": "image", "source": {"type": "base64", "media_type": mime, "data": body.imageBase64}},
-                {"type": "text", "text": FLASHCARD_USER},
-            ],
+            "content": content,
         }],
     )
 
@@ -385,4 +480,4 @@ async def generate_flashcards(body: GenerateBody, current_user=Depends(get_curre
     except Exception:
         cards = []
 
-    return {"cards": cards}
+    return {"cards": cards, "source": "text" if use_text else "vision", "model": used_model}

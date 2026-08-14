@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils'
 export interface PageData {
   dataUrl: string
   pageIndex: number
+  /** Embedded PDF text, when PyMuPDF can extract a useful text layer. */
+  extractedText?: string
 }
 
 interface FileUploaderProps {

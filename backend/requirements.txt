@@ -3,6 +3,7 @@ uvicorn[standard]>=0.29.0
 python-dotenv>=1.0.0
 supabase>=2.4.0
 anthropic>=0.26.0
+openai>=1.0.0
 pymupdf>=1.24.0
 python-multipart>=0.0.9
 paddlepaddle>=3.0.0

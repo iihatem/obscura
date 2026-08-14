@@ -22,7 +22,11 @@ build/
 .DS_Store
 *.log
 
-# Markdown docs (keep only README)
+# Markdown docs (keep only READMEs and HF Spaces config)
 *.md
 !README.md
 !**/README.md
+!backend/README.md
+
+# Local Netlify folder
+.netlify

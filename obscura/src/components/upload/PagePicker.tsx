@@ -17,8 +17,11 @@ interface PagePickerProps {
   onGenerate: (selectedPages: SelectedPage[]) => void
 }
 
-/** Very simple heuristic: sample a few pixels; if >15% are non-white → diagram */
-async function detectPageType(dataUrl: string): Promise<PageType> {
+/** Prefer a usable PDF text layer; only inspect pixels for image-only pages. */
+async function detectPageType(page: PageData): Promise<PageType> {
+  const extractedLength = (page.extractedText ?? '').replace(/\s+/g, '').length
+  if (extractedLength >= 80) return 'flashcard'
+
   return new Promise((resolve) => {
     const img = new Image()
     img.onload = () => {
@@ -38,7 +41,7 @@ async function detectPageType(dataUrl: string): Promise<PageType> {
       resolve(nonWhite / total > 0.15 ? 'diagram' : 'flashcard')
     }
     img.onerror = () => resolve('flashcard')
-    img.src = dataUrl
+    img.src = page.dataUrl
   })
 }
 
@@ -60,7 +63,7 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
       const results: Record<number, PageType> = {}
       for (const page of pages) {
         if (cancelled) return
-        results[page.pageIndex] = await detectPageType(page.dataUrl)
+        results[page.pageIndex] = await detectPageType(page)
       }
       if (!cancelled) {
         setTypes(results)

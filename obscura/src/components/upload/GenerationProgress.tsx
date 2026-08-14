@@ -16,6 +16,7 @@ interface PageResult {
   page: SelectedPage
   status: PageStatus
   error?: string
+  model?: string
   // Diagram pages
   labels?: Label[]
   croppedDataUrl?: string   // cropped diagram image returned by the backend
@@ -129,19 +130,23 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
           body: JSON.stringify({ imageBase64, setId }),
         })
         if (!res.ok) throw new Error(await errorMessage(res, 'Label generation failed'))
-        const { labels, croppedImageBase64 } = await res.json()
+        const { labels, croppedImageBase64, model } = await res.json()
         const croppedDataUrl = croppedImageBase64
           ? `data:image/jpeg;base64,${croppedImageBase64}`
           : undefined
-        updateResult(idx, { status: 'done', labels, croppedDataUrl })
+        updateResult(idx, { status: 'done', labels, croppedDataUrl, model })
       } else {
         const res = await apiFetch('/generate/flashcards', {
           method: 'POST',
-          body: JSON.stringify({ imageBase64, setId }),
+          body: JSON.stringify({
+            imageBase64,
+            setId,
+            extractedText: page.pageData.extractedText,
+          }),
         })
         if (!res.ok) throw new Error(await errorMessage(res, 'Flashcard generation failed'))
-        const { cards } = await res.json()
-        updateResult(idx, { status: 'done', cards })
+        const { cards, model } = await res.json()
+        updateResult(idx, { status: 'done', cards, model })
       }
     } catch (err) {
       updateResult(idx, { status: 'error', error: (err as Error).message })
@@ -372,10 +377,14 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
                 </button>
               )}
               {r.status === 'done' && r.page.type === 'diagram' && (
-                <p className="text-xs text-stone-400">{r.labels?.length ?? 0} labels detected</p>
+                <p className="text-xs text-stone-400">
+                  {r.labels?.length ?? 0} labels detected{r.model?.startsWith('openai:') ? ' · OpenAI fallback' : ''}
+                </p>
               )}
               {r.status === 'done' && r.page.type === 'flashcard' && (
-                <p className="text-xs text-stone-400">{r.cards?.length ?? 0} cards generated</p>
+                <p className="text-xs text-stone-400">
+                  {r.cards?.length ?? 0} cards generated{r.model?.startsWith('openai:') ? ' · OpenAI fallback' : ''}
+                </p>
               )}
             </div>
             <span className="text-xs text-stone-400 shrink-0">{statusLabel[r.status]}</span>

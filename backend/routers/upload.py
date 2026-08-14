@@ -36,10 +36,15 @@ async def render_pdf(
 
     for i in range(len(doc)):
         page = doc.load_page(i)
+        extracted_text = page.get_text("text").strip()
         pix = page.get_pixmap(matrix=mat)
         img_bytes = pix.tobytes("jpeg")
         b64 = base64.b64encode(img_bytes).decode("utf-8")
-        pages.append({"dataUrl": f"data:image/jpeg;base64,{b64}", "pageIndex": i})
+        pages.append({
+            "dataUrl": f"data:image/jpeg;base64,{b64}",
+            "pageIndex": i,
+            "extractedText": extracted_text,
+        })
 
     doc.close()
     return {"pages": pages}

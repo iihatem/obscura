@@ -26,6 +26,9 @@ export default function SignupPage() {
       password,
       options: {
         data: { display_name: displayName },
+        // Without this the link falls back to the project's Site URL, which is
+        // only right on a machine running the dev server.
+        emailRedirectTo: `${window.location.origin}/api/auth/callback`,
       },
     })
 

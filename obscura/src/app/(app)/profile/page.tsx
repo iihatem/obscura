@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { apiFetch } from '@/lib/api'
 import {
   ANTHROPIC_LINKS,
@@ -46,6 +46,9 @@ function StatCard({ icon, label, value }: { icon: string; label: string; value: 
     </div>
   )
 }
+
+/** Waits before each retry of a failed load, in ms. Sized for a Space cold start. */
+const COLD_START_BACKOFF = [2_000, 5_000, 10_000, 15_000]
 
 const modeLabel: Record<string, string> = {
   flashcard: 'Flashcards',
@@ -206,28 +209,53 @@ export default function ProfilePage() {
   const { toast } = useToast()
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [waking, setWaking] = useState(false)
   const [sessions, setSessions] = useState<SessionHistoryItem[]>([])
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Edit state
   const [editing, setEditing] = useState(false)
   const [displayName, setDisplayName] = useState('')
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    apiFetch('/profile')
-      .then((r) => r.json())
-      .then((data: ProfileData) => {
-        setProfile(data)
-        setDisplayName(data.display_name ?? '')
-      })
-      .catch(() => toast('Failed to load profile', 'error'))
-      .finally(() => setLoading(false))
+  // The API is a Hugging Face Space that sleeps when idle and answers with an
+  // HTML holding page for ~25s while it wakes. Retry through that on its own —
+  // an unattended failure here used to leave the page rendering nothing at all.
+  const load = useCallback(async (attempt = 0) => {
+    setLoading(true)
+    setLoadError(null)
+    setWaking(attempt > 0)
+    try {
+      const res = await apiFetch('/profile')
+      if (!res.ok) throw new Error('Failed to load profile')
+      const data: ProfileData = await res.json()
+      setProfile(data)
+      setDisplayName(data.display_name ?? '')
+      setLoading(false)
+      setWaking(false)
 
-    apiFetch('/sessions/history')
-      .then((r) => r.ok ? r.json() : [])
-      .then((history: SessionHistoryItem[]) => setSessions(history))
-      .catch(() => {})
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+      // Non-critical: an empty history is a perfectly good page.
+      apiFetch('/sessions/history')
+        .then((r) => (r.ok ? r.json() : []))
+        .then((history: SessionHistoryItem[]) => setSessions(history))
+        .catch(() => {})
+    } catch (err) {
+      const wait = COLD_START_BACKOFF[attempt]
+      if (wait !== undefined) {
+        retryTimer.current = setTimeout(() => load(attempt + 1), wait)
+        return // stay in the loading state — a retry is already queued
+      }
+      setLoading(false)
+      setWaking(false)
+      setLoadError((err as Error).message)
+    }
+  }, [])
+
+  useEffect(() => {
+    load()
+    return () => { if (retryTimer.current) clearTimeout(retryTimer.current) }
+  }, [load])
 
   async function handleSave() {
     if (!profile) return
@@ -267,11 +295,41 @@ export default function ProfilePage() {
           <Skeleton className="h-32 rounded-xl" />
           <Skeleton className="h-32 rounded-xl" />
         </div>
+        {waking && (
+          <p className="text-xs text-[#75777d] flex items-center gap-2">
+            <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+            Waking the study server — this takes a few seconds after it&apos;s been idle.
+          </p>
+        )}
       </div>
     )
   }
 
-  if (!profile) return null
+  if (!profile) {
+    return (
+      <div className="p-8 lg:p-12 max-w-2xl">
+        <div className="bg-white rounded-xl border border-[#e7e8e9] p-8 flex flex-col items-center text-center gap-3">
+          <span className="material-symbols-outlined text-[32px] text-[#d97706]">cloud_off</span>
+          <h2
+            className="text-xl font-extrabold text-[#051125]"
+            style={{ fontFamily: 'var(--font-manrope)' }}
+          >
+            Couldn&apos;t reach the study server
+          </h2>
+          <p className="text-sm text-[#45474d] max-w-sm">
+            {loadError ?? 'Something went wrong loading your profile.'} Your sets and cards are
+            safe — this only affects the stats on this page.
+          </p>
+          <button
+            onClick={() => load()}
+            className="mt-2 h-9 px-5 rounded-lg scholar-gradient text-white text-xs font-bold hover:opacity-90 transition-opacity"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-8 lg:p-12 space-y-10 max-w-2xl">

@@ -7,6 +7,14 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 // there's no reason to hand it to the CRUD routes.
 const GENERATION_PATHS = ['/generate/']
 
+/** The backend is asleep or unreachable — worth retrying, unlike a 4xx. */
+export class ApiUnavailableError extends Error {
+  constructor() {
+    super('The study server is waking up. This takes a few seconds on first use.')
+    this.name = 'ApiUnavailableError'
+  }
+}
+
 async function getToken(): Promise<string | null> {
   const supabase = createClient()
   const { data: { session } } = await supabase.auth.getSession()
@@ -31,11 +39,14 @@ export async function apiFetch(path: string, options: RequestInit = {}): Promise
 
   const res = await fetch(`${API_URL}${path}`, { ...options, headers })
 
-  // HF Spaces returns HTML when the space is sleeping/starting up.
-  // Detect this and throw a clear error rather than a JSON parse crash.
+  // HF Spaces answers with an HTML holding page while the Space wakes, and it
+  // does so with a 200 — so status alone can't be trusted here. Any HTML body
+  // means the API itself never ran; surface that instead of letting a caller
+  // crash on `.json()`. A 204 (our DELETEs) has no content-type and is fine.
   const contentType = res.headers.get('content-type') ?? ''
-  if (!contentType.includes('application/json') && !res.ok) {
-    throw new Error('The API server is starting up. Please wait a moment and try again.')
+  const isHtml = contentType.includes('text/html')
+  if (isHtml || (!contentType.includes('application/json') && !res.ok)) {
+    throw new ApiUnavailableError()
   }
 
   return res

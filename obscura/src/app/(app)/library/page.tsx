@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import SetGrid from '@/components/sets/SetGrid'
 import RecentSessionSpotlight from '@/components/sets/RecentSessionSpotlight'
+import ApiKeyNotice from '@/components/library/ApiKeyNotice'
 import type { Set } from '@/types'
 
 export default async function LibraryPage() {
@@ -14,6 +15,7 @@ export default async function LibraryPage() {
 
   if (!user) redirect('/login')
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deliberate escape hatch for Supabase SDK generic inference
   const { data } = await (supabase.from('sets') as any)
     .select('*')
     .eq('owner_id', user.id)
@@ -25,6 +27,7 @@ export default async function LibraryPage() {
   const setIds = sets.map((s) => s.id)
   const thumbMap: Record<string, string> = {}
   if (setIds.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deliberate escape hatch for Supabase SDK generic inference
     const { data: thumbData } = await (supabase.from('cards') as any)
       .select('set_id, image_url')
       .in('set_id', setIds)
@@ -63,6 +66,9 @@ export default async function LibraryPage() {
           </Link>
         </div>
       </section>
+
+      {/* ── Shared-key warning (hidden once the user adds their own) ─ */}
+      <ApiKeyNotice />
 
       {/* ── Recent Session Spotlight ──────────────────────────────── */}
       <RecentSessionSpotlight />

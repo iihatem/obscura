@@ -1,10 +1,10 @@
 import { createClient } from '@/lib/supabase/client'
-import { getApiKey } from '@/lib/apiKey'
+import { getApiKeyHeaders } from '@/lib/apiKey'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
-// Endpoints that spend Anthropic credits. Only these get the user's own key —
-// there's no reason to hand it to the CRUD routes.
+// Endpoints that spend model credits. Only these get the user's own keys —
+// there's no reason to hand them to the CRUD routes.
 const GENERATION_PATHS = ['/generate/']
 
 /** The backend is asleep or unreachable — worth retrying, unlike a 4xx. */
@@ -26,14 +26,14 @@ export async function apiFetch(path: string, options: RequestInit = {}): Promise
 
   const isFormData = options.body instanceof FormData
 
-  const userApiKey = GENERATION_PATHS.some((p) => path.startsWith(p))
-    ? getApiKey()
-    : null
+  const userKeyHeaders = GENERATION_PATHS.some((p) => path.startsWith(p))
+    ? getApiKeyHeaders()
+    : {}
 
   const headers: Record<string, string> = {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(!isFormData ? { 'Content-Type': 'application/json' } : {}),
-    ...(userApiKey ? { 'X-Anthropic-Key': userApiKey } : {}),
+    ...userKeyHeaders,
     ...(options.headers as Record<string, string> ?? {}),
   }
 

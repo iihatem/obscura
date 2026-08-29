@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { ANTHROPIC_LINKS } from '@/lib/apiKey'
+import { PROVIDERS } from '@/lib/apiKey'
 import { dismissOnboarding, isOnboardingDismissed, restoreOnboarding } from '@/lib/onboarding'
 
 interface Step {
@@ -141,32 +141,33 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
     {
       icon: 'key',
       eyebrow: 'Optional',
-      title: 'Use your own Anthropic API key',
+      title: 'Use your own API key',
       body: (
         <>
           <p className="text-sm text-[#45474d] leading-relaxed">
-            Everyone gets a free daily allowance of AI generations on our shared key. Add your own
-            Anthropic key to skip that cap entirely — generations then bill to your account instead.
+            Everyone gets a free daily allowance of AI generations on our shared key. Add a key of
+            your own — from either provider — to skip that cap entirely, and generations bill to
+            your account instead.
           </p>
 
           <div className="flex flex-col gap-2">
             <ExternalLink
-              href={ANTHROPIC_LINKS.keys}
+              href={PROVIDERS.anthropic.links.billing}
               icon="vpn_key"
-              label="Create an API key"
-              hint="console.anthropic.com → Settings → API keys"
+              label="Buy an Anthropic API key"
+              hint="console.anthropic.com — add credit, then create a key"
             />
             <ExternalLink
-              href={ANTHROPIC_LINKS.billing}
-              icon="credit_card"
-              label="Buy credits"
-              hint="A key only works once its account has credit"
+              href={PROVIDERS.openai.links.billing}
+              icon="vpn_key"
+              label="Buy an OpenAI API key"
+              hint="platform.openai.com — add credit, then create a key"
             />
             <ExternalLink
-              href={ANTHROPIC_LINKS.pricing}
+              href={PROVIDERS.anthropic.links.pricing}
               icon="payments"
               label="See what it costs"
-              hint="Anthropic's API pricing, per model"
+              hint="Per-model API pricing, both providers charge per token"
             />
           </div>
 
@@ -183,8 +184,9 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
           </button>
 
           <p className="text-xs text-[#75777d] leading-relaxed">
-            Keys start with <code className="font-mono">sk-ant-</code> and are stored only in this
-            browser — they never reach our database, so you&apos;ll re-enter yours on other devices.
+            Anthropic keys start with <code className="font-mono">sk-ant-</code>, OpenAI keys with{' '}
+            <code className="font-mono">sk-</code>. Both are stored only in this browser — they never
+            reach our database, so you&apos;ll re-enter them on other devices.
           </p>
         </>
       ),

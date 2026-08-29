@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { apiFetch } from '@/lib/api'
 import {
-  ANTHROPIC_LINKS,
-  API_KEY_PREFIX,
+  PROVIDERS,
+  PROVIDER_ORDER,
   clearApiKey,
   getApiKey,
   isValidApiKeyFormat,
   maskApiKey,
   setApiKey,
+  type Provider,
 } from '@/lib/apiKey'
 import { useToast } from '@/components/ui/Toast'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -67,140 +68,159 @@ function relativeDate(dateStr: string): string {
   return `${Math.floor(months / 12)}y ago`
 }
 
-function ApiKeySection() {
+function ApiKeySection({ provider }: { provider: Provider }) {
   const { toast } = useToast()
+  const { label, prefix, links } = PROVIDERS[provider]
   const [saved, setSaved] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const [editing, setEditing] = useState(false)
 
   useEffect(() => {
-    setSaved(getApiKey())
-  }, [])
+    setSaved(getApiKey(provider))
+  }, [provider])
 
   function handleSave() {
     const trimmed = draft.trim()
-    if (!isValidApiKeyFormat(trimmed)) {
-      toast(`Anthropic keys start with ${API_KEY_PREFIX}`, 'error')
+    if (!isValidApiKeyFormat(provider, trimmed)) {
+      toast(`${label} keys start with ${prefix}`, 'error')
       return
     }
-    setApiKey(trimmed)
+    setApiKey(provider, trimmed)
     setSaved(trimmed)
     setDraft('')
     setEditing(false)
-    toast('API key saved — generations now bill to your own account')
+    toast(`${label} key saved — generations now bill to your own account`)
   }
 
   function handleRemove() {
-    clearApiKey()
+    clearApiKey(provider)
     setSaved(null)
     setDraft('')
     setEditing(false)
-    toast('API key removed — back to the shared daily allowance')
+    toast(`${label} key removed`)
   }
 
   return (
-    <section className="space-y-4">
-      <h3 className="text-xs font-bold uppercase tracking-widest text-[#45474d]">
-        Anthropic API key
-      </h3>
-
-      <div className="bg-white rounded-xl border border-[#e7e8e9] p-6 space-y-4">
-        <p className="text-sm text-[#45474d] leading-relaxed">
-          Without a key you get a shared daily allowance of AI generations. Add your own{' '}
+    <div className="bg-white rounded-xl border border-[#e7e8e9] p-6 space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <h4 className="text-sm font-extrabold text-[#051125]" style={{ fontFamily: 'var(--font-manrope)' }}>
+          {label}
+        </h4>
+        <div className="flex items-center gap-3 text-xs font-bold">
           <a
-            href={ANTHROPIC_LINKS.keys}
+            href={links.keys}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-bold text-[#006972] underline underline-offset-2"
+            className="text-[#006972] underline underline-offset-2"
           >
-            Anthropic API key
-          </a>{' '}
-          to generate without limits — usage bills to your account instead. A new key needs{' '}
-          <a
-            href={ANTHROPIC_LINKS.billing}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-bold text-[#006972] underline underline-offset-2"
-          >
-            credits on the account
-          </a>{' '}
-          before it will work (see{' '}
-          <a
-            href={ANTHROPIC_LINKS.pricing}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-bold text-[#006972] underline underline-offset-2"
-          >
-            pricing
+            Get a key
           </a>
-          ).
-        </p>
+          <a
+            href={links.billing}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#006972] underline underline-offset-2"
+          >
+            Buy credits
+          </a>
+          <a
+            href={links.pricing}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#75777d] underline underline-offset-2"
+          >
+            Pricing
+          </a>
+        </div>
+      </div>
 
-        {saved && !editing ? (
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="material-symbols-outlined text-[18px] text-[#16a34a]">
-                check_circle
-              </span>
-              <code className="text-sm font-mono text-[#051125] truncate">
-                {maskApiKey(saved)}
-              </code>
-            </div>
-            <div className="flex gap-2 shrink-0">
+      {saved && !editing ? (
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="material-symbols-outlined text-[18px] text-[#16a34a]">
+              check_circle
+            </span>
+            <code className="text-sm font-mono text-[#051125] truncate">
+              {maskApiKey(saved)}
+            </code>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={() => { setEditing(true); setDraft('') }}
+              className="h-8 px-4 rounded-lg border border-[#e7e8e9] text-xs font-bold text-[#45474d] hover:bg-[#f3f4f5] transition-colors"
+            >
+              Replace
+            </button>
+            <button
+              onClick={handleRemove}
+              className="h-8 px-4 rounded-lg border border-[#e7e8e9] text-xs font-bold text-[#dc2626] hover:bg-[#fef2f2] transition-colors"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <input
+            type="password"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={`${prefix}...`}
+            autoComplete="off"
+            spellCheck={false}
+            className="w-full rounded-lg bg-[#f3f4f5] border-none px-3 py-2 text-sm font-mono text-[#191c1d] placeholder:text-[#75777d] focus:outline-none focus:ring-2 focus:ring-[#006972]/20"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSave()
+              if (e.key === 'Escape' && saved) setEditing(false)
+            }}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={handleSave}
+              disabled={!draft.trim()}
+              className="h-8 px-4 rounded-lg scholar-gradient text-white text-xs font-bold hover:opacity-90 disabled:opacity-50 transition-all"
+            >
+              Save key
+            </button>
+            {saved && (
               <button
-                onClick={() => { setEditing(true); setDraft('') }}
+                onClick={() => setEditing(false)}
                 className="h-8 px-4 rounded-lg border border-[#e7e8e9] text-xs font-bold text-[#45474d] hover:bg-[#f3f4f5] transition-colors"
               >
-                Replace
+                Cancel
               </button>
-              <button
-                onClick={handleRemove}
-                className="h-8 px-4 rounded-lg border border-[#e7e8e9] text-xs font-bold text-[#dc2626] hover:bg-[#fef2f2] transition-colors"
-              >
-                Remove
-              </button>
-            </div>
+            )}
           </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <input
-              type="password"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder={`${API_KEY_PREFIX}...`}
-              autoComplete="off"
-              spellCheck={false}
-              className="w-full rounded-lg bg-[#f3f4f5] border-none px-3 py-2 text-sm font-mono text-[#191c1d] placeholder:text-[#75777d] focus:outline-none focus:ring-2 focus:ring-[#006972]/20"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSave()
-                if (e.key === 'Escape' && saved) setEditing(false)
-              }}
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={handleSave}
-                disabled={!draft.trim()}
-                className="h-8 px-4 rounded-lg scholar-gradient text-white text-xs font-bold hover:opacity-90 disabled:opacity-50 transition-all"
-              >
-                Save key
-              </button>
-              {saved && (
-                <button
-                  onClick={() => setEditing(false)}
-                  className="h-8 px-4 rounded-lg border border-[#e7e8e9] text-xs font-bold text-[#45474d] hover:bg-[#f3f4f5] transition-colors"
-                >
-                  Cancel
-                </button>
-              )}
-            </div>
-          </div>
-        )}
+        </div>
+      )}
+    </div>
+  )
+}
 
-        <p className="text-xs text-[#75777d] leading-relaxed">
-          Stored only in this browser and sent directly to our generation endpoint.
-          It never touches our database, and you&apos;ll need to re-enter it on other devices.
-        </p>
+function ApiKeys() {
+  return (
+    <section className="space-y-4">
+      <h3 className="text-xs font-bold uppercase tracking-widest text-[#45474d]">
+        Your API keys
+      </h3>
+
+      <p className="text-sm text-[#45474d] leading-relaxed">
+        Without a key you get a shared daily allowance of AI generations. Add a key from either
+        provider to generate without limits — usage bills to that account instead. A new key needs
+        credits on its account before it will work. With both saved, Anthropic runs first and
+        OpenAI covers it if that call fails.
+      </p>
+
+      <div className="flex flex-col gap-4">
+        {PROVIDER_ORDER.map((provider) => (
+          <ApiKeySection key={provider} provider={provider} />
+        ))}
       </div>
+
+      <p className="text-xs text-[#75777d] leading-relaxed">
+        Stored only in this browser and sent directly to our generation endpoint.
+        They never touch our database, and you&apos;ll need to re-enter them on other devices.
+      </p>
     </section>
   )
 }
@@ -421,8 +441,8 @@ export default function ProfilePage() {
         </div>
       </section>
 
-      {/* API key */}
-      <ApiKeySection />
+      {/* API keys */}
+      <ApiKeys />
 
       {/* Recent sessions */}
       {sessions.length > 0 && (

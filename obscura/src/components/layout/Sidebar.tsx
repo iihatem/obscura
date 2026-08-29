@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/types'
+import { useOnboarding } from '@/components/onboarding/OnboardingProvider'
 
 const navLinks = [
   { href: '/library', label: 'My Library', icon: 'menu_book' },
@@ -20,6 +21,7 @@ interface SidebarProps {
 export default function Sidebar({ profile, open, onClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const { openOnboarding } = useOnboarding()
 
   async function handleSignOut() {
     const supabase = createClient()
@@ -121,6 +123,13 @@ export default function Sidebar({ profile, open, onClose }: SidebarProps) {
               <span className="material-symbols-outlined text-[18px]">manage_accounts</span>
               Profile
             </Link>
+            <button
+              onClick={() => { onClose(); openOnboarding() }}
+              className="w-full flex items-center gap-3 px-4 py-2 text-[#6A7A7C] hover:text-[#1E2528] transition-colors text-sm"
+            >
+              <span className="material-symbols-outlined text-[18px]">help</span>
+              How it works
+            </button>
             <button
               onClick={handleSignOut}
               className="w-full flex items-center gap-3 px-4 py-2 text-[#6A7A7C] hover:text-[#1E2528] transition-colors text-sm"

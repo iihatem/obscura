@@ -5,6 +5,7 @@ import Sidebar from './Sidebar'
 import TopBar from './TopBar'
 import type { Profile } from '@/types'
 import { ToastProvider } from '@/components/ui/Toast'
+import OnboardingProvider from '@/components/onboarding/OnboardingProvider'
 
 interface AppShellProps {
   profile: Profile | null
@@ -16,20 +17,22 @@ export default function AppShell({ profile, children }: AppShellProps) {
 
   return (
     <ToastProvider>
-      <div className="flex h-screen overflow-hidden bg-[#f3f4f5]">
-        <Sidebar
-          profile={profile}
-          open={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
+      <OnboardingProvider>
+        <div className="flex h-screen overflow-hidden bg-[#f3f4f5]">
+          <Sidebar
+            profile={profile}
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+          />
 
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <TopBar profile={profile} onMenuClick={() => setSidebarOpen(true)} />
-          <main className="flex-1 overflow-y-auto">
-            {children}
-          </main>
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <TopBar profile={profile} onMenuClick={() => setSidebarOpen(true)} />
+            <main className="flex-1 overflow-y-auto">
+              {children}
+            </main>
+          </div>
         </div>
-      </div>
+      </OnboardingProvider>
     </ToastProvider>
   )
 }

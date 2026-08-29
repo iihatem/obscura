@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { apiFetch } from '@/lib/api'
 import {
+  ANTHROPIC_LINKS,
   API_KEY_PREFIX,
   clearApiKey,
   getApiKey,
@@ -104,14 +105,32 @@ function ApiKeySection() {
         <p className="text-sm text-[#45474d] leading-relaxed">
           Without a key you get a shared daily allowance of AI generations. Add your own{' '}
           <a
-            href="https://console.anthropic.com/settings/keys"
+            href={ANTHROPIC_LINKS.keys}
             target="_blank"
             rel="noopener noreferrer"
             className="font-bold text-[#006972] underline underline-offset-2"
           >
             Anthropic API key
           </a>{' '}
-          to generate without limits — usage bills to your account instead.
+          to generate without limits — usage bills to your account instead. A new key needs{' '}
+          <a
+            href={ANTHROPIC_LINKS.billing}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold text-[#006972] underline underline-offset-2"
+          >
+            credits on the account
+          </a>{' '}
+          before it will work (see{' '}
+          <a
+            href={ANTHROPIC_LINKS.pricing}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold text-[#006972] underline underline-offset-2"
+          >
+            pricing
+          </a>
+          ).
         </p>
 
         {saved && !editing ? (

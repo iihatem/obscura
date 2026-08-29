@@ -14,6 +14,14 @@ const STORAGE_KEY = 'obscura.anthropicApiKey'
 
 export const API_KEY_PREFIX = 'sk-ant-'
 
+/** Where users get a key, and where they pay for the credits it spends. */
+export const ANTHROPIC_LINKS = {
+  keys: 'https://console.anthropic.com/settings/keys',
+  billing: 'https://console.anthropic.com/settings/billing',
+  pricing: 'https://www.anthropic.com/pricing#api',
+  console: 'https://console.anthropic.com/',
+} as const
+
 export function getApiKey(): string | null {
   if (typeof window === 'undefined') return null
   try {

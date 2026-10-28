@@ -13,6 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) redirect('/login')
 
   // Fetch profile — cast through unknown to avoid SDK generic inference issues
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deliberate escape hatch for Supabase SDK generic inference
   const { data } = await (supabase.from('profiles') as any)
     .select('*')
     .eq('id', user.id)

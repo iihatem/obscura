@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "obscura",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-26",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  // Keep the *.workers.dev URL alive alongside the custom domain (defaults to
+  // false once routes are set) - useful as a fallback and for smoke tests.
+  "workers_dev": true,
+  "routes": [
+    { "pattern": "obscura.study", "custom_domain": true },
+    { "pattern": "www.obscura.study", "custom_domain": true }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

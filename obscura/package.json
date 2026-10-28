@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
@@ -16,25 +16,25 @@
     "@supabase/supabase-js": "^2.101.1",
     "@tailwindcss/postcss": "^4.2.2",
     "clsx": "^2.1.1",
-    "next": "^15.5.24",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
+    "next": "^16.4.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.2",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@netlify/plugin-nextjs": "^5.15.9",
-    "@opennextjs/cloudflare": "^1.20.3",
+    "@opennextjs/cloudflare": "^1.20.14",
     "@types/node": "^25.5.2",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@types/uuid": "^10.0.0",
     "autoprefixer": "^10.4.27",
     "eslint": "^9.39.4",
-    "eslint-config-next": "^15.5.24",
+    "eslint-config-next": "^16.4.3",
     "postcss": "^8.5.8",
     "typescript": "^6.0.2",
-    "wrangler": "^4.126.0"
+    "wrangler": "^4.154.0"
   }
 }

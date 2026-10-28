@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Set } from '@/types'
+import { draftSetIds } from '@/lib/drafts'
 import SetCard from './SetCard'
 import EmptyState from '@/components/ui/EmptyState'
 
@@ -21,6 +22,11 @@ interface SetGridProps {
 
 export default function SetGrid({ sets, emptyAction, searchable }: SetGridProps) {
   const [query, setQuery] = useState('')
+  // Sets with generated cards not yet saved, so they're easy to find again.
+  const [drafts, setDrafts] = useState<ReadonlySet<string>>(new Set())
+  useEffect(() => {
+    draftSetIds().then((ids) => setDrafts(new Set(ids)))
+  }, [])
 
   const filtered = query.trim()
     ? sets.filter((s) =>
@@ -71,7 +77,7 @@ export default function SetGrid({ sets, emptyAction, searchable }: SetGridProps)
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((set) => (
-            <SetCard key={set.id} set={set} />
+            <SetCard key={set.id} set={set} hasDraft={drafts.has(set.id)} />
           ))}
         </div>
       )}

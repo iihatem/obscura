@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { clearAllDrafts } from '@/lib/drafts'
 import type { Profile } from '@/types'
 import { useOnboarding } from '@/components/onboarding/OnboardingProvider'
 
@@ -45,6 +46,7 @@ export default function Sidebar({ profile, open, onClose }: SidebarProps) {
   async function handleSignOut() {
     const supabase = createClient()
     await supabase.auth.signOut()
+    await clearAllDrafts()
     router.push('/login')
     router.refresh()
   }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { apiFetch, ApiUnavailableError, withColdStartRetry } from '@/lib/api'
+import { clearDraft, saveDraftPages, saveDraftState } from '@/lib/drafts'
 import Button from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import type { SelectedPage } from './PagePicker'
@@ -49,18 +50,41 @@ interface DraftFlashcardCard {
 
 type DraftCard = DraftDiagram | DraftFlashcardCard
 
+/** What's kept in the browser so an unsaved generation survives leaving the page. */
+export interface GenerationSnapshot {
+  // Pages are stored once on their own; repeating their images here would
+  // rewrite megabytes on every edit.
+  results: (Omit<PageResult, 'page'> & { pageIndex: number })[]
+  reviewing: boolean
+  draftCards: DraftCard[]
+}
+
 interface GenerationProgressProps {
   pages: SelectedPage[]
   setId: string
   userId: string
+  /** A generation from an earlier visit, picked up instead of starting over. */
+  restored?: GenerationSnapshot
   onDone: (cards: DraftCard[]) => void
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-let _draftId = 0
+// Restored drafts carry their ids, so a per-page-load counter would collide.
 function draftId() {
-  return `draft-${++_draftId}`
+  return crypto.randomUUID()
+}
+
+function restoreResults(pages: SelectedPage[], snapshot: GenerationSnapshot): PageResult[] {
+  return pages.map((page) => {
+    const saved = snapshot.results.find((r) => r.pageIndex === page.pageData.pageIndex)
+    if (!saved) return { page, status: 'pending' }
+    // A request cut off by leaving the page never reported back.
+    if (saved.status === 'pending' || saved.status === 'generating') {
+      return { ...saved, page, status: 'error', error: 'Stopped when you left the page.', note: undefined }
+    }
+    return { ...saved, page }
+  })
 }
 
 class HttpError extends Error {
@@ -108,12 +132,12 @@ const statusLabel: Record<PageStatus, string> = {
 
 const CHUNK_SIZE = 3
 
-export default function GenerationProgress({ pages, setId, userId, onDone }: GenerationProgressProps) {
-  const [results, setResults] = useState<PageResult[]>(
-    pages.map((page) => ({ page, status: 'pending' }))
+export default function GenerationProgress({ pages, setId, userId, restored, onDone }: GenerationProgressProps) {
+  const [results, setResults] = useState<PageResult[]>(() =>
+    restored ? restoreResults(pages, restored) : pages.map((page) => ({ page, status: 'pending' }))
   )
-  const [reviewing, setReviewing] = useState(false)
-  const [draftCards, setDraftCards] = useState<DraftCard[]>([])
+  const [reviewing, setReviewing] = useState(restored?.reviewing ?? false)
+  const [draftCards, setDraftCards] = useState<DraftCard[]>(restored?.draftCards ?? [])
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const ran = useRef(false)
@@ -180,6 +204,8 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
   useEffect(() => {
     if (ran.current) return
     ran.current = true
+    if (restored) return
+    saveDraftPages(setId, pages)
 
     async function runAll() {
       // Process in chunks of CHUNK_SIZE concurrently
@@ -192,12 +218,35 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
     runAll()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Generated-but-unsaved cards live only in memory, and each one already used
-  // a generation — warn before a reload or tab close throws them away.
-  const saved = useRef(false)
+  // Each generated card already used part of today's allowance, so keep the
+  // work in the browser until it's saved to the set. Edits are batched; the
+  // last batch is written when the component goes away.
+  const pendingWrite = useRef<GenerationSnapshot | null>(null)
+  useEffect(() => {
+    pendingWrite.current = {
+      results: results.map(({ page, ...rest }) => ({ ...rest, pageIndex: page.pageData.pageIndex })),
+      reviewing,
+      draftCards,
+    }
+    const timer = setTimeout(flushDraft, 400)
+    return () => clearTimeout(timer)
+  }, [results, reviewing, draftCards]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function flushDraft() {
+    if (pendingWrite.current) saveDraftState(setId, pendingWrite.current)
+    pendingWrite.current = null
+  }
+  useEffect(() => () => flushDraft(), []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A request still in flight can't be saved — its result would be lost, and
+  // the generation it used along with it.
+  const busy = useRef(false)
+  useEffect(() => {
+    busy.current = saving || results.some((r) => r.status === 'generating')
+  }, [saving, results])
   useEffect(() => {
     function onBeforeUnload(e: BeforeUnloadEvent) {
-      if (saved.current) return
+      if (!busy.current) return
       e.preventDefault()
       e.returnValue = ''
     }
@@ -322,7 +371,7 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
         // where it stopped instead of saving the earlier cards twice.
         setDraftCards((prev) => prev.filter((c) => c.id !== card.id))
       }
-      saved.current = true
+      await clearDraft(setId)
       toast(`Saved ${total} card${total !== 1 ? 's' : ''} to set`)
       onDone(draftCards)
     } catch (err) {

@@ -12,7 +12,8 @@ import EmptyState from '@/components/ui/EmptyState'
 import Button from '@/components/ui/Button'
 import FileUploader, { type PageData } from '@/components/upload/FileUploader'
 import PagePicker, { type SelectedPage } from '@/components/upload/PagePicker'
-import GenerationProgress from '@/components/upload/GenerationProgress'
+import GenerationProgress, { type GenerationSnapshot } from '@/components/upload/GenerationProgress'
+import { clearDraft, loadDraft } from '@/lib/drafts'
 import { cn } from '@/lib/utils'
 
 type TabType = 'flashcard' | 'diagram'
@@ -60,13 +61,30 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
   const [uploadStep, setUploadStep] = useState<UploadStep>('upload')
   const [uploadPages, setUploadPages] = useState<PageData[]>([])
   const [selectedPages, setSelectedPages] = useState<SelectedPage[]>([])
+  const [restored, setRestored] = useState<GenerationSnapshot | undefined>()
+  // Remounts the uploader after a discard, so it starts from a clean slate.
+  const [uploadRun, setUploadRun] = useState(0)
+
+  // Closing the dialog only hides it: an upload in progress — or generated
+  // cards not yet saved — is waiting when it's reopened.
+  const uploadInProgress = uploadStep !== 'upload'
 
   function openUpload() {
-    setUploadStep('upload')
-    setUploadPages([])
-    setSelectedPages([])
     setUploadOpen(true)
   }
+
+  // Unsaved cards from an earlier visit, kept by GenerationProgress.
+  useEffect(() => {
+    if (!isOwner) return
+    let cancelled = false
+    loadDraft<SelectedPage[], GenerationSnapshot>(set.id).then((draft) => {
+      if (cancelled || !draft) return
+      setSelectedPages(draft.pages)
+      setRestored(draft.state)
+      setUploadStep((step) => (step === 'upload' ? 'generate' : step))
+    })
+    return () => { cancelled = true }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // A brand-new set arrives with ?upload=1 — go straight to adding material.
   const router = useRouter()
@@ -79,15 +97,27 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function closeUpload() {
-    // Generated cards exist only in memory until saved, and each page already
-    // used a generation from today's allowance.
+    setUploadOpen(false)
+  }
+
+  function discardUpload() {
+    // Each generated page already used a generation from today's allowance.
     if (
       uploadStep === 'generate' &&
       !window.confirm("Discard the generated cards? The generations they used today won't be refunded.")
     ) {
       return
     }
-    setUploadOpen(false)
+    clearDraft(set.id)
+    resetUpload()
+  }
+
+  function resetUpload() {
+    setUploadStep('upload')
+    setUploadPages([])
+    setSelectedPages([])
+    setRestored(undefined)
+    setUploadRun((n) => n + 1)
   }
 
   function handlePagesReady(pages: PageData[]) {
@@ -97,12 +127,14 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
 
   function handleGenerate(pages: SelectedPage[]) {
     setSelectedPages(pages)
+    setRestored(undefined)
     setUploadStep('generate')
   }
 
   function handleGenerationDone() {
     // Pick up the new cards from the DB, keeping the user on the tab they're on.
     setUploadOpen(false)
+    resetUpload()
     router.refresh()
   }
 
@@ -201,6 +233,27 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
         )}
         </div>
       </div>
+
+      {isOwner && uploadInProgress && !uploadOpen && (
+        <div className="mx-6 mt-6 flex flex-col gap-3 rounded-xl border border-[#006972]/20 bg-[#006972]/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:mx-8">
+          <div className="flex items-start gap-3">
+            <span className="material-symbols-outlined mt-0.5 text-[20px] text-[#006972]" aria-hidden>pending_actions</span>
+            <p className="text-sm text-[#051125]">
+              {uploadStep === 'pick'
+                ? `Your upload is waiting — ${uploadPages.length} page${uploadPages.length !== 1 ? 's' : ''} ready to pick from.`
+                : 'You have generated cards that aren’t saved to this set yet.'}
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <Button variant="secondary" size="sm" onClick={discardUpload}>
+              Discard
+            </Button>
+            <Button size="sm" onClick={openUpload}>
+              {uploadStep === 'pick' ? 'Continue' : 'Review & save'}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div className="p-6 lg:p-8">
@@ -305,7 +358,6 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
       <Modal
         open={editor.open}
         onClose={closeEditor}
-        dismissOnBackdrop={false}
         title={
           editor.card
             ? `Edit ${editor.mode === 'flashcard' ? 'flashcard' : 'diagram'}`
@@ -330,17 +382,16 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
       <Modal
         open={uploadOpen}
         onClose={closeUpload}
-        dismissOnBackdrop={uploadStep === 'upload'}
         title={
           uploadStep === 'upload'
             ? 'Upload PDF or image'
             : uploadStep === 'pick'
             ? `${uploadPages.length} page${uploadPages.length !== 1 ? 's' : ''} — pick what to generate`
-            : 'Generating cards…'
+            : 'Generate and review cards'
         }
         className="max-w-4xl w-full"
       >
-        <div className="mt-2">
+        <div className="mt-2" key={uploadRun}>
           {uploadStep === 'upload' && (
             <FileUploader onPagesReady={handlePagesReady} />
           )}
@@ -352,10 +403,25 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
               pages={selectedPages}
               setId={set.id}
               userId={userId}
+              restored={restored}
               onDone={handleGenerationDone}
             />
           )}
         </div>
+        {uploadInProgress && (
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-stone-100 pt-4">
+            <p className="text-xs text-stone-500">
+              Closing this keeps your progress — pick it up from the set page.
+            </p>
+            <button
+              type="button"
+              onClick={discardUpload}
+              className="text-xs font-medium text-stone-500 hover:text-red-600 hover:underline"
+            >
+              Discard and start over
+            </button>
+          </div>
+        )}
       </Modal>
     </>
   )

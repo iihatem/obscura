@@ -19,7 +19,7 @@ function relativeDate(dateStr: string): string {
   return `${Math.floor(months / 12)}y ago`
 }
 
-export default function SetCard({ set }: { set: Set }) {
+export default function SetCard({ set, hasDraft = false }: { set: Set; hasDraft?: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -89,11 +89,17 @@ export default function SetCard({ set }: { set: Set }) {
         </h3>
 
         {/* Stats */}
-        <div className="flex items-center gap-4 text-xs text-[#45474d] font-medium">
-          <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[#45474d] font-medium">
+          <div className="flex items-center gap-1 whitespace-nowrap">
             <span className="material-symbols-outlined text-[16px]" aria-hidden>quiz</span>
             {set.card_count} {set.card_count === 1 ? 'card' : 'cards'}
           </div>
+          {hasDraft && (
+            <span className="flex items-center gap-1 whitespace-nowrap rounded-full bg-[#006972]/10 px-2 py-0.5 text-[#006972]">
+              <span className="material-symbols-outlined text-[14px]" aria-hidden>pending_actions</span>
+              Unsaved cards
+            </span>
+          )}
         </div>
 
         {/* Footer */}

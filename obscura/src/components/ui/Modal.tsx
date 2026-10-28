@@ -6,15 +6,15 @@ import { cn } from '@/lib/utils'
 interface ModalProps {
   open: boolean
   /**
-   * Asked to close — by Escape, the backdrop or the close button. The modal
-   * only closes once `open` turns false, so a handler can confirm first.
+   * Asked to close — by Escape or the close button. The modal only closes once
+   * `open` turns false, so a handler can confirm first. A click on the
+   * backdrop never closes it: dialogs here hold uploads and edits in progress,
+   * and a stray click (or a text selection dragged past the edge) would lose them.
    */
   onClose: () => void
   title?: string
   description?: string
   className?: string
-  /** Editors hold unsaved work: a stray backdrop click shouldn't discard it. */
-  dismissOnBackdrop?: boolean
   children: ReactNode
 }
 
@@ -24,7 +24,6 @@ export default function Modal({
   title,
   description,
   className,
-  dismissOnBackdrop = true,
   children,
 }: ModalProps) {
   const ref = useRef<HTMLDialogElement>(null)
@@ -40,10 +39,6 @@ export default function Modal({
     }
   }, [open])
 
-  function handleClick(e: React.MouseEvent<HTMLDialogElement>) {
-    if (dismissOnBackdrop && e.target === ref.current) onClose()
-  }
-
   // Escape fires `cancel`, which would close the dialog natively before the
   // parent had a say. Route it through onClose instead.
   function handleCancel(e: React.SyntheticEvent<HTMLDialogElement>) {
@@ -54,7 +49,6 @@ export default function Modal({
   return (
     <dialog
       ref={ref}
-      onClick={handleClick}
       onCancel={handleCancel}
       aria-labelledby={title ? titleId : undefined}
       className={cn(

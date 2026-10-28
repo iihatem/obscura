@@ -224,7 +224,6 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
   return (
     <dialog
       ref={ref}
-      onClick={(e) => { if (e.target === ref.current) onClose() }}
       onClose={onClose}
       onKeyDown={handleKeyDown}
       aria-labelledby="onboarding-title"

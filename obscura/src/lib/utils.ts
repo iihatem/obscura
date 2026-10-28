@@ -11,6 +11,18 @@ export function genId(): string {
 }
 
 /**
+ * A post-login destination taken from the URL, or `fallback` if it isn't a
+ * plain same-site path. Anything else — `//host`, `/\host`, `https:`,
+ * `javascript:` — would send the user off-site or run script on our origin.
+ */
+export function safeRedirect(value: string | null | undefined, fallback = '/library'): string {
+  if (!value || !value.startsWith('/') || value.startsWith('//') || value.startsWith('/\\')) {
+    return fallback
+  }
+  return value
+}
+
+/**
  * Rewrites a Supabase Storage URL to our image proxy endpoint.
  * The proxy uses the service role key, so it works regardless of bucket visibility.
  */

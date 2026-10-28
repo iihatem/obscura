@@ -38,7 +38,7 @@ export default function DiagramQuiz({ card, onAnswer }: DiagramQuizProps) {
             className="w-full h-auto block opacity-50"
           />
         </div>
-        <span className="material-symbols-outlined text-[40px] text-[#c5c6cd]">label_off</span>
+        <span className="material-symbols-outlined text-[40px] text-[#c5c6cd]" aria-hidden>label_off</span>
         <div>
           <p className="font-bold text-[#051125]" style={{ fontFamily: 'var(--font-manrope)' }}>
             No labels on this diagram
@@ -50,7 +50,7 @@ export default function DiagramQuiz({ card, onAnswer }: DiagramQuizProps) {
           className="inline-flex items-center gap-2 rounded-lg border border-[#e7e8e9] bg-white px-5 py-2.5 text-sm font-bold text-[#051125] hover:bg-[#f3f4f5] transition-colors"
         >
           Skip
-          <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+          <span className="material-symbols-outlined text-[16px]" aria-hidden>arrow_forward</span>
         </button>
       </div>
     )
@@ -67,6 +67,7 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
   const [hintActive, setHintActive] = useState(false)
   const [hintCount, setHintCount] = useState(0)
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
+  const continueRef = useRef<HTMLButtonElement>(null)
 
   // Reset when card changes
   useEffect(() => {
@@ -105,6 +106,8 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
     const grades = answers.map((ans, i) => gradeAnswer(ans, labels[i].label))
     setLabelGrades(grades)
     setSubmitted(true)
+    // The focused input unmounts on submit — keep the keyboard on Continue.
+    requestAnimationFrame(() => continueRef.current?.focus())
   }
 
   function handleContinue() {
@@ -147,8 +150,17 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
                 height: `${label.height}%`,
               }}
             >
-              {submitted ? null : (
+              {submitted ? (
+                // Show the right answer — colour alone never told the user what it was.
+                <span
+                  title={`You typed: ${answers[i] || '—'}`}
+                  className="m-auto max-w-full truncate rounded bg-white/85 px-1 text-[10px] font-bold leading-tight text-[#051125]"
+                >
+                  {label.label}
+                </span>
+              ) : (
                 <input
+                  aria-label={`Label ${i + 1} of ${labels.length}`}
                   ref={(el) => { inputRefs.current[i] = el }}
                   value={answers[i]}
                   onChange={(e) => {
@@ -209,7 +221,7 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
                   : 'border-[#e7e8e9] bg-white text-[#051125] hover:bg-[#f3f4f5]'
               )}
             >
-              <span className="material-symbols-outlined text-[16px]">lightbulb</span>
+              <span className="material-symbols-outlined text-[16px]" aria-hidden>lightbulb</span>
               Hint
               {hintCount > 0 && (
                 <span className="text-[11px] font-medium opacity-60">{hintCount}×</span>
@@ -220,16 +232,17 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
               className="flex items-center gap-2 rounded-lg scholar-gradient px-6 py-2.5 text-sm font-bold text-white hover:opacity-90 active:scale-95 transition-all"
             >
               Submit
-              <span className="material-symbols-outlined text-[16px]">check</span>
+              <span className="material-symbols-outlined text-[16px]" aria-hidden>check</span>
             </button>
           </>
         ) : (
           <button
+            ref={continueRef}
             onClick={handleContinue}
             className="flex items-center gap-2 rounded-lg scholar-gradient px-6 py-2.5 text-sm font-bold text-white hover:opacity-90 active:scale-95 transition-all"
           >
             Continue
-            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+            <span className="material-symbols-outlined text-[16px]" aria-hidden>arrow_forward</span>
           </button>
         )}
       </div>

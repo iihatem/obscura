@@ -9,7 +9,7 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Modal from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, errorMessage } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 
 const visibilityOptions = [
@@ -61,19 +61,27 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
     setStarCount((c) => c + (wasStarred ? -1 : 1))
     try {
       const res = await apiFetch(`/sets/${set.id}/star`, { method: 'POST' })
+      if (!res.ok) throw new Error(await errorMessage(res, "Couldn't update the star."))
       const data = await res.json()
       setStarred(data.starred)
       setStarCount(data.count)
-    } catch {
+    } catch (err) {
       setStarred(wasStarred)
       setStarCount((c) => c + (wasStarred ? 1 : -1))
+      toast(err instanceof Error ? err.message : "Couldn't update the star.", 'error')
     }
   }
 
   async function copyShareLink() {
     if (!set.share_token) return
     const url = `${window.location.origin}/s/${set.share_token}`
-    await navigator.clipboard.writeText(url)
+    try {
+      await navigator.clipboard.writeText(url)
+    } catch {
+      // Clipboard can be blocked (permissions, insecure context) — show the link instead.
+      window.prompt('Copy this share link:', url)
+      return
+    }
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -96,7 +104,7 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
         method: 'PATCH',
         body: JSON.stringify({ title, description, subject, visibility }),
       })
-      if (!res.ok) { const j = await res.json(); throw new Error(j.error) }
+      if (!res.ok) throw new Error(await errorMessage(res, "Couldn't save the set. Please try again."))
       const updated: Set = await res.json()
       onUpdate(updated)
       setEditOpen(false)
@@ -112,10 +120,11 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
     setDeleting(true)
     try {
       const res = await apiFetch(`/sets/${set.id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Delete failed')
+      if (!res.ok) throw new Error(await errorMessage(res, "Couldn't delete the set. Please try again."))
       router.push('/library')
       router.refresh()
-    } catch {
+    } catch (err) {
+      toast((err as Error).message, 'error')
       setDeleting(false)
       setDeleteConfirm(false)
     }
@@ -127,7 +136,7 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
   return (
     <>
       <div className="bg-[#f8f9fa]/80 backdrop-blur-md border-b border-[#c5c6cd]/20 px-6 py-5 lg:px-8">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-2">
               {set.subject && (
@@ -138,7 +147,7 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
               <span className="text-[10px] font-bold uppercase tracking-widest text-[#75777d]">
                 {visLabel}
               </span>
-              <span className="text-xs text-[#45474d]">{cardCount} cards</span>
+              <span className="text-xs text-[#45474d]">{cardCount} {cardCount === 1 ? 'card' : 'cards'}</span>
             </div>
             <h1
               className="text-2xl font-extrabold text-[#051125] truncate tracking-tight"
@@ -151,14 +160,16 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
             )}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
             {/* Star */}
             <button
               onClick={handleStarToggle}
+              aria-pressed={starred}
+              aria-label={`${starred ? 'Unstar' : 'Star'} this set (${starCount} star${starCount === 1 ? '' : 's'})`}
               className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#e7e8e9] bg-white px-3 text-xs font-bold text-[#45474d] hover:bg-[#edeeef] transition-colors"
             >
               <span
-                className="material-symbols-outlined text-[16px]"
+                className="material-symbols-outlined text-[16px]" aria-hidden
                 style={{
                   color: starred ? '#e8b400' : '#c5c6cd',
                   fontVariationSettings: starred ? "'FILL' 1" : "'FILL' 0",
@@ -175,7 +186,7 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
                 onClick={copyShareLink}
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#e7e8e9] bg-white px-3 text-xs font-bold text-[#051125] hover:bg-[#edeeef] transition-colors"
               >
-                <span className="material-symbols-outlined text-[16px]">
+                <span className="material-symbols-outlined text-[16px]" aria-hidden>
                   {copied ? 'check' : 'link'}
                 </span>
                 {copied ? 'Copied!' : 'Share link'}
@@ -187,7 +198,7 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
                 onClick={openEdit}
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#e7e8e9] bg-white px-3 text-xs font-bold text-[#051125] hover:bg-[#edeeef] transition-colors"
               >
-                <span className="material-symbols-outlined text-[16px]">edit</span>
+                <span className="material-symbols-outlined text-[16px]" aria-hidden>edit</span>
                 Edit
               </button>
             )}
@@ -200,7 +211,7 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
                   : 'scholar-gradient text-white hover:opacity-90 shadow-lg shadow-[#051125]/20'
               )}
             >
-              <span className="material-symbols-outlined text-[16px]">play_arrow</span>
+              <span className="material-symbols-outlined text-[16px]" aria-hidden>play_arrow</span>
               Study
             </Link>
           </div>
@@ -219,11 +230,14 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
             label="Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            maxLength={200}
             required
           />
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold uppercase tracking-widest text-[#45474d]">Description</label>
+            <label htmlFor="edit-set-description" className="text-xs font-bold uppercase tracking-widest text-[#45474d]">Description</label>
             <textarea
+              id="edit-set-description"
+              maxLength={2000}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
@@ -233,6 +247,7 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
           </div>
           <Input
             label="Subject"
+            maxLength={100}
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder="e.g. Anatomy, Physiology"
@@ -245,6 +260,7 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
                   key={opt.value}
                   type="button"
                   onClick={() => setVisibility(opt.value)}
+                  aria-pressed={visibility === opt.value}
                   className={cn(
                     'rounded-lg border px-3 py-2 text-sm font-bold transition-colors',
                     visibility === opt.value
@@ -258,7 +274,7 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
             </div>
           </div>
 
-          {error && <p className="text-sm text-[#ba1a1a] bg-[#ffdad6] rounded-lg px-4 py-2">{error}</p>}
+          {error && <p role="alert" className="text-sm text-[#ba1a1a] bg-[#ffdad6] rounded-lg px-4 py-2">{error}</p>}
 
           <div className="flex items-center justify-between pt-1">
             {!deleteConfirm ? (

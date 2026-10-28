@@ -44,7 +44,7 @@ export default function FlashCard({ card, onEdit, onDelete, isOwner, className }
 
       {/* Actions */}
       {isOwner && (
-        <div className="absolute right-2 top-2 hidden items-center gap-1 group-hover:flex">
+        <div className="absolute right-2 top-2 flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
           <button
             onClick={onEdit}
             className="flex h-7 w-7 items-center justify-center rounded-lg bg-white border border-stone-200 text-stone-500 shadow-sm hover:text-stone-900 transition-colors"

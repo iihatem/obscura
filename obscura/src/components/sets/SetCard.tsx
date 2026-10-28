@@ -5,7 +5,8 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Set } from '@/types'
 import { proxyImageUrl } from '@/lib/utils'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, errorMessage } from '@/lib/api'
+import { useToast } from '@/components/ui/Toast'
 
 function relativeDate(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -22,6 +23,7 @@ export default function SetCard({ set }: { set: Set }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const { toast } = useToast()
   const menuRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
@@ -40,8 +42,12 @@ export default function SetCard({ set }: { set: Set }) {
   async function handleDelete() {
     setDeleting(true)
     try {
-      await apiFetch(`/sets/${set.id}`, { method: 'DELETE' })
+      const res = await apiFetch(`/sets/${set.id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error(await errorMessage(res, "Couldn't delete the set. Please try again."))
+      toast(`Deleted “${set.title}”`)
       router.refresh()
+    } catch (err) {
+      toast((err as Error).message, 'error')
     } finally {
       setDeleting(false)
       setMenuOpen(false)
@@ -85,7 +91,7 @@ export default function SetCard({ set }: { set: Set }) {
         {/* Stats */}
         <div className="flex items-center gap-4 text-xs text-[#45474d] font-medium">
           <div className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[16px]">quiz</span>
+            <span className="material-symbols-outlined text-[16px]" aria-hidden>quiz</span>
             {set.card_count} {set.card_count === 1 ? 'card' : 'cards'}
           </div>
         </div>
@@ -106,9 +112,12 @@ export default function SetCard({ set }: { set: Set }) {
       <div ref={menuRef} className="absolute top-4 right-4 z-10">
         <button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuOpen((o) => !o) }}
+          aria-label={`Options for ${set.title}`}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
           className="flex items-center justify-center w-7 h-7 rounded-md text-[#c5c6cd] hover:text-[#051125] hover:bg-[#f3f4f5] transition-colors"
         >
-          <span className="material-symbols-outlined text-[18px]">more_vert</span>
+          <span className="material-symbols-outlined text-[18px]" aria-hidden>more_vert</span>
         </button>
 
         {menuOpen && (
@@ -118,12 +127,12 @@ export default function SetCard({ set }: { set: Set }) {
                 onClick={(e) => { e.stopPropagation(); setConfirming(true) }}
                 className="w-full flex items-center gap-2 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors text-left"
               >
-                <span className="material-symbols-outlined text-[16px]">delete</span>
+                <span className="material-symbols-outlined text-[16px]" aria-hidden>delete</span>
                 Delete set
               </button>
             ) : (
               <div className="p-4 space-y-3">
-                <p className="text-xs text-[#45474d] font-medium">Delete "{set.title}"? This can't be undone.</p>
+                <p className="text-xs text-[#45474d] font-medium">Delete &quot;{set.title}&quot;? This can&apos;t be undone.</p>
                 <div className="flex gap-2">
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDelete() }}

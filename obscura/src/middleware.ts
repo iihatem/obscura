@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 // Paths under (app) route group — these don't include (app) in the URL
-const PROTECTED_PREFIXES = ['/library', '/explore', '/sets']
+const PROTECTED_PREFIXES = ['/library', '/explore', '/sets', '/profile']
 const AUTH_PREFIXES = ['/login', '/signup']
 
 export async function middleware(request: NextRequest) {
@@ -41,6 +41,9 @@ export async function middleware(request: NextRequest) {
   if (!user && isProtected) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    // Come back to the page they asked for, not the Library.
+    url.search = ''
+    url.searchParams.set('redirect', pathname + request.nextUrl.search)
     return NextResponse.redirect(url)
   }
 

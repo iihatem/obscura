@@ -19,7 +19,7 @@ export default function TopBar({ profile, onMenuClick }: TopBarProps) {
         className="flex h-9 w-9 items-center justify-center rounded-lg text-[#4A5558] hover:bg-[#D8D8D4] transition-colors"
         aria-label="Open menu"
       >
-        <span className="material-symbols-outlined text-[20px]">menu</span>
+        <span className="material-symbols-outlined text-[20px]" aria-hidden>menu</span>
       </button>
 
       <div className="flex items-center gap-2">

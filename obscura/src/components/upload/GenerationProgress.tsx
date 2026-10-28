@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, ApiUnavailableError, withColdStartRetry } from '@/lib/api'
 import Button from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import type { SelectedPage } from './PagePicker'
@@ -16,6 +16,10 @@ interface PageResult {
   page: SelectedPage
   status: PageStatus
   error?: string
+  /** HTTP status of a failed request — a 429 means retrying today won't help. */
+  httpStatus?: number
+  /** Shown under a page that's still generating, e.g. while the server wakes. */
+  note?: string
   model?: string
   // Diagram pages
   labels?: Label[]
@@ -57,6 +61,21 @@ interface GenerationProgressProps {
 let _draftId = 0
 function draftId() {
   return `draft-${++_draftId}`
+}
+
+class HttpError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message)
+  }
+}
+
+/**
+ * FastAPI reports failures as `detail`, so quota and API-key messages from the
+ * backend surface verbatim rather than collapsing to a generic string.
+ */
+async function httpError(res: Response, fallback: string): Promise<HttpError> {
+  const body = await res.json().catch(() => ({}))
+  return new HttpError(body.detail ?? body.error ?? fallback, res.status)
 }
 
 const StatusIcon = ({ status }: { status: PageStatus }) => {
@@ -108,50 +127,55 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
     )
   }, [])
 
-  /**
-   * FastAPI reports failures as `detail`, so quota and API-key messages from the
-   * backend surface verbatim rather than collapsing to a generic string.
-   */
-  async function errorMessage(res: Response, fallback: string): Promise<string> {
-    const body = await res.json().catch(() => ({}))
-    return body.detail ?? body.error ?? fallback
-  }
+  const generatePage = useCallback(async (page: SelectedPage) => {
+    const idx = page.pageData.pageIndex
+    const commaIdx = page.pageData.dataUrl.indexOf(',')
+    const imageBase64 = page.pageData.dataUrl.slice(commaIdx + 1)
+
+    if (page.type === 'diagram') {
+      const res = await apiFetch('/generate/labels', {
+        method: 'POST',
+        body: JSON.stringify({ imageBase64, setId }),
+      })
+      if (!res.ok) throw await httpError(res, 'Label generation failed')
+      const { labels, croppedImageBase64, model } = await res.json()
+      const croppedDataUrl = croppedImageBase64
+        ? `data:image/jpeg;base64,${croppedImageBase64}`
+        : undefined
+      updateResult(idx, { status: 'done', labels, croppedDataUrl, model, note: undefined })
+    } else {
+      const res = await apiFetch('/generate/flashcards', {
+        method: 'POST',
+        body: JSON.stringify({
+          imageBase64,
+          setId,
+          extractedText: page.pageData.extractedText,
+        }),
+      })
+      if (!res.ok) throw await httpError(res, 'Flashcard generation failed')
+      const { cards, model } = await res.json()
+      updateResult(idx, { status: 'done', cards, model, note: undefined })
+    }
+  }, [setId, updateResult])
 
   const processPage = useCallback(async (page: SelectedPage) => {
     const idx = page.pageData.pageIndex
-    updateResult(idx, { status: 'generating' })
+    updateResult(idx, { status: 'generating', error: undefined, httpStatus: undefined, note: undefined })
     try {
-      const commaIdx = page.pageData.dataUrl.indexOf(',')
-      const imageBase64 = page.pageData.dataUrl.slice(commaIdx + 1)
-
-      if (page.type === 'diagram') {
-        const res = await apiFetch('/generate/labels', {
-          method: 'POST',
-          body: JSON.stringify({ imageBase64, setId }),
-        })
-        if (!res.ok) throw new Error(await errorMessage(res, 'Label generation failed'))
-        const { labels, croppedImageBase64, model } = await res.json()
-        const croppedDataUrl = croppedImageBase64
-          ? `data:image/jpeg;base64,${croppedImageBase64}`
-          : undefined
-        updateResult(idx, { status: 'done', labels, croppedDataUrl, model })
-      } else {
-        const res = await apiFetch('/generate/flashcards', {
-          method: 'POST',
-          body: JSON.stringify({
-            imageBase64,
-            setId,
-            extractedText: page.pageData.extractedText,
-          }),
-        })
-        if (!res.ok) throw new Error(await errorMessage(res, 'Flashcard generation failed'))
-        const { cards, model } = await res.json()
-        updateResult(idx, { status: 'done', cards, model })
-      }
+      // Waiting out a cold start beats making the user click Retry on every page.
+      await withColdStartRetry(
+        () => generatePage(page),
+        () => updateResult(idx, { note: 'The study server is waking up — retrying automatically…' })
+      )
     } catch (err) {
-      updateResult(idx, { status: 'error', error: (err as Error).message })
+      updateResult(idx, {
+        status: 'error',
+        error: (err as Error).message,
+        httpStatus: err instanceof HttpError ? err.status : undefined,
+        note: undefined,
+      })
     }
-  }, [setId, updateResult])
+  }, [generatePage, updateResult])
 
   useEffect(() => {
     if (ran.current) return
@@ -168,6 +192,19 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
     runAll()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Generated-but-unsaved cards live only in memory, and each one already used
+  // a generation — warn before a reload or tab close throws them away.
+  const saved = useRef(false)
+  useEffect(() => {
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      if (saved.current) return
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [])
+
   async function retryPage(pageIndex: number) {
     const page = pages.find((p) => p.pageData.pageIndex === pageIndex)
     if (!page) return
@@ -176,6 +213,13 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
 
   const allDone = results.every((r) => r.status === 'done' || r.status === 'error')
   const successCount = results.filter((r) => r.status === 'done').length
+  const retryable = results.filter((r) => r.status === 'error' && r.httpStatus !== 429)
+
+  async function retryAllFailed() {
+    for (let i = 0; i < retryable.length; i += CHUNK_SIZE) {
+      await Promise.all(retryable.slice(i, i + CHUNK_SIZE).map((r) => processPage(r.page)))
+    }
+  }
 
   function buildDraftCards(): DraftCard[] {
     const cards: DraftCard[] = []
@@ -237,6 +281,7 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
   async function handleSave() {
     setSaving(true)
     setSaveError(null)
+    const total = draftCards.length
     try {
       let diagramIndex = 0
       for (const card of draftCards) {
@@ -245,10 +290,7 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
             method: 'POST',
             body: JSON.stringify({ set_id: setId, type: 'flashcard', front: card.front, back: card.back }),
           })
-          if (!res.ok) {
-            const j = await res.json().catch(() => ({}))
-            throw new Error(j.error ?? 'Failed to save flashcard')
-          }
+          if (!res.ok) throw await httpError(res, 'Failed to save flashcard')
         } else {
           // 1. Upload the diagram image to Supabase Storage
           const mimeMatch = card.dataUrl.match(/^data:([^;,]+)/)
@@ -261,10 +303,7 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
             method: 'POST',
             body: JSON.stringify({ dataUrl: card.dataUrl, path }),
           })
-          if (!uploadRes.ok) {
-            const j = await uploadRes.json().catch(() => ({}))
-            throw new Error(j.error ?? 'Failed to upload diagram image')
-          }
+          if (!uploadRes.ok) throw await httpError(uploadRes, 'Failed to upload diagram image')
           const { publicUrl } = await uploadRes.json()
 
           // 2. Save the diagram card with the permanent image URL
@@ -277,16 +316,19 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
               labels: card.labels,
             }),
           })
-          if (!res.ok) {
-            const j = await res.json().catch(() => ({}))
-            throw new Error(j.error ?? 'Failed to save diagram card')
-          }
+          if (!res.ok) throw await httpError(res, 'Failed to save diagram card')
         }
+        // Drop each card as it lands, so a retry after a failure resumes
+        // where it stopped instead of saving the earlier cards twice.
+        setDraftCards((prev) => prev.filter((c) => c.id !== card.id))
       }
-      toast(`Saved ${draftCards.length} card${draftCards.length !== 1 ? 's' : ''} to set`)
+      saved.current = true
+      toast(`Saved ${total} card${total !== 1 ? 's' : ''} to set`)
       onDone(draftCards)
     } catch (err) {
-      const msg = (err as Error).message
+      const msg = err instanceof ApiUnavailableError
+        ? 'The study server is waking up. Your unsaved cards are still here — try Save again in a few seconds.'
+        : (err as Error).message
       setSaveError(msg)
       toast(msg, 'error')
     } finally {
@@ -365,25 +407,43 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
                   {r.page.type === 'diagram' ? 'Diagram' : 'Text'}
                 </span>
               </p>
+              {r.status === 'generating' && r.note && (
+                <p className="text-xs text-stone-500">{r.note}</p>
+              )}
               {r.status === 'error' && r.error && (
-                <p className="text-xs text-red-600 truncate">{r.error}</p>
+                <p className="text-xs text-red-600 break-words">{r.error}</p>
               )}
               {r.status === 'error' && (
-                <button
-                  onClick={() => retryPage(r.page.pageData.pageIndex)}
-                  className="text-xs text-[#006972] font-medium hover:underline"
-                >
-                  Retry
-                </button>
+                <div className="flex flex-wrap gap-x-4">
+                  {r.httpStatus !== 429 && (
+                    <button
+                      onClick={() => retryPage(r.page.pageData.pageIndex)}
+                      className="text-xs text-[#006972] font-medium hover:underline"
+                    >
+                      Retry
+                    </button>
+                  )}
+                  {/key/i.test(r.error ?? '') && (
+                    // New tab: navigating away here would throw away the other pages' results.
+                    <a
+                      href="/profile"
+                      target="_blank"
+                      rel="noopener"
+                      className="text-xs text-[#006972] font-medium hover:underline"
+                    >
+                      Add your own API key ↗
+                    </a>
+                  )}
+                </div>
               )}
               {r.status === 'done' && r.page.type === 'diagram' && (
                 <p className="text-xs text-stone-400">
-                  {r.labels?.length ?? 0} labels detected{r.model?.startsWith('openai:') ? ' · OpenAI fallback' : ''}
+                  {r.labels?.length ?? 0} labels detected{r.model?.startsWith('openai:') ? ' · via OpenAI' : ''}
                 </p>
               )}
               {r.status === 'done' && r.page.type === 'flashcard' && (
                 <p className="text-xs text-stone-400">
-                  {r.cards?.length ?? 0} cards generated{r.model?.startsWith('openai:') ? ' · OpenAI fallback' : ''}
+                  {r.cards?.length ?? 0} cards generated{r.model?.startsWith('openai:') ? ' · via OpenAI' : ''}
                 </p>
               )}
             </div>
@@ -395,11 +455,24 @@ export default function GenerationProgress({ pages, setId, userId, onDone }: Gen
       {allDone && (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-stone-200 bg-stone-50 px-6 py-5 text-center">
           <p className="text-sm font-medium text-stone-700">
-            Done! Generated content from {successCount} of {results.length} pages.
+            {successCount === 0
+              ? 'Nothing was generated — see the errors above.'
+              : successCount === results.length
+                ? `Done! Generated content from all ${results.length} page${results.length !== 1 ? 's' : ''}.`
+                : `Generated content from ${successCount} of ${results.length} pages.`}
           </p>
-          <Button onClick={handleReview} size="lg">
-            Review cards
-          </Button>
+          <div className="flex flex-wrap justify-center gap-2">
+            {retryable.length > 0 && (
+              <Button onClick={retryAllFailed} size="lg" variant={successCount > 0 ? 'secondary' : 'primary'}>
+                Retry {retryable.length} failed page{retryable.length !== 1 ? 's' : ''}
+              </Button>
+            )}
+            {successCount > 0 && (
+              <Button onClick={handleReview} size="lg">
+                Review cards
+              </Button>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -510,8 +583,9 @@ function FlashcardReviewCard({ card, onUpdate, onDelete }: FlashcardReviewCardPr
     <div className="group relative flex flex-col gap-2 rounded-xl border border-stone-200 bg-white p-4">
       <button
         onClick={onDelete}
-        className="absolute right-3 top-3 hidden rounded p-1 text-stone-300 hover:bg-red-50 hover:text-red-500 group-hover:flex transition-colors"
+        className="absolute right-3 top-3 flex rounded p-1 text-stone-300 hover:bg-red-50 hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-colors"
         title="Delete card"
+        aria-label="Delete card"
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -592,8 +666,9 @@ function DiagramReviewCard({ card, onUpdateLabel, onDeleteLabel, onDelete, onLab
     <div className="group relative rounded-xl border border-stone-200 bg-white p-4">
       <button
         onClick={onDelete}
-        className="absolute right-3 top-3 hidden rounded p-1 text-stone-300 hover:bg-red-50 hover:text-red-500 group-hover:flex transition-colors"
+        className="absolute right-3 top-3 flex rounded p-1 text-stone-300 hover:bg-red-50 hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-colors"
         title="Delete card"
+        aria-label="Delete card"
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -655,7 +730,7 @@ function DiagramReviewCard({ card, onUpdateLabel, onDeleteLabel, onDelete, onLab
                 />
                 <button
                   onClick={() => onDeleteLabel(label.id)}
-                  className="hidden text-stone-300 hover:text-red-500 group-hover/label:block transition-colors"
+                  className="text-stone-300 hover:text-red-500 md:opacity-0 md:group-hover/label:opacity-100 focus:opacity-100 transition-colors"
                   title="Remove label"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

@@ -41,7 +41,7 @@ export default function RecentSessionSpotlight() {
     <section className="relative overflow-hidden rounded-xl scholar-gradient p-8 text-white flex items-center justify-between gap-6">
       {/* Background icon */}
       <div className="absolute right-4 bottom-0 opacity-10 pointer-events-none select-none">
-        <span className="material-symbols-outlined" style={{ fontSize: '9rem' }}>history_edu</span>
+        <span className="material-symbols-outlined" aria-hidden style={{ fontSize: '9rem' }}>history_edu</span>
       </div>
 
       {/* Left: info */}
@@ -75,7 +75,7 @@ export default function RecentSessionSpotlight() {
           href={`/sets/${session.set_id}/study`}
           className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 border border-white/20 rounded-lg px-4 py-2 text-sm font-bold text-white transition-colors"
         >
-          <span className="material-symbols-outlined text-[16px]">replay</span>
+          <span className="material-symbols-outlined text-[16px]" aria-hidden>replay</span>
           Study again
         </Link>
       </div>

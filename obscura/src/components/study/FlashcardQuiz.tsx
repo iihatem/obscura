@@ -104,7 +104,7 @@ export default function FlashcardQuiz({ card, onAnswer }: FlashcardQuizProps) {
             onClick={() => setRevealed(true)}
             className="w-full flex items-center justify-center gap-2 py-3 bg-[#051125] text-white rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all"
           >
-            <span className="material-symbols-outlined text-sm">sync</span>
+            <span className="material-symbols-outlined text-sm" aria-hidden>sync</span>
             Flip to See Answer
           </button>
         )}
@@ -150,7 +150,7 @@ export default function FlashcardQuiz({ card, onAnswer }: FlashcardQuizProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-[#45474d] opacity-50">{key}</span>
-                  <span className="material-symbols-outlined text-[#45474d] group-hover:translate-x-1 transition-transform text-[18px]">
+                  <span className="material-symbols-outlined text-[#45474d] group-hover:translate-x-1 transition-transform text-[18px]" aria-hidden>
                     chevron_right
                   </span>
                 </div>
@@ -163,7 +163,7 @@ export default function FlashcardQuiz({ card, onAnswer }: FlashcardQuizProps) {
         <div className="rounded-xl overflow-hidden shadow-xl shadow-[#051125]/5">
           <div className="p-6 bg-[#1b263b] text-[#828da7] flex flex-col gap-4">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#006972]">psychology</span>
+              <span className="material-symbols-outlined text-[#006972]" aria-hidden>psychology</span>
               <span className="text-xs font-bold uppercase tracking-widest text-[#828da7]/70">AI Curator Insight</span>
             </div>
             <p className="text-sm leading-relaxed">

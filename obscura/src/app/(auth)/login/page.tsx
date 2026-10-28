@@ -4,14 +4,19 @@ import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { safeRedirect } from '@/lib/utils'
 
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirect = searchParams.get('redirect')
+  const redirect = safeRedirect(searchParams.get('redirect'))
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [error, setError] = useState(
+    searchParams.get('error') === 'auth_callback_failed'
+      ? 'That confirmation link has expired or was already used. Sign in below, or sign up again to get a new link.'
+      : ''
+  )
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -31,12 +36,12 @@ function LoginForm() {
         msg.includes('networkerror')
       setError(
         isPaused
-          ? 'The database is currently paused (free tier). Visit the Supabase dashboard to resume it, then try again.'
+          ? "We can't reach the server right now. Please try again in a minute."
           : error.message
       )
       setLoading(false)
     } else {
-      router.push(redirect ?? '/library')
+      router.push(redirect)
       router.refresh()
     }
   }
@@ -52,7 +57,7 @@ function LoginForm() {
             Obscura
           </span>
         </Link>
-        <Link href="/signup" className="text-sm text-[#4A5558] hover:text-[#2A3741] transition-colors">
+        <Link href={`/signup?redirect=${encodeURIComponent(redirect)}`} className="text-sm text-[#4A5558] hover:text-[#2A3741] transition-colors">
           Create account →
         </Link>
       </header>
@@ -73,10 +78,11 @@ function LoginForm() {
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-widest text-[#4A5558] mb-2">
+                <label htmlFor="login-email" className="block text-xs font-bold uppercase tracking-widest text-[#4A5558] mb-2">
                   Email
                 </label>
                 <input
+                  id="login-email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -87,10 +93,11 @@ function LoginForm() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-widest text-[#4A5558] mb-2">
+                <label htmlFor="login-password" className="block text-xs font-bold uppercase tracking-widest text-[#4A5558] mb-2">
                   Password
                 </label>
                 <input
+                  id="login-password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -102,7 +109,7 @@ function LoginForm() {
               </div>
 
               {error && (
-                <p className="text-sm text-[#ba1a1a] bg-[#ffdad6] rounded-lg px-4 py-2">{error}</p>
+                <p role="alert" className="text-sm text-[#ba1a1a] bg-[#ffdad6] rounded-lg px-4 py-2">{error}</p>
               )}
 
               <button
@@ -117,7 +124,7 @@ function LoginForm() {
 
           <p className="text-center text-sm text-[#4A5558] mt-6">
             No account?{' '}
-            <Link href="/signup" className="text-[#60888A] font-bold hover:underline">
+            <Link href={`/signup?redirect=${encodeURIComponent(redirect)}`} className="text-[#60888A] font-bold hover:underline">
               Sign up free
             </Link>
           </p>

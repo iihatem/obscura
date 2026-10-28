@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import type { Set, Card, FlashCard as FlashCardType, DiagramCard as DiagramCardType } from '@/types'
 import SetHeader from './SetHeader'
 import FlashCard from '@/components/cards/FlashCard'
@@ -48,6 +49,9 @@ const UploadIcon = () => (
 export default function SetDetail({ initialSet, initialCards, isOwner, userId }: SetDetailProps) {
   const [set, setSet] = useState<Set>(initialSet)
   const [cards, setCards] = useState<Card[]>(initialCards)
+  // router.refresh() (after saving generated cards) sends fresh server props.
+  useEffect(() => { setCards(initialCards) }, [initialCards])
+  useEffect(() => { setSet(initialSet) }, [initialSet])
   const [activeTab, setActiveTab] = useState<TabType>('flashcard')
   const [editor, setEditor] = useState<EditorState>({ open: false, mode: 'flashcard', card: null })
 
@@ -64,7 +68,25 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
     setUploadOpen(true)
   }
 
+  // A brand-new set arrives with ?upload=1 — go straight to adding material.
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  useEffect(() => {
+    if (isOwner && searchParams.get('upload') === '1') {
+      openUpload()
+      router.replace(`/sets/${set.id}`, { scroll: false })
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   function closeUpload() {
+    // Generated cards exist only in memory until saved, and each page already
+    // used a generation from today's allowance.
+    if (
+      uploadStep === 'generate' &&
+      !window.confirm("Discard the generated cards? The generations they used today won't be refunded.")
+    ) {
+      return
+    }
     setUploadOpen(false)
   }
 
@@ -79,9 +101,9 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
   }
 
   function handleGenerationDone() {
-    // Reload the page to pick up new cards from DB
-    closeUpload()
-    window.location.reload()
+    // Pick up the new cards from the DB, keeping the user on the tab they're on.
+    setUploadOpen(false)
+    router.refresh()
   }
 
   const flashcards = cards.filter((c): c is FlashCardType => c.type === 'flashcard')
@@ -174,7 +196,7 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
             className="mb-1 gap-1.5"
           >
             <UploadIcon />
-            Upload PDF
+            Upload PDF or image
           </Button>
         )}
         </div>
@@ -182,6 +204,32 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
 
       {/* Content */}
       <div className="p-6 lg:p-8">
+        {isOwner && cards.length === 0 ? (
+          // An empty set's next step is almost always the upload, not typing cards by hand.
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#006972]/10">
+              <span className="material-symbols-outlined text-[28px] text-[#006972]" aria-hidden>cloud_upload</span>
+            </div>
+            <h3 className="text-base font-bold text-[#051125]" style={{ fontFamily: 'var(--font-manrope)' }}>
+              Add your lecture material
+            </h3>
+            <p className="mt-1 max-w-sm text-sm text-[#45474d]">
+              Upload a PDF or image and we&apos;ll draft flashcards and diagram quizzes for you to review.
+            </p>
+            <Button onClick={openUpload} size="lg" className="mt-5 gap-1.5">
+              <UploadIcon />
+              Upload PDF or image
+            </Button>
+            <button
+              type="button"
+              onClick={() => openNewEditor(activeTab)}
+              className="mt-3 text-sm text-[#45474d] hover:text-[#051125] hover:underline"
+            >
+              or add a {activeTab === 'flashcard' ? 'flashcard' : 'diagram'} by hand
+            </button>
+          </div>
+        ) : (
+        <>
         {activeTab === 'flashcard' && (
           <div className="flex flex-col gap-3">
             {flashcards.length === 0 ? (
@@ -249,12 +297,15 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
             )}
           </div>
         )}
+        </>
+        )}
       </div>
 
       {/* Card editor modal */}
       <Modal
         open={editor.open}
         onClose={closeEditor}
+        dismissOnBackdrop={false}
         title={
           editor.card
             ? `Edit ${editor.mode === 'flashcard' ? 'flashcard' : 'diagram'}`
@@ -279,6 +330,7 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
       <Modal
         open={uploadOpen}
         onClose={closeUpload}
+        dismissOnBackdrop={uploadStep === 'upload'}
         title={
           uploadStep === 'upload'
             ? 'Upload PDF or image'

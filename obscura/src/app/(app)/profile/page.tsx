@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, COLD_START_BACKOFF } from '@/lib/api'
 import {
   PROVIDERS,
   PROVIDER_ORDER,
@@ -37,7 +37,7 @@ export interface SessionHistoryItem {
 function StatCard({ icon, label, value }: { icon: string; label: string; value: number | string }) {
   return (
     <div className="bg-white rounded-xl border border-[#e7e8e9] p-6 flex flex-col gap-3">
-      <span className="material-symbols-outlined text-[28px] text-[#006972]">{icon}</span>
+      <span className="material-symbols-outlined text-[28px] text-[#006972]" aria-hidden>{icon}</span>
       <div>
         <p className="text-3xl font-extrabold text-[#051125]" style={{ fontFamily: 'var(--font-manrope)' }}>
           {value}
@@ -47,9 +47,6 @@ function StatCard({ icon, label, value }: { icon: string; label: string; value: 
     </div>
   )
 }
-
-/** Waits before each retry of a failed load, in ms. Sized for a Space cold start. */
-const COLD_START_BACKOFF = [2_000, 5_000, 10_000, 15_000]
 
 const modeLabel: Record<string, string> = {
   flashcard: 'Flashcards',
@@ -137,7 +134,7 @@ function ApiKeySection({ provider }: { provider: Provider }) {
       {saved && !editing ? (
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="material-symbols-outlined text-[18px] text-[#16a34a]">
+            <span className="material-symbols-outlined text-[18px] text-[#16a34a]" aria-hidden>
               check_circle
             </span>
             <code className="text-sm font-mono text-[#051125] truncate">
@@ -317,10 +314,12 @@ export default function ProfilePage() {
         </div>
         {waking && (
           <p className="text-xs text-[#75777d] flex items-center gap-2">
-            <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+            <span className="material-symbols-outlined text-[16px] animate-spin" aria-hidden>progress_activity</span>
             Waking the study server — this takes a few seconds after it&apos;s been idle.
           </p>
         )}
+        {/* Keys live in this browser, not on the server — they work while it's asleep. */}
+        <ApiKeys />
       </div>
     )
   }
@@ -329,7 +328,7 @@ export default function ProfilePage() {
     return (
       <div className="p-8 lg:p-12 max-w-2xl">
         <div className="bg-white rounded-xl border border-[#e7e8e9] p-8 flex flex-col items-center text-center gap-3">
-          <span className="material-symbols-outlined text-[32px] text-[#d97706]">cloud_off</span>
+          <span className="material-symbols-outlined text-[32px] text-[#d97706]" aria-hidden>cloud_off</span>
           <h2
             className="text-xl font-extrabold text-[#051125]"
             style={{ fontFamily: 'var(--font-manrope)' }}
@@ -346,6 +345,9 @@ export default function ProfilePage() {
           >
             Try again
           </button>
+        </div>
+        <div className="mt-10">
+          <ApiKeys />
         </div>
       </div>
     )
@@ -424,7 +426,7 @@ export default function ProfilePage() {
                 onClick={() => setEditing(true)}
                 className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#e7e8e9] bg-white px-3 text-xs font-bold text-[#051125] hover:bg-[#edeeef] transition-colors shrink-0"
               >
-                <span className="material-symbols-outlined text-[14px]">edit</span>
+                <span className="material-symbols-outlined text-[14px]" aria-hidden>edit</span>
                 Edit
               </button>
             </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import type { Set, Card, FlashCard as FlashCardType, DiagramCard as DiagramCardType } from '@/types'
 import type { Grade } from '@/lib/scoring'
@@ -8,7 +8,7 @@ import FlashcardQuiz from './FlashcardQuiz'
 import DiagramQuiz from './DiagramQuiz'
 import ResultsSummary from './ResultsSummary'
 import { cn } from '@/lib/utils'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, withColdStartRetry } from '@/lib/api'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -163,7 +163,12 @@ interface StudySessionProps {
 export default function StudySession({ set, cards }: StudySessionProps) {
   const [phase, setPhase] = useState<Phase>('picking')
   const [activeMode, setActiveMode] = useState<StudyMode>('flashcard')
-  const [sessionId, setSessionId] = useState<string | null>(null)
+  const sessionRef = useRef<Promise<string | null> | null>(null)
+  // The index of the card already graded. A double press or key auto-repeat
+  // can call handleAnswer twice before re-render; both calls would see the
+  // same state, skip a card and drop an answer.
+  const gradedIndex = useRef(-1)
+  const [resultsSaved, setResultsSaved] = useState(true)
   const [deck, setDeck] = useState<Card[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<CardAnswer[]>([])
@@ -180,24 +185,26 @@ export default function StudySession({ set, cards }: StudySessionProps) {
 
   const beginStudy = useCallback(async (mode: StudyMode, cardList: Card[]) => {
     setError('')
-    try {
-      const res = await apiFetch('/sessions', {
+    setResultsSaved(true)
+    // The cards are already here — don't make studying wait on the API, which
+    // may be cold-starting. The session record is created alongside, and the
+    // results submission waits for it at the end.
+    sessionRef.current = withColdStartRetry(() =>
+      apiFetch('/sessions', {
         method: 'POST',
         body: JSON.stringify({ set_id: set.id, mode }),
       })
-      if (!res.ok) throw new Error('Could not start session')
-      const session = await res.json()
+    )
+      .then(async (res) => (res.ok ? ((await res.json()).id as string) : null))
+      .catch(() => null)
 
-      setActiveMode(mode)
-      setSessionId(session.id)
-      setDeck(shuffle(cardList))
-      setCurrentIndex(0)
-      setAnswers([])
-      setCardStartTime(Date.now())
-      setPhase('studying')
-    } catch (err) {
-      setError((err as Error).message)
-    }
+    gradedIndex.current = -1
+    setActiveMode(mode)
+    setDeck(shuffle(cardList))
+    setCurrentIndex(0)
+    setAnswers([])
+    setCardStartTime(Date.now())
+    setPhase('studying')
   }, [set.id])
 
   async function handleModeSelect(mode: StudyMode) {
@@ -214,6 +221,8 @@ export default function StudySession({ set, cards }: StudySessionProps) {
 
   const handleAnswer = useCallback(
     async (grade: Grade, labelGrades?: Grade[]) => {
+      if (gradedIndex.current === currentIndex) return
+      gradedIndex.current = currentIndex
       const card = deck[currentIndex]
       const time_taken_ms = Date.now() - cardStartTime
       const answer: CardAnswer = { card, grade, time_taken_ms, labelGrades }
@@ -221,29 +230,37 @@ export default function StudySession({ set, cards }: StudySessionProps) {
       setAnswers(newAnswers)
 
       if (currentIndex + 1 >= deck.length) {
-        // Submit results
-        try {
-          await apiFetch('/results', {
-            method: 'POST',
-            body: JSON.stringify({
-              session_id: sessionId,
-              results: newAnswers.map((a) => ({
-                card_id: a.card.id,
-                grade: a.grade,
-                time_taken_ms: a.time_taken_ms,
-              })),
-            }),
-          })
-        } catch {
-          // Non-fatal — show results regardless
-        }
+        // Show the score straight away; recording it is best-effort.
         setPhase('results')
+        const sessionId = await sessionRef.current
+        let ok = false
+        if (sessionId) {
+          try {
+            const res = await withColdStartRetry(() =>
+              apiFetch('/results', {
+                method: 'POST',
+                body: JSON.stringify({
+                  session_id: sessionId,
+                  results: newAnswers.map((a) => ({
+                    card_id: a.card.id,
+                    grade: a.grade,
+                    time_taken_ms: a.time_taken_ms,
+                  })),
+                }),
+              })
+            )
+            ok = res.ok
+          } catch {
+            ok = false
+          }
+        }
+        setResultsSaved(ok)
       } else {
         setCurrentIndex((i) => i + 1)
         setCardStartTime(Date.now())
       }
     },
-    [deck, currentIndex, answers, sessionId, cardStartTime]
+    [deck, currentIndex, answers, cardStartTime]
   )
 
   // -------------------------------------------------------------------------
@@ -266,7 +283,7 @@ export default function StudySession({ set, cards }: StudySessionProps) {
       {
         mode: 'flashcard',
         label: 'Flashcards only',
-        description: 'Self-grade: reveal, then mark correct / almost / missed',
+        description: 'Reveal the answer, then mark it Confident, Almost or Need review',
         count: flashcards.length,
         icon: <FlashIcon />,
         disabled: flashcards.length === 0,
@@ -295,7 +312,7 @@ export default function StudySession({ set, cards }: StudySessionProps) {
           href={`/sets/${set.id}`}
           className="text-xs font-medium text-[#45474d] hover:text-[#051125] transition-colors flex items-center gap-1"
         >
-          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+          <span className="material-symbols-outlined text-[16px]" aria-hidden>arrow_back</span>
           {set.title}
         </Link>
         <h1 className="text-3xl font-extrabold text-[#051125] mt-4 mb-1" style={{ fontFamily: 'var(--font-manrope)' }}>
@@ -311,7 +328,17 @@ export default function StudySession({ set, cards }: StudySessionProps) {
   if (phase === 'results') {
     return (
       <div className="p-8 lg:p-12">
-        <ResultsSummary set={set} answers={answers} onRetryMissed={handleRetryMissed} />
+        {!resultsSaved && (
+          <p role="status" className="mx-auto mb-4 max-w-2xl rounded-lg bg-[#fdf8ef] border border-[#f0d9a8] px-4 py-2 text-sm text-[#45474d]">
+            This score couldn&apos;t be saved to your history — the study server didn&apos;t respond. Your answers above are still accurate.
+          </p>
+        )}
+        <ResultsSummary
+          set={set}
+          answers={answers}
+          onRetryMissed={handleRetryMissed}
+          onStudyAgain={() => setPhase('picking')}
+        />
       </div>
     )
   }
@@ -339,9 +366,14 @@ export default function StudySession({ set, cards }: StudySessionProps) {
             </span>
             <Link
               href={`/sets/${set.id}`}
+              onClick={(e) => {
+                if (currentIndex > 0 && !window.confirm("Leave this session? Your progress won't be saved.")) {
+                  e.preventDefault()
+                }
+              }}
               className="text-xs font-medium text-[#45474d] hover:text-[#051125] transition-colors flex items-center gap-1"
             >
-              <span className="material-symbols-outlined text-[16px]">close</span>
+              <span className="material-symbols-outlined text-[16px]" aria-hidden>close</span>
               Exit
             </Link>
           </div>

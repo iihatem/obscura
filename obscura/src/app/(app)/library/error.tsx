@@ -15,7 +15,7 @@ export default function LibraryError({
 
   return (
     <div className="flex flex-col items-center justify-center py-32 gap-4 text-center px-6">
-      <span className="material-symbols-outlined text-[48px] text-[#ba1a1a]">error</span>
+      <span className="material-symbols-outlined text-[48px] text-[#ba1a1a]" aria-hidden>error</span>
       <h2 className="text-xl font-bold text-[#051125]" style={{ fontFamily: 'var(--font-manrope)' }}>
         Couldn&apos;t load your library
       </h2>

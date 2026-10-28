@@ -16,6 +16,7 @@ interface ResultsSummaryProps {
   set: Set
   answers: CardAnswer[]
   onRetryMissed: (cards: Card[]) => void
+  onStudyAgain: () => void
 }
 
 const gradeConfig: Record<Grade, { label: string; bg: string; text: string; dot: string }> = {
@@ -30,7 +31,7 @@ function cardLabel(card: Card): string {
   return `Diagram (${card.labels.length} labels)`
 }
 
-export default function ResultsSummary({ set, answers, onRetryMissed }: ResultsSummaryProps) {
+export default function ResultsSummary({ set, answers, onRetryMissed, onStudyAgain }: ResultsSummaryProps) {
   const total = answers.length
   const correct = answers.filter((a) => a.grade === 'correct').length
   const close = answers.filter((a) => a.grade === 'close').length
@@ -113,7 +114,7 @@ export default function ResultsSummary({ set, answers, onRetryMissed }: ResultsS
           href={`/sets/${set.id}`}
           className="text-sm font-medium text-[#45474d] hover:text-[#051125] transition-colors flex items-center gap-1"
         >
-          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+          <span className="material-symbols-outlined text-[16px]" aria-hidden>arrow_back</span>
           Back to set
         </Link>
 
@@ -126,13 +127,15 @@ export default function ResultsSummary({ set, answers, onRetryMissed }: ResultsS
               Retry {missedCards.length} missed
             </button>
           )}
-          <Link
-            href={`/sets/${set.id}/study`}
+          {/* A link to this same URL wouldn't reset the session — restart it in place. */}
+          <button
+            type="button"
+            onClick={onStudyAgain}
             className="rounded-lg scholar-gradient px-4 py-2 text-sm font-bold text-white hover:opacity-90 transition-all flex items-center gap-2"
           >
-            <span className="material-symbols-outlined text-[16px]">replay</span>
+            <span className="material-symbols-outlined text-[16px]" aria-hidden>replay</span>
             Study again
-          </Link>
+          </button>
         </div>
       </div>
     </div>

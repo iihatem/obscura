@@ -16,7 +16,7 @@ export default function SetDetailError({
 
   return (
     <div className="flex flex-col items-center justify-center py-32 gap-4 text-center px-6">
-      <span className="material-symbols-outlined text-[48px] text-[#ba1a1a]">folder_off</span>
+      <span className="material-symbols-outlined text-[48px] text-[#ba1a1a]" aria-hidden>folder_off</span>
       <h2 className="text-xl font-bold text-[#051125]" style={{ fontFamily: 'var(--font-manrope)' }}>
         Couldn&apos;t load this set
       </h2>

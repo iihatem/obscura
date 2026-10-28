@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { apiFetch } from '@/lib/api'
+import { hasAnyApiKey } from '@/lib/apiKey'
 import Button from '@/components/ui/Button'
 import type { PageData } from './FileUploader'
 
@@ -51,8 +53,25 @@ const CheckIcon = () => (
   </svg>
 )
 
+interface Quota {
+  limit: number
+  remaining: number | null
+  shared_key: boolean
+}
+
 export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
   const [selected, setSelected] = useState<Set<number>>(new Set(pages.map((p) => p.pageIndex)))
+  // Each selected page spends one generation from the daily allowance — show
+  // it before the run, not as a wall of errors halfway through a long deck.
+  const [quota, setQuota] = useState<Quota | null>(null)
+  const ownKey = useMemo(() => hasAnyApiKey(), [])
+  useEffect(() => {
+    if (ownKey) return
+    apiFetch('/generate/quota')
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setQuota)
+      .catch(() => {})
+  }, [ownKey])
   const [types, setTypes] = useState<Record<number, PageType>>({})
   const [detecting, setDetecting] = useState(true)
 
@@ -106,6 +125,8 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
   }
 
   const selectedCount = selected.size
+  const remaining = quota?.remaining ?? null
+  const overAllowance = remaining !== null && selectedCount > remaining
 
   return (
     <div className="flex flex-col gap-4">
@@ -147,8 +168,18 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
             >
               {/* Thumbnail */}
               <div
-                className="relative aspect-[3/4] bg-stone-100"
+                role="button"
+                tabIndex={0}
+                aria-pressed={isSelected}
+                aria-label={`Page ${page.pageIndex + 1}`}
+                className="relative aspect-[3/4] bg-stone-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#006972]"
                 onClick={() => togglePage(page.pageIndex)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    togglePage(page.pageIndex)
+                  }
+                }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -189,6 +220,9 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
                 ) : (
                   <>
                     <button
+                      type="button"
+                      aria-pressed={type === 'flashcard'}
+                      aria-label={`Page ${page.pageIndex + 1}: text — make flashcards`}
                       onClick={() => setType(page.pageIndex, 'flashcard')}
                       className={cn(
                         'flex-1 py-1.5 text-[11px] font-medium transition-colors',
@@ -201,6 +235,9 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
                     </button>
                     <div className="w-px bg-stone-100" />
                     <button
+                      type="button"
+                      aria-pressed={type === 'diagram'}
+                      aria-label={`Page ${page.pageIndex + 1}: diagram — make a labelling quiz`}
                       onClick={() => setType(page.pageIndex, 'diagram')}
                       className={cn(
                         'flex-1 py-1.5 text-[11px] font-medium transition-colors',
@@ -220,7 +257,23 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
       </div>
 
       {/* Generate button */}
-      <div className="flex justify-end pt-2">
+      <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
+        {quota && !ownKey && (
+          <p className={cn('text-xs sm:mr-auto', overAllowance ? 'text-[#b45309]' : 'text-stone-500')} role="status">
+            {!quota.shared_key ? (
+              <>AI generation needs your own API key on this server. <a href="/profile" target="_blank" rel="noopener" className="font-bold underline">Add one ↗</a></>
+            ) : remaining === null ? (
+              <>Each page uses 1 generation from your free daily allowance.</>
+            ) : overAllowance ? (
+              <>
+                You have {remaining} generation{remaining !== 1 ? 's' : ''} left today — pages past that will fail.
+                Deselect some, or <a href="/profile" target="_blank" rel="noopener" className="font-bold underline">add your own key ↗</a> for no limit.
+              </>
+            ) : (
+              <>Each page uses 1 generation · {remaining} of {quota.limit} left today.</>
+            )}
+          </p>
+        )}
         <Button
           onClick={handleGenerate}
           disabled={selectedCount === 0}

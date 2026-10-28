@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, withColdStartRetry } from '@/lib/api'
 
 function Spinner() {
   return (
@@ -31,8 +31,14 @@ export default function ForkCTA({ setId, token }: { setId: string; token: string
     setForking(true)
     setError('')
     try {
-      const res = await apiFetch(`/sets/${setId}/fork`, { method: 'POST' })
-      if (!res.ok) throw new Error('Failed to copy set')
+      // The token proves the link was shared with us; a link set can't be copied by id alone.
+      const res = await withColdStartRetry(() =>
+        apiFetch(`/sets/${setId}/fork?token=${encodeURIComponent(token)}`, { method: 'POST' })
+      )
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.detail ?? "Couldn't copy this set. Please try again.")
+      }
       const { new_set_id } = await res.json()
       router.push(`/sets/${new_set_id}`)
     } catch (err) {
@@ -52,13 +58,18 @@ export default function ForkCTA({ setId, token }: { setId: string; token: string
     return (
       <div className="flex flex-col items-center gap-3">
         <a
-          href={`/login?redirect=/s/${token}`}
+          href={`/signup?redirect=${encodeURIComponent(`/s/${token}`)}`}
           className="inline-flex items-center gap-2 px-8 py-3 scholar-gradient text-white rounded-xl font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[#051125]/20"
         >
-          <span className="material-symbols-outlined text-[18px]">login</span>
-          Sign in to copy
+          <span className="material-symbols-outlined text-[18px]" aria-hidden>library_add</span>
+          Sign up free to copy
         </a>
-        <p className="text-xs text-[#75777d]">Free account required</p>
+        <p className="text-xs text-[#75777d]">
+          Already have an account?{' '}
+          <a href={`/login?redirect=${encodeURIComponent(`/s/${token}`)}`} className="font-bold text-[#006972] hover:underline">
+            Sign in
+          </a>
+        </p>
       </div>
     )
   }
@@ -70,7 +81,7 @@ export default function ForkCTA({ setId, token }: { setId: string; token: string
         disabled={forking}
         className="inline-flex items-center gap-2 px-8 py-3 scholar-gradient text-white rounded-xl font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[#051125]/20 disabled:opacity-60 disabled:pointer-events-none"
       >
-        {forking ? <Spinner /> : <span className="material-symbols-outlined text-[18px]">library_add</span>}
+        {forking ? <Spinner /> : <span className="material-symbols-outlined text-[18px]" aria-hidden>library_add</span>}
         {forking ? 'Copying…' : 'Copy to my library'}
       </button>
       {error && <p className="text-xs text-[#ba1a1a]">{error}</p>}

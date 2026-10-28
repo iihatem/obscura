@@ -15,6 +15,41 @@ export class ApiUnavailableError extends Error {
   }
 }
 
+/** Waits before each retry while the Space cold-starts, in ms. */
+export const COLD_START_BACKOFF = [2_000, 5_000, 10_000, 15_000]
+
+/**
+ * Run `fn`, retrying while the API is asleep. A holding page means the request
+ * never reached our API — nothing was spent — so waiting it out is safe.
+ * `onWaiting` fires before each retry, so callers can say what's happening.
+ */
+export async function withColdStartRetry<T>(fn: () => Promise<T>, onWaiting?: () => void): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      if (!(err instanceof ApiUnavailableError) || attempt >= COLD_START_BACKOFF.length) throw err
+      onWaiting?.()
+      await new Promise((r) => setTimeout(r, COLD_START_BACKOFF[attempt]))
+    }
+  }
+}
+
+/**
+ * The message from a failed response. FastAPI reports errors as `detail`, our
+ * Next routes as `error`; either beats a generic fallback the user can't act on.
+ */
+export async function errorMessage(res: Response, fallback: string): Promise<string> {
+  const body = await res.json().catch(() => ({}))
+  // FastAPI validation errors (422) arrive as a list of {loc, msg} objects.
+  if (Array.isArray(body.detail)) {
+    const first = body.detail[0]
+    const field = Array.isArray(first?.loc) ? first.loc[first.loc.length - 1] : null
+    return first?.msg ? `${field ? `${field}: ` : ''}${first.msg}` : fallback
+  }
+  return body.detail ?? body.error ?? fallback
+}
+
 async function getToken(): Promise<string | null> {
   const supabase = createClient()
   const { data: { session } } = await supabase.auth.getSession()

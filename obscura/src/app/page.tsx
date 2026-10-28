@@ -100,7 +100,7 @@ export default function HomePage() {
                     ))}
                   </div>
                   <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-[#D8D8D4]">
-                    <span className="material-symbols-outlined text-[#60888A] text-lg">auto_awesome</span>
+                    <span className="material-symbols-outlined text-[#60888A] text-lg" aria-hidden>auto_awesome</span>
                     <div>
                       <p className="text-xs font-bold text-[#2A3741]">AI Curator Insight</p>
                       <p className="text-[10px] text-[#4A5558]">3 new cards generated from Chapter 5</p>
@@ -131,7 +131,7 @@ export default function HomePage() {
               <div className="md:col-span-8 bg-white p-10 rounded-xl flex flex-col justify-between group hover:shadow-lg transition-shadow border border-[#D8D8D4]">
                 <div>
                   <div className="w-12 h-12 bg-[#2A3741]/5 rounded-lg flex items-center justify-center mb-6">
-                    <span className="material-symbols-outlined text-[#2A3741]">upload_file</span>
+                    <span className="material-symbols-outlined text-[#2A3741]" aria-hidden>upload_file</span>
                   </div>
                   <h3 className="text-2xl font-bold text-[#2A3741] mb-4" style={{ fontFamily: 'var(--font-manrope)' }}>
                     Upload PDFs or Slides
@@ -143,7 +143,7 @@ export default function HomePage() {
                 </div>
                 <div className="mt-12 bg-[#E1E1DD] rounded-lg p-6 border border-[#CFCFCB]">
                   <div className="flex items-center gap-4 text-sm text-[#6A7A7C] font-medium">
-                    <span className="material-symbols-outlined">picture_as_pdf</span>
+                    <span className="material-symbols-outlined" aria-hidden>picture_as_pdf</span>
                     <span>Cellular_Biology_Lecture_04.pdf</span>
                     <span className="ml-auto text-[#60888A] font-bold">Complete</span>
                   </div>
@@ -152,7 +152,7 @@ export default function HomePage() {
 
               {/* Feature 2: Diagram Drills */}
               <div className="md:col-span-4 scholar-gradient p-10 rounded-xl text-[#E6E6E2]">
-                <span className="material-symbols-outlined text-4xl mb-6 block">psychology</span>
+                <span className="material-symbols-outlined text-4xl mb-6 block" aria-hidden>psychology</span>
                 <h3 className="text-2xl font-bold mb-4" style={{ fontFamily: 'var(--font-manrope)' }}>
                   AI-Generated Diagram Drills
                 </h3>
@@ -170,7 +170,7 @@ export default function HomePage() {
               {/* Feature 3: Flashcards */}
               <div className="md:col-span-5 bg-white p-10 rounded-xl border border-[#D8D8D4]">
                 <div className="flex items-center gap-4 mb-6">
-                  <span className="material-symbols-outlined text-[#60888A]">style</span>
+                  <span className="material-symbols-outlined text-[#60888A]" aria-hidden>style</span>
                   <h3 className="text-xl font-bold text-[#2A3741]" style={{ fontFamily: 'var(--font-manrope)' }}>
                     Flashcard-Style Q&amp;A
                   </h3>
@@ -213,7 +213,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <div className="absolute right-0 bottom-0 opacity-10">
-                  <span className="material-symbols-outlined" style={{ fontSize: '12rem' }}>group</span>
+                  <span className="material-symbols-outlined" aria-hidden style={{ fontSize: '12rem' }}>group</span>
                 </div>
               </div>
             </div>
@@ -233,7 +233,7 @@ export default function HomePage() {
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#2A3741] via-[#60888A] to-[#2A3741]" />
               <div className="flex items-start gap-6 mb-8">
                 <div className="p-3 bg-[#60888A]/10 rounded-lg">
-                  <span className="material-symbols-outlined text-[#60888A]">auto_awesome</span>
+                  <span className="material-symbols-outlined text-[#60888A]" aria-hidden>auto_awesome</span>
                 </div>
                 <div>
                   <h4 className="text-lg font-bold text-[#2A3741] mb-1" style={{ fontFamily: 'var(--font-manrope)' }}>
@@ -254,7 +254,7 @@ export default function HomePage() {
                   'High Probability Exam Topic: The Role of Myelination',
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3">
-                    <span className="material-symbols-outlined text-[#60888A] mt-1">check_circle</span>
+                    <span className="material-symbols-outlined text-[#60888A] mt-1" aria-hidden>check_circle</span>
                     <span className="text-[#4A5558] font-medium italic">{item}</span>
                   </li>
                 ))}

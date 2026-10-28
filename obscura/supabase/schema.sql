@@ -4,20 +4,24 @@
 -- profiles: extends auth.users
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
-  display_name text,
+  display_name text check (char_length(display_name) <= 80),
   avatar_url text,
   created_at timestamptz default now()
 );
 
 -- auto-create profile on signup
 create or replace function public.handle_new_user()
-returns trigger as $$
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
 begin
   insert into public.profiles (id, display_name)
-  values (new.id, new.raw_user_meta_data->>'display_name');
+  values (new.id, left(new.raw_user_meta_data->>'display_name', 80));
   return new;
 end;
-$$ language plpgsql security definer;
+$$;
 
 create trigger on_auth_user_created
   after insert on auth.users
@@ -82,9 +86,13 @@ create table public.set_stars (
   primary key (user_id, set_id)
 );
 
--- keep card_count in sync
+-- keep card_count in sync. Security definer: users can't write the counter
+-- columns themselves (see the column grants below), only these triggers can.
 create or replace function update_card_count()
-returns trigger as $$
+returns trigger
+security definer
+set search_path = public, pg_temp
+as $$
 begin
   update public.sets
   set card_count = (
@@ -102,7 +110,10 @@ for each row execute function update_card_count();
 
 -- keep star_count in sync
 create or replace function update_star_count()
-returns trigger as $$
+returns trigger
+security definer
+set search_path = public, pg_temp
+as $$
 begin
   update public.sets
   set star_count = (
@@ -131,6 +142,14 @@ create trigger sets_updated_at
 before update on public.sets
 for each row execute function touch_updated_at();
 
+alter function touch_updated_at() set search_path = public, pg_temp;
+
+-- Trigger functions aren't API endpoints. Firing a trigger doesn't check
+-- EXECUTE, so this only stops direct calls over /rest/v1/rpc.
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+revoke execute on function update_card_count() from public, anon, authenticated;
+revoke execute on function update_star_count() from public, anon, authenticated;
+
 -- RLS
 alter table public.profiles enable row level security;
 alter table public.sets enable row level security;
@@ -152,10 +171,14 @@ create policy "sets_insert" on public.sets for insert with check (owner_id = aut
 create policy "sets_update" on public.sets for update using (owner_id = auth.uid());
 create policy "sets_delete" on public.sets for delete using (owner_id = auth.uid());
 
--- sets with share token (link sharing) — additional policy
-create policy "sets_select_by_token" on public.sets for select using (
-  visibility = 'link'
-); -- tokens validated at application layer
+-- Link-shared sets have no select policy on purpose: a policy can't see the
+-- token, so it would expose every link set. The API serves them by token.
+
+-- Row policies limit which sets a user may write; these limit which columns.
+-- Counters, share_token and forked_from are maintained server-side only.
+revoke insert, update on public.sets from anon, authenticated;
+grant insert (owner_id, title, description, subject, visibility) on public.sets to authenticated;
+grant update (title, description, subject, visibility) on public.sets to authenticated;
 
 -- cards
 create policy "cards_select" on public.cards for select using (
@@ -184,8 +207,29 @@ create policy "cards_delete" on public.cards for delete using (
   )
 );
 
--- sessions
-create policy "sessions_own" on public.study_sessions for all using (user_id = auth.uid());
+-- sessions — only on sets the user can see, or their history would leak the
+-- titles of other users' private sets.
+create policy "sessions_select_own" on public.study_sessions
+  for select using (user_id = auth.uid());
+create policy "sessions_insert_own" on public.study_sessions
+  for insert with check (
+    user_id = auth.uid()
+    and exists (
+      select 1 from public.sets s
+      where s.id = set_id and (s.visibility = 'public' or s.owner_id = auth.uid())
+    )
+  );
+create policy "sessions_update_own" on public.study_sessions
+  for update using (user_id = auth.uid())
+  with check (
+    user_id = auth.uid()
+    and exists (
+      select 1 from public.sets s
+      where s.id = set_id and (s.visibility = 'public' or s.owner_id = auth.uid())
+    )
+  );
+create policy "sessions_delete_own" on public.study_sessions
+  for delete using (user_id = auth.uid());
 
 -- results
 create policy "results_own" on public.card_results for all using (
@@ -197,7 +241,13 @@ create policy "results_own" on public.card_results for all using (
 
 -- stars
 create policy "stars_select" on public.set_stars for select using (true);
-create policy "stars_insert" on public.set_stars for insert with check (user_id = auth.uid());
+create policy "stars_insert" on public.set_stars for insert with check (
+  user_id = auth.uid()
+  and exists (
+    select 1 from public.sets s
+    where s.id = set_id and (s.visibility = 'public' or s.owner_id = auth.uid())
+  )
+);
 create policy "stars_delete" on public.set_stars for delete using (user_id = auth.uid());
 
 -- ── AI generation quota ──────────────────────────────────────────────────────

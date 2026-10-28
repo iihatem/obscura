@@ -64,7 +64,7 @@ export default function DiagramCard({ card, onEdit, onDelete, isOwner, className
 
         {/* Actions */}
         {isOwner && (
-          <div className="hidden items-center gap-1 group-hover:flex">
+          <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
             <button
               onClick={onEdit}
               className="flex h-7 w-7 items-center justify-center rounded-lg border border-stone-200 text-stone-500 hover:text-stone-900 transition-colors"

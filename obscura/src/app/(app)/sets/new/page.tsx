@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, errorMessage } from '@/lib/api'
 import type { Set } from '@/types'
 
 const visibilityOptions = [
@@ -34,12 +34,9 @@ export default function NewSetPage() {
         method: 'POST',
         body: JSON.stringify({ title, description, subject, visibility }),
       })
-      if (!res.ok) {
-        const j = await res.json()
-        throw new Error(j.error ?? 'Failed to create set')
-      }
+      if (!res.ok) throw new Error(await errorMessage(res, "Couldn't create the set. Please try again."))
       const newSet: Set = await res.json()
-      router.push(`/sets/${newSet.id}`)
+      router.push(`/sets/${newSet.id}?upload=1`)
     } catch (err) {
       setError((err as Error).message)
       setLoading(false)
@@ -54,7 +51,7 @@ export default function NewSetPage() {
           href="/library"
           className="text-xs font-medium text-[#45474d] hover:text-[#051125] transition-colors flex items-center gap-1"
         >
-          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+          <span className="material-symbols-outlined text-[16px]" aria-hidden>arrow_back</span>
           Library
         </Link>
         <div className="mt-4 space-y-1">
@@ -71,11 +68,13 @@ export default function NewSetPage() {
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#051125] via-[#006972] to-[#051125]" />
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-[#45474d] mb-2">
+            <label htmlFor="set-title" className="block text-xs font-bold uppercase tracking-widest text-[#45474d] mb-2">
               Title *
             </label>
             <input
+              id="set-title"
               type="text"
+              maxLength={200}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Neuroanatomy — Week 4"
@@ -86,10 +85,12 @@ export default function NewSetPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-[#45474d] mb-2">
+            <label htmlFor="set-description" className="block text-xs font-bold uppercase tracking-widest text-[#45474d] mb-2">
               Description <span className="font-normal normal-case tracking-normal">(optional)</span>
             </label>
             <textarea
+              id="set-description"
+              maxLength={2000}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -99,11 +100,13 @@ export default function NewSetPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-[#45474d] mb-2">
+            <label htmlFor="set-subject" className="block text-xs font-bold uppercase tracking-widest text-[#45474d] mb-2">
               Subject <span className="font-normal normal-case tracking-normal">(optional)</span>
             </label>
             <input
+              id="set-subject"
               type="text"
+              maxLength={100}
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="e.g. Anatomy, Physiology, Biochemistry"
@@ -167,7 +170,7 @@ export default function NewSetPage() {
                 </>
               ) : (
                 <>
-                  <span className="material-symbols-outlined text-[16px]">add</span>
+                  <span className="material-symbols-outlined text-[16px]" aria-hidden>add</span>
                   Create set
                 </>
               )}

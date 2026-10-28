@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -19,6 +20,24 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ profile, open, onClose }: SidebarProps) {
+  // Below md the sidebar is an off-canvas drawer. Closed, it's only translated
+  // out of view — `inert` keeps keyboard and screen-reader users out of it too.
+  const [isDrawer, setIsDrawer] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)')
+    const sync = () => setIsDrawer(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
   const pathname = usePathname()
   const router = useRouter()
   const { openOnboarding } = useOnboarding()
@@ -46,6 +65,7 @@ export default function Sidebar({ profile, open, onClose }: SidebarProps) {
       )}
 
       <aside
+        inert={isDrawer && !open}
         className={cn(
           'fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[#E6E6E2] border-r-0',
           'transition-transform duration-200 ease-in-out',
@@ -86,7 +106,7 @@ export default function Sidebar({ profile, open, onClose }: SidebarProps) {
                     : 'text-[#4A5558] hover:bg-[#D8D8D4]'
                 )}
               >
-                <span className="material-symbols-outlined text-[20px]">{icon}</span>
+                <span className="material-symbols-outlined text-[20px]" aria-hidden>{icon}</span>
                 {label}
               </Link>
             )
@@ -101,7 +121,7 @@ export default function Sidebar({ profile, open, onClose }: SidebarProps) {
             onClick={onClose}
             className="w-full scholar-gradient text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-lg text-sm"
           >
-            <span className="material-symbols-outlined text-[18px]">add</span>
+            <span className="material-symbols-outlined text-[18px]" aria-hidden>add</span>
             New Set
           </Link>
 
@@ -120,22 +140,22 @@ export default function Sidebar({ profile, open, onClose }: SidebarProps) {
               onClick={onClose}
               className="flex items-center gap-3 px-4 py-2 text-[#6A7A7C] hover:text-[#1E2528] transition-colors text-sm"
             >
-              <span className="material-symbols-outlined text-[18px]">manage_accounts</span>
+              <span className="material-symbols-outlined text-[18px]" aria-hidden>manage_accounts</span>
               Profile
             </Link>
             <button
               onClick={() => { onClose(); openOnboarding() }}
               className="w-full flex items-center gap-3 px-4 py-2 text-[#6A7A7C] hover:text-[#1E2528] transition-colors text-sm"
             >
-              <span className="material-symbols-outlined text-[18px]">help</span>
+              <span className="material-symbols-outlined text-[18px]" aria-hidden>help</span>
               How it works
             </button>
             <button
               onClick={handleSignOut}
               className="w-full flex items-center gap-3 px-4 py-2 text-[#6A7A7C] hover:text-[#1E2528] transition-colors text-sm"
             >
-              <span className="material-symbols-outlined text-[18px]">logout</span>
-              Logout
+              <span className="material-symbols-outlined text-[18px]" aria-hidden>logout</span>
+              Sign out
             </button>
           </div>
         </div>

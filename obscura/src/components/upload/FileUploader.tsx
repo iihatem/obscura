@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, withColdStartRetry } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 export interface PageData {
@@ -15,8 +15,11 @@ interface FileUploaderProps {
   onPagesReady: (pages: PageData[]) => void
 }
 
+/** Matches the API's limit; checked here so a huge file fails before uploading. */
+const MAX_FILE_BYTES = 50 * 1024 * 1024
+
 const UploadIcon = () => (
-  <span className="material-symbols-outlined text-[#006972] text-5xl" style={{ fontVariationSettings: "'wght' 200" }}>
+  <span className="material-symbols-outlined text-[#006972] text-5xl" aria-hidden style={{ fontVariationSettings: "'wght' 200" }}>
     cloud_upload
   </span>
 )
@@ -30,6 +33,10 @@ export default function FileUploader({ onPagesReady }: FileUploaderProps) {
 
   const processFile = useCallback(async (file: File) => {
     setError(null)
+    if (file.size > MAX_FILE_BYTES) {
+      setError('That file is over 50 MB. Split the PDF or export fewer pages, then try again.')
+      return
+    }
     setIsProcessing(true)
     setProgress(null)
 
@@ -59,19 +66,21 @@ export default function FileUploader({ onPagesReady }: FileUploaderProps) {
   }
 
   async function processPdf(file: File) {
-    setProgress('Uploading PDF…')
+    setProgress('Uploading and rendering pages… large PDFs can take a minute.')
 
     const form = new FormData()
     form.append('file', file)
 
-    const res = await apiFetch('/upload/pdf', { method: 'POST', body: form })
+    const res = await withColdStartRetry(
+      () => apiFetch('/upload/pdf', { method: 'POST', body: form }),
+      () => setProgress('The study server is waking up — this takes a few seconds on first use…')
+    )
 
     if (!res.ok) {
       const j = await res.json().catch(() => ({}))
       throw new Error(j.detail ?? 'PDF rendering failed')
     }
 
-    setProgress('Rendering pages…')
     const { pages } = await res.json() as { pages: PageData[] }
 
     setIsProcessing(false)
@@ -102,6 +111,16 @@ export default function FileUploader({ onPagesReady }: FileUploaderProps) {
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
         onClick={() => !isProcessing && inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if ((e.key === 'Enter' || e.key === ' ') && !isProcessing) {
+            e.preventDefault()
+            inputRef.current?.click()
+          }
+        }}
+        role="button"
+        tabIndex={isProcessing ? -1 : 0}
+        aria-label="Upload a PDF or image"
+        aria-busy={isProcessing}
         className={cn(
           'relative flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed p-16 transition-all cursor-pointer text-center',
           isDragging
@@ -132,14 +151,14 @@ export default function FileUploader({ onPagesReady }: FileUploaderProps) {
             </div>
             <div>
               <h3 className="text-2xl font-bold text-[#051125] mb-2" style={{ fontFamily: 'var(--font-manrope)' }}>
-                Begin Curation
+                Upload a PDF or image
               </h3>
               <p className="text-[#45474d] max-w-sm mb-6 leading-relaxed text-sm">
-                Drop your lecture notes, PDFs, or slide decks here. Our AI will extract concepts, diagrams, and logic flows.
+                Drop in lecture slides, notes or a diagram. You&apos;ll pick which pages to turn into flashcards and diagram quizzes.
               </p>
-              <button className="px-8 py-3 scholar-gradient text-white rounded-lg font-bold text-sm shadow-xl shadow-[#051125]/10 hover:scale-[1.02] active:scale-95 transition-all pointer-events-none">
-                Select Files
-              </button>
+              <span className="inline-block px-8 py-3 scholar-gradient text-white rounded-lg font-bold text-sm shadow-xl shadow-[#051125]/10 hover:scale-[1.02] active:scale-95 transition-all">
+                Choose file
+              </span>
               <p className="mt-4 text-[11px] text-[#75777d] tracking-wider uppercase font-bold">
                 PDF, JPG, PNG or WebP (Max 50MB)
               </p>
@@ -148,7 +167,7 @@ export default function FileUploader({ onPagesReady }: FileUploaderProps) {
         )}
 
         {error && (
-          <p className="absolute bottom-3 text-xs text-[#ba1a1a]">{error}</p>
+          <p role="alert" className="absolute bottom-3 px-4 text-xs text-[#ba1a1a]">{error}</p>
         )}
       </div>
     </div>

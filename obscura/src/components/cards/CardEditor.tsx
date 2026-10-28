@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, errorMessage } from '@/lib/api'
 import { cn, proxyImageUrl } from '@/lib/utils'
 import Button from '@/components/ui/Button'
 import type { Card, Label } from '@/types'
@@ -44,8 +44,10 @@ function FlashcardEditor({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-stone-700">Front</label>
+        <label htmlFor="card-front" className="text-sm font-medium text-stone-700">Front</label>
         <textarea
+          id="card-front"
+          maxLength={5000}
           value={front}
           onChange={(e) => setFront(e.target.value)}
           rows={3}
@@ -54,8 +56,10 @@ function FlashcardEditor({
         />
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-stone-700">Back</label>
+        <label htmlFor="card-back" className="text-sm font-medium text-stone-700">Back</label>
         <textarea
+          id="card-back"
+          maxLength={5000}
           value={back}
           onChange={(e) => setBack(e.target.value)}
           rows={3}
@@ -201,8 +205,9 @@ function DiagramEditor({
       setUploading(true)
       setUploadError('')
       try {
-        const ext = pendingFile.name.split('.').pop() ?? 'jpg'
-        const path = `${userId}/${Date.now()}.${ext}`
+        const ext = pendingFile.name.split('.').pop()?.replace(/[^a-z0-9]/gi, '').toLowerCase() || 'jpg'
+        // Random, not a timestamp: a guessable name is a readable name.
+        const path = `${userId}/${crypto.randomUUID()}.${ext}`
 
         const dataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader()
@@ -211,14 +216,13 @@ function DiagramEditor({
           reader.readAsDataURL(pendingFile)
         })
 
-        const uploadRes = await fetch('/api/upload/image', {
+        const uploadRes = await apiFetch('/upload/image', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ dataUrl, path }),
         })
         if (!uploadRes.ok) {
           const j = await uploadRes.json().catch(() => ({}))
-          throw new Error(j.error ?? 'Upload failed')
+          throw new Error(j.detail ?? j.error ?? 'Upload failed')
         }
         const { publicUrl } = await uploadRes.json()
         finalUrl = publicUrl
@@ -357,7 +361,7 @@ function DiagramEditor({
               />
               <button
                 onClick={() => removeLabel(lbl._key)}
-                className="hidden text-stone-300 hover:text-red-500 group-hover/lbl:block transition-colors"
+                className="text-stone-300 hover:text-red-500 md:opacity-0 md:group-hover/lbl:opacity-100 focus:opacity-100 transition-colors"
                 aria-label="Remove label"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -416,10 +420,7 @@ export default function CardEditor({ mode, setId, userId, card, onSave, onDelete
           method,
           body: JSON.stringify(isEditing ? body : { set_id: setId, type: mode, ...body }),
         })
-        if (!res.ok) {
-          const j = await res.json()
-          throw new Error(j.error ?? 'Failed to save')
-        }
+        if (!res.ok) throw new Error(await errorMessage(res, "Couldn't save the card. Please try again."))
         const saved: Card = await res.json()
         onSave(saved)
       } catch (err) {
@@ -436,7 +437,7 @@ export default function CardEditor({ mode, setId, userId, card, onSave, onDelete
     setDeleting(true)
     try {
       const res = await apiFetch(`/cards/${card.id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Delete failed')
+      if (!res.ok) throw new Error(await errorMessage(res, "Couldn't delete the card. Please try again."))
       onDelete(card.id)
     } catch (err) {
       setError((err as Error).message)

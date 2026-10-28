@@ -60,7 +60,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             `}
           >
             <span
-              className="material-symbols-outlined text-[16px] shrink-0"
+              className="material-symbols-outlined text-[16px] shrink-0" aria-hidden
               style={{ fontVariationSettings: "'FILL' 1" }}
             >
               {t.type === 'success' ? 'check_circle' : t.type === 'error' ? 'error' : 'info'}

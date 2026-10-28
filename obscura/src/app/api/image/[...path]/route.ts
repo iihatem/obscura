@@ -19,6 +19,19 @@ function detectMime(buf: ArrayBuffer): string {
   return 'image/jpeg'
 }
 
+/**
+ * A plain relative path: no empty, `.` or `..` segments and no separators or
+ * escapes inside one. The service role reads Storage over HTTP, where URL
+ * normalisation would resolve `<me>/../<victim>/x.jpg` into someone else's
+ * folder after the ownership check had passed.
+ */
+function isPlainPath(path: string): boolean {
+  if (path.length > 512) return false
+  return path
+    .split('/')
+    .every((s) => /^[A-Za-z0-9_-][A-Za-z0-9_.-]{0,127}$/.test(s) && s.replace(/\./g, '') !== '')
+}
+
 /** `%` and `_` are LIKE wildcards — a storage path must match literally. */
 function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, (c) => `\\${c}`)
@@ -34,7 +47,7 @@ function escapeLike(value: string): string {
  * rest of the app treats them — the token gates discovery, not the assets.
  */
 async function canRead(path: string, viewerId: string | null): Promise<boolean> {
-  // Uploads are namespaced by uploader (enforced in /api/upload/image), so the
+  // Uploads are namespaced by uploader (enforced by the API's POST /upload/image), so the
   // owner is recognisable from the path alone — no query needed.
   if (viewerId && path.startsWith(`${viewerId}/`)) return true
 
@@ -75,6 +88,9 @@ export async function GET(
   if (!path) {
     return NextResponse.json({ error: 'path is required' }, { status: 400 })
   }
+  if (!isPlainPath(path)) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -88,7 +104,7 @@ export async function GET(
   const { data, error } = await admin.storage.from('card-images').download(path)
 
   if (error || !data) {
-    return NextResponse.json({ error: error?.message ?? 'Not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
   const arrayBuffer = await data.arrayBuffer()
@@ -97,6 +113,7 @@ export async function GET(
   return new Response(arrayBuffer, {
     headers: {
       'Content-Type': contentType,
+      'X-Content-Type-Options': 'nosniff',
       'Cache-Control': 'private, max-age=31536000, immutable',
       // The response now depends on who is asking.
       Vary: 'Cookie',

@@ -61,13 +61,13 @@ export default async function LibraryPage() {
             href="/sets/new"
             className="inline-flex items-center gap-2 px-5 py-2.5 scholar-gradient text-white rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[#051125]/20"
           >
-            <span className="material-symbols-outlined text-[18px]">add</span>
+            <span className="material-symbols-outlined text-[18px]" aria-hidden>add</span>
             New Set
           </Link>
         </div>
       </section>
 
-      {/* ── Shared-key warning (hidden once the user adds their own) ─ */}
+      {/* ── Shared-key allowance note (hidden once the user adds their own) ─ */}
       <ApiKeyNotice />
 
       {/* ── Recent Session Spotlight ──────────────────────────────── */}

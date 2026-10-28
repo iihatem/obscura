@@ -16,7 +16,7 @@ interface Step {
 function Bullet({ icon, children }: { icon: string; children: ReactNode }) {
   return (
     <li className="flex gap-3">
-      <span className="material-symbols-outlined text-[18px] text-[#006972] mt-0.5 shrink-0">
+      <span className="material-symbols-outlined text-[18px] text-[#006972] mt-0.5 shrink-0" aria-hidden>
         {icon}
       </span>
       <span className="text-sm text-[#45474d] leading-relaxed">{children}</span>
@@ -32,12 +32,12 @@ function ExternalLink({ href, icon, label, hint }: { href: string; icon: string;
       rel="noopener noreferrer"
       className="flex items-center gap-3 rounded-lg border border-[#e7e8e9] bg-white px-4 py-3 hover:border-[#006972]/40 hover:bg-[#006972]/[0.03] transition-colors group"
     >
-      <span className="material-symbols-outlined text-[20px] text-[#006972] shrink-0">{icon}</span>
+      <span className="material-symbols-outlined text-[20px] text-[#006972] shrink-0" aria-hidden>{icon}</span>
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-bold text-[#051125]">{label}</span>
         <span className="block text-xs text-[#75777d]">{hint}</span>
       </span>
-      <span className="material-symbols-outlined text-[16px] text-[#75777d] group-hover:text-[#006972] transition-colors">
+      <span className="material-symbols-outlined text-[16px] text-[#75777d] group-hover:text-[#006972] transition-colors" aria-hidden>
         open_in_new
       </span>
     </a>
@@ -154,13 +154,13 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
             <ExternalLink
               href={PROVIDERS.anthropic.links.billing}
               icon="vpn_key"
-              label="Buy an Anthropic API key"
+              label="Get an Anthropic API key"
               hint="console.anthropic.com — add credit, then create a key"
             />
             <ExternalLink
               href={PROVIDERS.openai.links.billing}
               icon="vpn_key"
-              label="Buy an OpenAI API key"
+              label="Get an OpenAI API key"
               hint="platform.openai.com — add credit, then create a key"
             />
             <ExternalLink
@@ -179,7 +179,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
             }}
             className="w-full flex items-center justify-center gap-2 rounded-lg scholar-gradient px-4 py-3 text-sm font-bold text-white hover:opacity-90 transition-opacity"
           >
-            <span className="material-symbols-outlined text-[18px]">manage_accounts</span>
+            <span className="material-symbols-outlined text-[18px]" aria-hidden>manage_accounts</span>
             Paste your key in Profile
           </button>
 
@@ -241,7 +241,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
         <div className="flex items-start justify-between gap-4 px-6 pt-6 sm:px-8">
           <div className="flex items-start gap-4 min-w-0">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#006972]/10">
-              <span className="material-symbols-outlined text-[22px] text-[#006972]">
+              <span className="material-symbols-outlined text-[22px] text-[#006972]" aria-hidden>
                 {current.icon}
               </span>
             </div>
@@ -264,7 +264,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
             aria-label="Close"
             className="shrink-0 rounded-lg p-1 text-[#75777d] hover:bg-[#f3f4f5] hover:text-[#051125] transition-colors"
           >
-            <span className="material-symbols-outlined text-[20px]">close</span>
+            <span className="material-symbols-outlined text-[20px]" aria-hidden>close</span>
           </button>
         </div>
 
@@ -311,10 +311,16 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
               )}
               <button
                 type="button"
-                onClick={() => (last ? onClose() : setStep((s) => s + 1))}
+                onClick={() => {
+                  if (!last) return setStep((s) => s + 1)
+                  // Finishing the tour is a clear "got it" — don't show it on every load.
+                  dismissOnboarding()
+                  onClose()
+                  router.push('/sets/new')
+                }}
                 className="h-9 rounded-lg scholar-gradient px-5 text-xs font-bold text-white hover:opacity-90 transition-opacity"
               >
-                {last ? 'Start studying' : 'Next'}
+                {last ? 'Create my first set' : 'Next'}
               </button>
             </div>
           </div>

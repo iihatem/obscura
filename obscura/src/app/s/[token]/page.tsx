@@ -16,13 +16,18 @@ interface ShareSet {
   visibility: string
 }
 
-async function fetchSharedSet(token: string): Promise<{ set: ShareSet; cards: Card[] } | null> {
+type SharedSet = { set: ShareSet; cards: Card[] }
+
+/** The set, `null` if no such link exists, or `'waking'` if the API didn't answer. */
+async function fetchSharedSet(token: string): Promise<SharedSet | null | 'waking'> {
   try {
-    const res = await fetch(`${API_URL}/sets/share/${token}`, { cache: 'no-store' })
-    if (!res.ok) return null
-    return res.json()
+    const res = await fetch(`${API_URL}/sets/share/${encodeURIComponent(token)}`, { cache: 'no-store' })
+    if (res.status === 404) return null
+    // A sleeping Space answers with an HTML holding page, sometimes with a 200.
+    if (!res.ok || !(res.headers.get('content-type') ?? '').includes('application/json')) return 'waking'
+    return await res.json()
   } catch {
-    return null
+    return 'waking'
   }
 }
 
@@ -31,6 +36,18 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
   const data = await fetchSharedSet(token)
 
   if (!data) notFound()
+  if (data === 'waking') {
+    return (
+      <div className="min-h-screen bg-[#f8f9fa] flex flex-col items-center justify-center gap-3 px-6 text-center">
+        <meta httpEquiv="refresh" content="8" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#e7e8e9] border-t-[#006972]" />
+        <h1 className="text-lg font-bold text-[#051125]">Loading this study set…</h1>
+        <p className="max-w-sm text-sm text-[#45474d]">
+          The study server is waking up. This page will refresh by itself in a few seconds.
+        </p>
+      </div>
+    )
+  }
 
   const { set, cards } = data
   const flashcards = cards.filter((c): c is FlashCard => c.type === 'flashcard').slice(0, 4)
@@ -47,11 +64,11 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
           Obscura
         </Link>
         <div className="flex items-center gap-3">
-          <Link href="/login" className="text-sm text-[#45474d] hover:text-[#051125] transition-colors font-medium">
+          <Link href={`/login?redirect=${encodeURIComponent(`/s/${token}`)}`} className="text-sm text-[#45474d] hover:text-[#051125] transition-colors font-medium">
             Sign in
           </Link>
           <Link
-            href="/signup"
+            href={`/signup?redirect=${encodeURIComponent(`/s/${token}`)}`}
             className="text-sm font-bold px-4 py-2 rounded-lg scholar-gradient text-white hover:opacity-90 transition-opacity"
           >
             Sign up free
@@ -78,16 +95,16 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
           )}
           <div className="flex flex-wrap items-center gap-4 text-sm text-[#75777d] font-medium">
             <div className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[16px]">quiz</span>
+              <span className="material-symbols-outlined text-[16px]" aria-hidden>quiz</span>
               {set.card_count} {set.card_count === 1 ? 'card' : 'cards'}
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1", color: '#e8b400' }}>star</span>
+              <span className="material-symbols-outlined text-[16px]" aria-hidden style={{ fontVariationSettings: "'FILL' 1", color: '#e8b400' }}>star</span>
               {set.star_count}
             </div>
             {set.owner_display_name && (
               <div className="flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[16px]">person</span>
+                <span className="material-symbols-outlined text-[16px]" aria-hidden>person</span>
                 {set.owner_display_name}
               </div>
             )}
@@ -96,7 +113,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
 
         {/* CTA */}
         <section className="bg-white rounded-xl border border-[#e7e8e9] p-8 flex flex-col items-center gap-4 text-center shadow-sm">
-          <span className="material-symbols-outlined text-[40px] text-[#006972]">school</span>
+          <span className="material-symbols-outlined text-[40px] text-[#006972]" aria-hidden>school</span>
           <div>
             <p className="font-bold text-[#051125] text-lg" style={{ fontFamily: 'var(--font-manrope)' }}>
               Study this set

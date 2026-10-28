@@ -19,7 +19,7 @@ export default function StudyError({
 
   return (
     <div className="flex flex-col items-center justify-center py-32 gap-4 text-center px-6">
-      <span className="material-symbols-outlined text-[48px] text-[#ba1a1a]">psychology_off</span>
+      <span className="material-symbols-outlined text-[48px] text-[#ba1a1a]" aria-hidden>psychology_off</span>
       <h2 className="text-xl font-bold text-[#051125]" style={{ fontFamily: 'var(--font-manrope)' }}>
         Study session failed to load
       </h2>

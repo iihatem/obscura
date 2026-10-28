@@ -3,7 +3,8 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import type { ExploreSet } from '@/types'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, errorMessage, withColdStartRetry } from '@/lib/api'
+import { useToast } from '@/components/ui/Toast'
 import { proxyImageUrl } from '@/lib/utils'
 
 function Spinner({ className = 'h-4 w-4' }: { className?: string }) {
@@ -23,18 +24,23 @@ function ExploreSetCard({
   onStarToggle: (id: string) => void
 }) {
   const router = useRouter()
+  const { toast } = useToast()
   const [forking, setForking] = useState(false)
 
   async function handleFork() {
     setForking(true)
     try {
       const res = await apiFetch(`/sets/${set.id}/fork`, { method: 'POST' })
-      if (!res.ok) throw new Error('Fork failed')
+      if (!res.ok) throw new Error(await errorMessage(res, "Couldn't copy this set. Please try again."))
       const { new_set_id } = await res.json()
+      toast('Copied to your library')
       router.push(`/sets/${new_set_id}`)
-    } finally {
+    } catch (err) {
+      toast((err as Error).message, 'error')
       setForking(false)
     }
+    // On success the button stays disabled until navigation, so a double
+    // click can't create two copies.
   }
 
   return (
@@ -60,10 +66,12 @@ function ExploreSetCard({
         </div>
         <button
           onClick={() => onStarToggle(set.id)}
+          aria-pressed={set.starred_by_me}
+          aria-label={`${set.starred_by_me ? 'Unstar' : 'Star'} ${set.title} (${set.star_count})`}
           className="flex items-center gap-1 text-xs font-bold text-[#45474d] hover:text-[#e8b400] transition-colors"
         >
           <span
-            className="material-symbols-outlined text-[18px] transition-colors"
+            className="material-symbols-outlined text-[18px] transition-colors" aria-hidden
             style={{
               color: set.starred_by_me ? '#e8b400' : '#c5c6cd',
               fontVariationSettings: set.starred_by_me ? "'FILL' 1" : "'FILL' 0",
@@ -86,7 +94,7 @@ function ExploreSetCard({
       {/* Stats */}
       <div className="flex flex-wrap items-center gap-3 text-xs text-[#75777d] font-medium">
         <div className="flex items-center gap-1">
-          <span className="material-symbols-outlined text-[15px]">quiz</span>
+          <span className="material-symbols-outlined text-[15px]" aria-hidden>quiz</span>
           {set.card_count} {set.card_count === 1 ? 'card' : 'cards'}
         </div>
       </div>
@@ -98,7 +106,7 @@ function ExploreSetCard({
           disabled={forking}
           className="w-full inline-flex items-center justify-center gap-2 h-9 rounded-lg border border-[#051125] text-xs font-bold text-[#051125] hover:bg-[#051125] hover:text-white transition-colors disabled:opacity-50 disabled:pointer-events-none"
         >
-          {forking ? <Spinner /> : <span className="material-symbols-outlined text-[16px]">library_add</span>}
+          {forking ? <Spinner /> : <span className="material-symbols-outlined text-[16px]" aria-hidden>library_add</span>}
           Copy to library
         </button>
       </div>
@@ -109,16 +117,24 @@ function ExploreSetCard({
 export default function ExplorePage() {
   const [sets, setSets] = useState<ExploreSet[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [query, setQuery] = useState('')
+  const { toast } = useToast()
   const [activeSubject, setActiveSubject] = useState<string | null>(null)
 
-  useEffect(() => {
-    apiFetch('/explore')
-      .then((r) => r.json())
-      .then((data) => setSets(data))
-      .catch(() => {})
+  function load() {
+    setLoading(true)
+    setLoadError(false)
+    withColdStartRetry(() => apiFetch('/explore'))
+      .then(async (r) => {
+        if (!r.ok) throw new Error()
+        setSets(await r.json())
+      })
+      .catch(() => setLoadError(true))
       .finally(() => setLoading(false))
-  }, [])
+  }
+
+  useEffect(load, [])
 
   const subjects = useMemo(() => {
     const seen = new Set<string>()
@@ -150,7 +166,10 @@ export default function ExplorePage() {
           : s
       )
     )
-    apiFetch(`/sets/${id}/star`, { method: 'POST' }).catch(() => {
+    apiFetch(`/sets/${id}/star`, { method: 'POST' }).then((r) => {
+      if (!r.ok) throw new Error()
+    }).catch(() => {
+      toast("Couldn't update the star. Please try again.", 'error')
       // revert on failure
       setSets((prev) =>
         prev.map((s) =>
@@ -183,7 +202,7 @@ export default function ExplorePage() {
 
       {/* Search */}
       <div className="relative max-w-md">
-        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#75777d] text-[18px] pointer-events-none">
+        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#75777d] text-[18px] pointer-events-none" aria-hidden>
           search
         </span>
         <input
@@ -230,9 +249,21 @@ export default function ExplorePage() {
           <Spinner className="h-5 w-5" />
           <span className="text-sm">Loading…</span>
         </div>
+      ) : loadError ? (
+        <div className="flex flex-col items-center justify-center py-24 text-[#75777d] gap-3">
+          <span className="material-symbols-outlined text-[48px]" aria-hidden>cloud_off</span>
+          <p className="text-sm font-medium">Couldn&apos;t load public sets — the study server didn&apos;t respond.</p>
+          <button
+            type="button"
+            onClick={load}
+            className="rounded-lg border border-[#e7e8e9] bg-white px-4 py-2 text-sm font-bold text-[#051125] hover:bg-[#edeeef] transition-colors"
+          >
+            Try again
+          </button>
+        </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-[#75777d] gap-3">
-          <span className="material-symbols-outlined text-[48px]">search_off</span>
+          <span className="material-symbols-outlined text-[48px]" aria-hidden>search_off</span>
           <p className="text-sm font-medium">
             {sets.length === 0 ? 'No public sets yet' : 'No sets match your search'}
           </p>

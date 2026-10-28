@@ -2,16 +2,16 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { PROVIDERS, PROVIDER_ORDER, hasAnyApiKey } from '@/lib/apiKey'
+import { hasAnyApiKey } from '@/lib/apiKey'
 
 /**
- * Heads-up that AI generation runs on a shared key that can be capped or out of
- * credit. Only shown to users without a key of their own — once one is saved for
- * either provider the warning no longer applies, so it disappears on its own.
+ * Tells users without a key of their own that generation runs on the shared key
+ * with a daily allowance, and that adding a key lifts the cap. Once a key is
+ * saved for either provider the note no longer applies, so it disappears.
  */
 export default function ApiKeyNotice() {
   // Rendered only after mount: localStorage doesn't exist on the server, and
-  // guessing wrong would flash a warning at users who already have a key.
+  // guessing wrong would flash the note at users who already have a key.
   const [show, setShow] = useState(false)
 
   useEffect(() => {
@@ -21,34 +21,21 @@ export default function ApiKeyNotice() {
   if (!show) return null
 
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-[#f0d9a8] bg-[#fdf8ef] px-4 py-3">
-      <span className="material-symbols-outlined text-[20px] text-[#b45309] shrink-0">
-        warning
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-[#006972]/20 bg-[#006972]/[0.04] px-4 py-3">
+      <span className="material-symbols-outlined text-[20px] text-[#006972] shrink-0" aria-hidden>
+        auto_awesome
       </span>
       <p className="text-sm text-[#45474d] flex-1 min-w-[16rem]">
-        AI generation may not work right now — the shared key can hit its daily cap or run out
-        of credit. Add your own Anthropic or OpenAI key to generate without limits.
+        AI generation is included — every account gets a free daily allowance. Add your own
+        Anthropic or OpenAI key any time to generate without limits.
       </p>
-      <div className="flex items-center gap-2 shrink-0">
-        {PROVIDER_ORDER.map((provider) => (
-          <a
-            key={provider}
-            href={PROVIDERS[provider].links.billing}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#b45309] px-3 text-xs font-bold text-white hover:bg-[#92400e] transition-colors"
-          >
-            Buy {PROVIDERS[provider].label} key
-            <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-          </a>
-        ))}
-        <Link
-          href="/profile"
-          className="inline-flex h-8 items-center rounded-lg border border-[#e7d3ab] bg-white px-3 text-xs font-bold text-[#92400e] hover:bg-[#fefaf3] transition-colors"
-        >
-          Add it here
-        </Link>
-      </div>
+      <Link
+        href="/profile"
+        className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-[#006972]/25 bg-white px-3 text-xs font-bold text-[#006972] hover:bg-[#006972]/[0.06] transition-colors"
+      >
+        <span className="material-symbols-outlined text-[14px]" aria-hidden>key</span>
+        Use my own key
+      </Link>
     </div>
   )
 }

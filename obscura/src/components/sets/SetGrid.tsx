@@ -44,7 +44,7 @@ export default function SetGrid({ sets, emptyAction, searchable }: SetGridProps)
     <div className="space-y-6">
       {searchable && (
         <div className="relative max-w-sm">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#75777d] pointer-events-none">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#75777d] pointer-events-none" aria-hidden>
             search
           </span>
           <input
@@ -57,16 +57,17 @@ export default function SetGrid({ sets, emptyAction, searchable }: SetGridProps)
           {query && (
             <button
               onClick={() => setQuery('')}
+              aria-label="Clear search"
               className="absolute right-3 top-1/2 -translate-y-1/2 text-[#75777d] hover:text-[#051125] transition-colors"
             >
-              <span className="material-symbols-outlined text-[18px]">close</span>
+              <span className="material-symbols-outlined text-[18px]" aria-hidden>close</span>
             </button>
           )}
         </div>
       )}
 
       {filtered.length === 0 ? (
-        <p className="text-sm text-[#75777d] font-medium">No sets match "{query}"</p>
+        <p className="text-sm text-[#75777d] font-medium">No sets match &quot;{query}&quot;</p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((set) => (

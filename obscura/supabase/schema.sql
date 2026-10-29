@@ -17,8 +17,13 @@ security definer
 set search_path = ''
 as $$
 begin
+  -- Email signups send display_name; Google sends full_name / name.
   insert into public.profiles (id, display_name)
-  values (new.id, left(new.raw_user_meta_data->>'display_name', 80));
+  values (new.id, left(coalesce(
+    new.raw_user_meta_data->>'display_name',
+    new.raw_user_meta_data->>'full_name',
+    new.raw_user_meta_data->>'name'
+  ), 80));
   return new;
 end;
 $$;

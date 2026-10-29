@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { safeRedirect } from '@/lib/utils'
+import GoogleButton from '@/components/auth/GoogleButton'
 
 const UNREACHABLE = "We can't reach the server right now. Please try again in a minute."
 
@@ -178,6 +179,7 @@ function SignupForm() {
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#2A3741] via-[#60888A] to-[#2A3741]" />
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <GoogleButton redirect={redirect} onError={setError} />
               <div>
                 <label htmlFor="signup-name" className="block text-xs font-bold uppercase tracking-widest text-[#4A5558] mb-2">
                   Display name

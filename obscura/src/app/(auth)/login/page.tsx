@@ -5,6 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { safeRedirect } from '@/lib/utils'
+import GoogleButton from '@/components/auth/GoogleButton'
+
+const CALLBACK_ERRORS: Record<string, string> = {
+  auth_callback_failed:
+    'That sign-in link has expired or was already used. Sign in below, or sign up again to get a new link.',
+  oauth_cancelled: 'Google sign-in was cancelled.',
+  oauth_failed: "Google sign-in didn't go through. Please try again.",
+}
 
 function LoginForm() {
   const router = useRouter()
@@ -12,11 +20,7 @@ function LoginForm() {
   const redirect = safeRedirect(searchParams.get('redirect'))
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState(
-    searchParams.get('error') === 'auth_callback_failed'
-      ? 'That confirmation link has expired or was already used. Sign in below, or sign up again to get a new link.'
-      : ''
-  )
+  const [error, setError] = useState(CALLBACK_ERRORS[searchParams.get('error') ?? ''] ?? '')
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -77,6 +81,7 @@ function LoginForm() {
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#2A3741] via-[#60888A] to-[#2A3741]" />
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <GoogleButton redirect={redirect} onError={setError} />
               <div>
                 <label htmlFor="login-email" className="block text-xs font-bold uppercase tracking-widest text-[#4A5558] mb-2">
                   Email

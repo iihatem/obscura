@@ -9,6 +9,14 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code')
   const next = safeRedirect(searchParams.get('next'))
 
+  // Google (via Supabase) comes back with ?error= instead of a code when the
+  // user cancels or the provider refuses — not an expired email link.
+  const oauthError = searchParams.get('error')
+  if (oauthError) {
+    const reason = oauthError === 'access_denied' ? 'oauth_cancelled' : 'oauth_failed'
+    return NextResponse.redirect(`${origin}/login?error=${reason}`)
+  }
+
   if (code) {
     const cookieStore = await cookies()
 

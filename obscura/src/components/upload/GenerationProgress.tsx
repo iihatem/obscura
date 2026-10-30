@@ -38,6 +38,8 @@ interface DraftDiagram {
   id: string
   /** Local data URL — used for preview; uploaded to Supabase at save time */
   dataUrl: string
+  /** Set once the image is uploaded, so retrying a failed save doesn't upload it twice. */
+  imageUrl?: string
   labels: DraftLabel[]
 }
 
@@ -327,50 +329,50 @@ export default function GenerationProgress({ pages, setId, userId, restored, onD
 
   // ── Save: upload diagrams to Supabase, then bulk-insert cards ────────────
 
+  async function uploadDiagram(card: DraftDiagram): Promise<string> {
+    if (card.imageUrl) return card.imageUrl
+    const mimeMatch = card.dataUrl.match(/^data:([^;,]+)/)
+    const fileMime = mimeMatch?.[1] ?? 'image/jpeg'
+    const ext = fileMime === 'image/png' ? 'png' : fileMime === 'image/webp' ? 'webp' : 'jpg'
+    const path = `${userId}/${setId}/diagram-${crypto.randomUUID()}.${ext}`
+
+    const res = await apiFetch('/upload/image', {
+      method: 'POST',
+      body: JSON.stringify({ dataUrl: card.dataUrl, path }),
+    })
+    if (!res.ok) throw await httpError(res, 'Failed to upload diagram image')
+    const { publicUrl } = await res.json()
+    setDraftCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, imageUrl: publicUrl } : c)))
+    return publicUrl
+  }
+
   async function handleSave() {
     setSaving(true)
     setSaveError(null)
     const total = draftCards.length
     try {
-      let diagramIndex = 0
-      for (const card of draftCards) {
-        if (card.type === 'flashcard') {
-          const res = await apiFetch('/cards', {
-            method: 'POST',
-            body: JSON.stringify({ set_id: setId, type: 'flashcard', front: card.front, back: card.back }),
-          })
-          if (!res.ok) throw await httpError(res, 'Failed to save flashcard')
-        } else {
-          // 1. Upload the diagram image to Supabase Storage
-          const mimeMatch = card.dataUrl.match(/^data:([^;,]+)/)
-          const fileMime = mimeMatch?.[1] ?? 'image/jpeg'
-          const ext = fileMime === 'image/png' ? 'png' : fileMime === 'image/webp' ? 'webp' : 'jpg'
-          const path = `${userId}/${setId}/diagram-${crypto.randomUUID()}.${ext}`
-          diagramIndex++
-
-          const uploadRes = await apiFetch('/upload/image', {
-            method: 'POST',
-            body: JSON.stringify({ dataUrl: card.dataUrl, path }),
-          })
-          if (!uploadRes.ok) throw await httpError(uploadRes, 'Failed to upload diagram image')
-          const { publicUrl } = await uploadRes.json()
-
-          // 2. Save the diagram card with the permanent image URL
-          const res = await apiFetch('/cards', {
-            method: 'POST',
-            body: JSON.stringify({
-              set_id: setId,
-              type: 'diagram',
-              image_url: publicUrl,
-              labels: card.labels,
-            }),
-          })
-          if (!res.ok) throw await httpError(res, 'Failed to save diagram card')
-        }
-        // Drop each card as it lands, so a retry after a failure resumes
-        // where it stopped instead of saving the earlier cards twice.
-        setDraftCards((prev) => prev.filter((c) => c.id !== card.id))
+      // Images first, since a diagram card needs its permanent URL. Nothing
+      // reaches the set until every card is ready, then they all land at once.
+      const imageUrls = new Map<string, string>()
+      const diagrams = draftCards.filter((c): c is DraftDiagram => c.type === 'diagram')
+      for (let i = 0; i < diagrams.length; i += CHUNK_SIZE) {
+        await Promise.all(diagrams.slice(i, i + CHUNK_SIZE).map(async (card) => {
+          imageUrls.set(card.id, await uploadDiagram(card))
+        }))
       }
+
+      const res = await apiFetch('/cards/bulk', {
+        method: 'POST',
+        body: JSON.stringify({
+          set_id: setId,
+          cards: draftCards.map((card) =>
+            card.type === 'flashcard'
+              ? { type: 'flashcard', front: card.front, back: card.back }
+              : { type: 'diagram', image_url: imageUrls.get(card.id), labels: card.labels }
+          ),
+        }),
+      })
+      if (!res.ok) throw await httpError(res, 'Failed to save cards')
       await clearDraft(setId)
       toast(`Saved ${total} card${total !== 1 ? 's' : ''} to set`)
       onDone(draftCards)
@@ -572,6 +574,8 @@ function ReviewStep({
         </p>
       )}
 
+      {/* The save sends the cards as they were when it started, so edits wait for it. */}
+      <fieldset disabled={saving} className={cn('flex flex-col gap-6', saving && 'pointer-events-none opacity-60')}>
       {flashcards.length > 0 && (
         <section className="flex flex-col gap-3">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400">
@@ -609,6 +613,7 @@ function ReviewStep({
           </div>
         </section>
       )}
+      </fieldset>
 
       <div className="flex justify-end pt-2">
         <Button onClick={onSave} loading={saving} size="lg">

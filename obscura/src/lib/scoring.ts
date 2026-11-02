@@ -1,7 +1,19 @@
 export type Grade = 'correct' | 'close' | 'wrong' | 'empty'
 
+const STOPWORDS = new Set(['the', 'a', 'an', 'of', 'and', 'or', 'to', 'in'])
+
+/** Lowercase letters, digits and single spaces, without a leading article. */
 function normalize(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim()
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^(the|a|an) /, '')
+}
+
+function words(s: string): string[] {
+  return s.split(' ').filter((w) => w && !STOPWORDS.has(w))
 }
 
 function levenshtein(a: string, b: string): number {
@@ -22,18 +34,38 @@ function levenshtein(a: string, b: string): number {
   return dp[m][n]
 }
 
+/** Two words match when they differ by about one letter in four. */
+function sameWord(a: string, b: string): boolean {
+  return levenshtein(a, b) <= Math.max(1, Math.floor(Math.min(a.length, b.length) * 0.25))
+}
+
+/**
+ * How well a typed answer names a label.
+ *
+ * The whole answer is compared first, forgiving small slips. Failing that, an
+ * answer that names most of a longer label ("bone marrow" for "Red bone
+ * marrow") is Almost — but every word typed has to be in the label, so a list
+ * of guesses never earns credit.
+ */
 export function gradeAnswer(input: string, correct: string): Grade {
   if (input.trim() === '') return 'empty'
 
-  const normInput = normalize(input)
-  const normCorrect = normalize(correct)
+  const answer = normalize(input)
+  const label = normalize(correct)
+  if (!answer) return 'wrong'
 
-  const dist = levenshtein(normInput, normCorrect)
-
+  const dist = levenshtein(answer, label)
   if (dist <= 1) return 'correct'
+  if (dist <= Math.max(2, Math.floor(label.length * 0.3))) return 'close'
 
-  const closeThreshold = Math.max(2, Math.floor(normCorrect.length * 0.3))
-  if (dist <= closeThreshold) return 'close'
-
-  return 'wrong'
+  const typed = words(answer)
+  const wanted = words(label)
+  if (!typed.length || wanted.length < 2) return 'wrong'
+  const matched = new Set<number>()
+  for (const w of typed) {
+    const hit = wanted.findIndex((x, i) => !matched.has(i) && sameWord(w, x))
+    if (hit === -1) return 'wrong'
+    matched.add(hit)
+  }
+  return matched.size / wanted.length >= 0.5 && matched.size >= 2 ? 'close' : 'wrong'
 }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { LogOut } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { clearAllDrafts } from '@/lib/drafts'
+import { clearAllProgress } from '@/lib/studyProgress'
 import Button from '@/components/ui/Button'
 
 export default function SignOutButton() {
@@ -15,6 +16,7 @@ export default function SignOutButton() {
     setBusy(true)
     await createClient().auth.signOut()
     await clearAllDrafts()
+    clearAllProgress()
     router.push('/login')
     router.refresh()
   }

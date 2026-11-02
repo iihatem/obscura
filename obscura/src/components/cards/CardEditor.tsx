@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 import { apiFetch, errorMessage } from '@/lib/api'
 import { cn, proxyImageUrl } from '@/lib/utils'
 import Button from '@/components/ui/Button'
+import Textarea from '@/components/ui/Textarea'
 import type { Card, Label } from '@/types'
 
 // ---------------------------------------------------------------------------
@@ -41,40 +42,40 @@ function FlashcardEditor({
   const [front, setFront] = useState(initialFront)
   const [back, setBack] = useState(initialBack)
 
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && front.trim() && back.trim()) {
+      e.preventDefault()
+      onSubmit(front, back)
+    }
+  }
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="card-front" className="text-sm font-medium text-ink-muted">Front</label>
-        <textarea
-          id="card-front"
-          maxLength={5000}
-          value={front}
-          onChange={(e) => setFront(e.target.value)}
-          rows={3}
-          placeholder="Question or term…"
-          className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ink resize-none"
-        />
+    <div className="flex flex-col gap-4" onKeyDown={onKeyDown}>
+      <Textarea
+        id="card-front"
+        label="Question"
+        maxLength={5000}
+        value={front}
+        onChange={(e) => setFront(e.target.value)}
+        rows={2}
+        placeholder="What should you be able to answer?"
+        autoFocus={!initialFront}
+      />
+      <Textarea
+        id="card-back"
+        label="Answer"
+        maxLength={5000}
+        value={back}
+        onChange={(e) => setBack(e.target.value)}
+        rows={2}
+        placeholder="The answer, in a sentence or two"
+      />
+      <div className="flex items-center justify-between gap-3">
+        <span className="hidden text-[13px] text-ink-muted sm:inline">⌘ Enter to save</span>
+        <Button loading={loading} disabled={!front.trim() || !back.trim()} onClick={() => onSubmit(front, back)} className="ml-auto">
+          Save card
+        </Button>
       </div>
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="card-back" className="text-sm font-medium text-ink-muted">Back</label>
-        <textarea
-          id="card-back"
-          maxLength={5000}
-          value={back}
-          onChange={(e) => setBack(e.target.value)}
-          rows={3}
-          placeholder="Answer or definition…"
-          className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ink resize-none"
-        />
-      </div>
-      <Button
-        loading={loading}
-        disabled={!front.trim() || !back.trim()}
-        onClick={() => onSubmit(front, back)}
-        className="self-end"
-      >
-        Save card
-      </Button>
     </div>
   )
 }
@@ -141,7 +142,7 @@ function DiagramEditor({
     setLabels((prev) => prev.filter((l) => l._key !== key))
   }
 
-  function handleLabelDrag(e: React.MouseEvent<HTMLDivElement>, lbl: LabelRow) {
+  function handleLabelDrag(e: React.PointerEvent<HTMLDivElement>, lbl: LabelRow) {
     e.preventDefault()
     e.stopPropagation()
     const container = imgContainerRef.current
@@ -152,21 +153,21 @@ function DiagramEditor({
     const startLX = lbl.x
     const startLY = lbl.y
 
-    function onMove(ev: MouseEvent) {
+    function onMove(ev: PointerEvent) {
       const dx = ((ev.clientX - startX) / rect.width) * 100
       const dy = ((ev.clientY - startY) / rect.height) * 100
       updateLabel(lbl._key, 'x', Math.max(0, Math.min(100 - lbl.width, startLX + dx)))
       updateLabel(lbl._key, 'y', Math.max(0, Math.min(100 - lbl.height, startLY + dy)))
     }
     function onUp() {
-      document.removeEventListener('mousemove', onMove)
-      document.removeEventListener('mouseup', onUp)
+      document.removeEventListener('pointermove', onMove)
+      document.removeEventListener('pointerup', onUp)
     }
-    document.addEventListener('mousemove', onMove)
-    document.addEventListener('mouseup', onUp)
+    document.addEventListener('pointermove', onMove)
+    document.addEventListener('pointerup', onUp)
   }
 
-  function handleLabelResize(e: React.MouseEvent, corner: 'tl' | 'tr' | 'bl' | 'br', lbl: LabelRow) {
+  function handleLabelResize(e: React.PointerEvent, corner: 'tl' | 'tr' | 'bl' | 'br', lbl: LabelRow) {
     e.preventDefault()
     e.stopPropagation()
     const container = imgContainerRef.current
@@ -177,7 +178,7 @@ function DiagramEditor({
     const { x: lx, y: ly, width: lw, height: lh } = lbl
     const MIN = 2
 
-    function onMove(ev: MouseEvent) {
+    function onMove(ev: PointerEvent) {
       const dx = ((ev.clientX - startX) / rect.width) * 100
       const dy = ((ev.clientY - startY) / rect.height) * 100
       let nx = lx, ny = ly, nw = lw, nh = lh
@@ -194,8 +195,8 @@ function DiagramEditor({
       updateLabel(lbl._key, 'x', nx); updateLabel(lbl._key, 'y', ny)
       updateLabel(lbl._key, 'width', nw); updateLabel(lbl._key, 'height', nh)
     }
-    function onUp() { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
-    document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp)
+    function onUp() { document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp) }
+    document.addEventListener('pointermove', onMove); document.addEventListener('pointerup', onUp)
   }
 
   async function handleSave() {
@@ -290,8 +291,8 @@ function DiagramEditor({
             {labels.map((lbl) => (
               <div
                 key={lbl._key}
-                onMouseDown={(e) => handleLabelDrag(e, lbl)}
-                className="absolute cursor-move border-2 border-ink bg-scrim flex items-end"
+                onPointerDown={(e) => handleLabelDrag(e, lbl)}
+                className="absolute flex cursor-move touch-none items-end border-2 border-accent bg-cover/80"
                 style={{
                   left: `${lbl.x}%`,
                   top: `${lbl.y}%`,
@@ -309,8 +310,8 @@ function DiagramEditor({
                 {(['tl','tr','bl','br'] as const).map((c) => (
                   <div
                     key={c}
-                    onMouseDown={(e) => handleLabelResize(e, c, lbl)}
-                    className="absolute w-2.5 h-2.5 bg-surface border border-ink-muted rounded-sm z-10"
+                    onPointerDown={(e) => handleLabelResize(e, c, lbl)}
+                    className="absolute z-10 h-3.5 w-3.5 touch-none rounded-sm border border-ink-muted bg-surface"
                     style={{
                       cursor: `${c === 'tl' ? 'nw' : c === 'tr' ? 'ne' : c === 'bl' ? 'sw' : 'se'}-resize`,
                       top:    c === 'tl' || c === 'tr' ? -5 : undefined,

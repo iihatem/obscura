@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { buttonClass } from './Button'
 
 interface EmptyStateProps {
   icon?: ReactNode
@@ -16,30 +17,20 @@ interface EmptyStateProps {
 
 export default function EmptyState({ icon, heading, subtext, action, className }: EmptyStateProps) {
   return (
-    <div className={cn('flex flex-col items-center justify-center py-20 text-center', className)}>
+    <div className={cn('flex flex-col items-center justify-center px-4 py-20 text-center', className)}>
       {icon && (
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#edeeef] text-[#45474d]">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-soft text-accent-ink">
           {icon}
         </div>
       )}
-      <h3 className="text-base font-bold text-[#051125]" style={{ fontFamily: 'var(--font-manrope)' }}>{heading}</h3>
-      {subtext && <p className="mt-1 text-sm text-[#45474d] max-w-xs">{subtext}</p>}
+      <h3 className="text-lg font-bold text-ink">{heading}</h3>
+      {subtext && <p className="mt-1.5 max-w-sm text-sm text-ink-muted">{subtext}</p>}
       {action && (
-        <div className="mt-5">
+        <div className="mt-6">
           {action.href ? (
-            <Link
-              href={action.href}
-              className="inline-flex h-9 items-center rounded-lg scholar-gradient px-4 text-sm font-bold text-white hover:opacity-90 transition-all"
-            >
-              {action.label}
-            </Link>
+            <Link href={action.href} className={buttonClass('primary', 'md')}>{action.label}</Link>
           ) : (
-            <button
-              onClick={action.onClick}
-              className="inline-flex h-9 items-center rounded-lg scholar-gradient px-4 text-sm font-bold text-white hover:opacity-90 transition-all"
-            >
-              {action.label}
-            </button>
+            <button type="button" onClick={action.onClick} className={buttonClass('primary', 'md')}>{action.label}</button>
           )}
         </div>
       )}

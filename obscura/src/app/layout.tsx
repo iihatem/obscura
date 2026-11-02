@@ -1,5 +1,6 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Manrope, Inter } from 'next/font/google'
+import { THEME_COOKIE } from '@/lib/theme'
 import './globals.css'
 
 const manrope = Manrope({
@@ -15,9 +16,21 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Obscura — The Digital Curator',
-  description: 'AI-powered study cards from your lecture slides',
+  title: 'Obscura — Turn your lecture into a quiz',
+  description: 'Upload your lecture slides. Obscura writes flashcards from the text and quizzes you on every labelled diagram.',
 }
+
+export const viewport: Viewport = {
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#F6F5F1' },
+    { media: '(prefers-color-scheme: dark)', color: '#161A1D' },
+  ],
+}
+
+// Runs before first paint so a saved Light/Dark choice never flashes the other
+// theme. Reading the cookie on the server instead would make every page dynamic.
+const themeScript = `(function(){try{var m=document.cookie.match(/(?:^|; )${THEME_COOKIE}=(light|dark)/);if(m)document.documentElement.setAttribute('data-theme',m[1])}catch(e){}})()`
 
 export default function RootLayout({
   children,
@@ -25,12 +38,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-        />
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className={`${manrope.variable} ${inter.variable}`}>{children}</body>
     </html>

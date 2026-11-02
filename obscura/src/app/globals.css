@@ -21,6 +21,7 @@
   --bad: #A63D2F;
   --bad-soft: #F5E2DE;
   --cover: #1E2A32;
+  --on-cover: #FFFFFF;
   --on-ink: #F6F5F1;
   --scrim: rgb(30 42 50 / 0.45);
   --lift: 0 1px 2px rgb(30 42 50 / 0.05), 0 18px 40px -12px rgb(30 42 50 / 0.18);
@@ -45,6 +46,8 @@
     --bad: #EE9A8D;
     --bad-soft: #3D2421;
     --cover: #0E1214;
+  --on-cover: #E8E6E1;
+    --on-cover: #E8E6E1;
     --on-ink: #161A1D;
     --scrim: rgb(0 0 0 / 0.6);
     --lift: 0 1px 2px rgb(0 0 0 / 0.3), 0 18px 40px -12px rgb(0 0 0 / 0.6);
@@ -69,6 +72,7 @@
   --bad: #EE9A8D;
   --bad-soft: #3D2421;
   --cover: #0E1214;
+  --on-cover: #E8E6E1;
   --on-ink: #161A1D;
   --scrim: rgb(0 0 0 / 0.6);
   --lift: 0 1px 2px rgb(0 0 0 / 0.3), 0 18px 40px -12px rgb(0 0 0 / 0.6);
@@ -92,6 +96,7 @@
   --color-bad: var(--bad);
   --color-bad-soft: var(--bad-soft);
   --color-cover: var(--cover);
+  --color-on-cover: var(--on-cover);
   --color-on-ink: var(--on-ink);
   --color-scrim: var(--scrim);
 

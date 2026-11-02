@@ -20,7 +20,7 @@ interface PagePickerProps {
 }
 
 /** Prefer a usable PDF text layer; only inspect pixels for image-only pages. */
-async function detectPageType(page: PageData): Promise<PageType> {
+export async function detectPageType(page: Pick<PageData, 'dataUrl' | 'extractedText'>): Promise<PageType> {
   const extractedLength = (page.extractedText ?? '').replace(/\s+/g, '').length
   if (extractedLength >= 80) return 'flashcard'
 

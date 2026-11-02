@@ -317,3 +317,43 @@ grant execute on function public.claim_generation(uuid, int) to service_role;
 -- bucket: card-images, public: false, allowed mime types: image/jpeg image/png image/webp
 -- RLS policy: authenticated users can upload to their own folder ({user_id}/*)
 -- RLS policy: anyone can read images in sets that are public
+
+-- ── Trying without an account ────────────────────────────────────────────
+create table if not exists public.trial_usage (
+  ip_hash text not null,
+  day date not null default (now() at time zone 'utc')::date,
+  count int not null default 0,
+  primary key (ip_hash, day)
+);
+
+-- Only the backend (service role) touches this table.
+alter table public.trial_usage enable row level security;
+
+create or replace function public.claim_trial_page(p_ip_hash text, p_limit int)
+returns int
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_count int;
+begin
+  if p_limit <= 0 then
+    return null;
+  end if;
+
+  insert into public.trial_usage as tu (ip_hash, day, count)
+  values (p_ip_hash, (now() at time zone 'utc')::date, 1)
+  on conflict (ip_hash, day) do update
+    set count = tu.count + 1
+    where tu.count < p_limit
+  returning tu.count into v_count;
+
+  return v_count;
+end;
+$$;
+
+revoke all on function public.claim_trial_page(text, int) from public;
+revoke all on function public.claim_trial_page(text, int) from anon;
+revoke all on function public.claim_trial_page(text, int) from authenticated;
+grant execute on function public.claim_trial_page(text, int) to service_role;

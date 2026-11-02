@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { apiFetch, withColdStartRetry } from '@/lib/api'
 import Icon from '@/components/ui/Icon'
+import { buttonClass } from '@/components/ui/Button'
 
 function Spinner() {
   return (
@@ -50,24 +51,19 @@ export default function ForkCTA({ setId, token }: { setId: string; token: string
 
   // still checking auth
   if (authed === null) {
-    return (
-      <div className="h-12 w-48 rounded-xl bg-line animate-pulse" />
-    )
+    return <div className="h-12 w-52 animate-pulse rounded-full bg-paper-2" />
   }
 
   if (!authed) {
     return (
       <div className="flex flex-col items-center gap-3">
-        <a
-          href={`/signup?redirect=${encodeURIComponent(`/s/${token}`)}`}
-          className="inline-flex items-center gap-2 px-8 py-3 bg-ink text-on-ink rounded-xl font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-ink/20"
-        >
+        <a href={`/signup?redirect=${encodeURIComponent(`/s/${token}`)}`} className={buttonClass('primary', 'lg')}>
           <Icon name="library_add" size={18} />
-          Sign up free to copy
+          Sign up to copy and study
         </a>
-        <p className="text-xs text-ink-muted">
+        <p className="text-sm text-ink-muted">
           Already have an account?{' '}
-          <a href={`/login?redirect=${encodeURIComponent(`/s/${token}`)}`} className="font-bold text-accent hover:underline">
+          <a href={`/login?redirect=${encodeURIComponent(`/s/${token}`)}`} className="font-semibold text-accent-ink hover:underline">
             Sign in
           </a>
         </p>
@@ -77,15 +73,11 @@ export default function ForkCTA({ setId, token }: { setId: string; token: string
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <button
-        onClick={handleFork}
-        disabled={forking}
-        className="inline-flex items-center gap-2 px-8 py-3 bg-ink text-on-ink rounded-xl font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-ink/20 disabled:opacity-60 disabled:pointer-events-none"
-      >
+      <button type="button" onClick={handleFork} disabled={forking} className={buttonClass('primary', 'lg')}>
         {forking ? <Spinner /> : <Icon name="library_add" size={18} />}
         {forking ? 'Copying…' : 'Copy to my library'}
       </button>
-      {error && <p className="text-xs text-bad">{error}</p>}
+      {error && <p role="alert" className="text-sm text-bad">{error}</p>}
     </div>
   )
 }

@@ -2,7 +2,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { Card, FlashCard } from '@/types'
 import ForkCTA from './ForkCTA'
-import Icon from '@/components/ui/Icon'
+import { Star } from 'lucide-react'
+import { plural } from '@/lib/utils'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -39,7 +40,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
   if (!data) notFound()
   if (data === 'waking') {
     return (
-      <div className="min-h-screen bg-paper flex flex-col items-center justify-center gap-3 px-6 text-center">
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-paper px-6 text-center">
         <meta httpEquiv="refresh" content="8" />
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-accent" />
         <h1 className="text-lg font-bold text-ink">Loading this study set…</h1>
@@ -51,101 +52,64 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
   }
 
   const { set, cards } = data
-  const flashcards = cards.filter((c): c is FlashCard => c.type === 'flashcard').slice(0, 4)
+  const flashcards = cards.filter((c): c is FlashCard => c.type === 'flashcard').slice(0, 5)
+  const diagramCount = cards.filter((c) => c.type === 'diagram').length
 
   return (
-    <div className="min-h-screen bg-paper flex flex-col">
-      {/* Nav */}
-      <header className="px-8 py-5 flex items-center justify-between border-b border-line bg-surface">
-        <Link
-          href="/"
-          className="font-headline text-xl font-black text-ink tracking-tight"
-        >
-          Obscura
+    <div className="flex min-h-dvh flex-col bg-paper">
+      <header className="mx-auto flex h-16 w-full max-w-3xl items-center justify-between px-4 sm:px-6">
+        <Link href="/" className="flex items-center gap-2.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/frog.svg" alt="" className="h-7 w-7 rounded-md" />
+          <span className="font-headline text-lg font-extrabold tracking-tight text-ink">Obscura</span>
         </Link>
-        <div className="flex items-center gap-3">
-          <Link href={`/login?redirect=${encodeURIComponent(`/s/${token}`)}`} className="text-sm text-ink-muted hover:text-ink transition-colors font-medium">
-            Sign in
-          </Link>
-          <Link
-            href={`/signup?redirect=${encodeURIComponent(`/s/${token}`)}`}
-            className="text-sm font-bold px-4 py-2 rounded-lg bg-ink text-on-ink hover:opacity-90 transition-opacity"
-          >
-            Sign up free
-          </Link>
-        </div>
+        <Link href={`/login?redirect=${encodeURIComponent(`/s/${token}`)}`} className="text-sm font-medium text-ink-muted hover:text-ink">
+          Sign in
+        </Link>
       </header>
 
-      <main className="flex-1 max-w-3xl mx-auto w-full px-6 py-12 space-y-10">
-        {/* Set info */}
-        <section className="space-y-4">
-          {set.subject && (
-            <span className="text-[10px] font-bold uppercase tracking-widest text-accent">
-              {set.subject}
-            </span>
-          )}
-          <h1
-            className="font-headline text-3xl font-extrabold text-ink tracking-tight"
-          >
-            {set.title}
-          </h1>
-          {set.description && (
-            <p className="text-ink-muted leading-relaxed">{set.description}</p>
-          )}
-          <div className="flex flex-wrap items-center gap-4 text-sm text-ink-muted font-medium">
-            <div className="flex items-center gap-1.5">
-              <Icon name="quiz" size={16} />
-              {set.card_count} {set.card_count === 1 ? 'card' : 'cards'}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Icon name="star" size={16} filled className="text-warn" />
-              {set.star_count}
-            </div>
-            {set.owner_display_name && (
-              <div className="flex items-center gap-1.5">
-                <Icon name="person" size={16} />
-                {set.owner_display_name}
-              </div>
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 pb-16 pt-6 sm:px-6">
+        <section>
+          <p className="text-sm font-semibold text-accent">A study set shared with you</p>
+          <h1 className="mt-2 text-[28px] font-extrabold leading-tight text-ink sm:text-4xl">{set.title}</h1>
+          {set.description && <p className="mt-2 text-ink-muted">{set.description}</p>}
+          <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
+            {set.subject && <span>{set.subject}</span>}
+            <span>{[
+              cards.length - diagramCount ? plural(cards.length - diagramCount, 'flashcard') : null,
+              diagramCount ? plural(diagramCount, 'diagram') : null,
+            ].filter(Boolean).join(' · ') || plural(set.card_count, 'card')}</span>
+            {set.owner_display_name && <span>by {set.owner_display_name}</span>}
+            {set.star_count > 0 && (
+              <span className="inline-flex items-center gap-1">
+                <Star className="h-3.5 w-3.5 fill-current text-warn" aria-hidden />
+                {set.star_count}
+              </span>
             )}
-          </div>
+          </p>
         </section>
 
-        {/* CTA */}
-        <section className="bg-surface rounded-xl border border-line p-8 flex flex-col items-center gap-4 text-center shadow-sm">
-          <Icon name="school" size={40} className="text-accent" />
+        <section className="flex flex-col items-start gap-4 rounded-3xl border border-line bg-surface p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-headline font-bold text-ink text-lg">
-              Study this set
-            </p>
-            <p className="text-sm text-ink-muted mt-1">
-              Copy it to your library and start studying with flashcards and diagrams.
-            </p>
+            <p className="font-headline text-lg font-bold text-ink">Study it yourself</p>
+            <p className="mt-1 text-sm text-ink-muted">Copy it into your library to study it, edit the cards, or add your own.</p>
           </div>
           <ForkCTA setId={set.id} token={token} />
         </section>
 
-        {/* Sample cards preview */}
         {flashcards.length > 0 && (
-          <section className="space-y-4">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-ink-muted">
-              Preview — {flashcards.length} of {set.card_count} cards
+          <section className="flex flex-col gap-3">
+            <h2 className="text-sm font-semibold text-ink">
+              A look inside <span className="font-normal text-ink-muted">{flashcards.length} of {set.card_count}</span>
             </h2>
-            <div className="space-y-3">
+            <ul className="flex flex-col gap-3">
               {flashcards.map((card) => (
-                <div
-                  key={card.id}
-                  className="bg-surface rounded-xl border border-line px-6 py-4 shadow-sm"
-                >
-                  <p className="text-sm font-bold text-ink">{card.front}</p>
-                  <p className="text-sm text-ink-muted mt-1 pt-2 border-t border-paper-2">{card.back}</p>
-                </div>
+                <li key={card.id} className="rounded-2xl border border-line bg-surface px-5 py-4">
+                  <p className="font-medium text-ink">{card.front}</p>
+                  <p className="mt-2 border-t border-line pt-2 text-ink-muted">{card.back}</p>
+                </li>
               ))}
-            </div>
-            {set.card_count > flashcards.length && (
-              <p className="text-xs text-ink-muted text-center">
-                +{set.card_count - flashcards.length} more cards after copying
-              </p>
-            )}
+            </ul>
           </section>
         )}
       </main>

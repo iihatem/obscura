@@ -4,13 +4,11 @@ export default function SetDetailLoading() {
   return (
     <>
       <SkeletonHeader />
-      {/* Tabs bar */}
-      <div className="border-b border-line py-3 flex gap-6">
-        <Skeleton className="h-5 w-24" />
-        <Skeleton className="h-5 w-20" />
+      <div className="flex items-center justify-between py-1">
+        <Skeleton className="h-10 w-56 rounded-full" />
+        <Skeleton className="h-10 w-28 rounded-full" />
       </div>
-      {/* Card list */}
-      <div className="p-6 lg:p-8 flex flex-col gap-3">
+      <div className="flex flex-col gap-3 py-4">
         {Array.from({ length: 5 }).map((_, i) => (
           <SkeletonFlashCard key={i} />
         ))}

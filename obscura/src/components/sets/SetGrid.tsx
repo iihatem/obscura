@@ -65,6 +65,7 @@ export default function SetGrid({ sets }: { sets: LibrarySet[] }) {
             )}
           </div>
           <SegmentedControl
+            className="self-start sm:self-auto"
             label="Sort sets"
             size="sm"
             value={sort}

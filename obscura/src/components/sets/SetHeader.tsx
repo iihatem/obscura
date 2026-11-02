@@ -10,7 +10,7 @@ import Input from '@/components/ui/Input'
 import Textarea from '@/components/ui/Textarea'
 import Modal from '@/components/ui/Modal'
 import IconButton from '@/components/ui/IconButton'
-import { cn } from '@/lib/utils'
+import { cn, plural } from '@/lib/utils'
 import { apiFetch, errorMessage } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 
@@ -285,7 +285,7 @@ export default function SetHeader({ set, flashcardCount, diagramCount, isOwner, 
       </Modal>
 
       {/* Delete */}
-      <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete this set?" description={`“${set.title}” and its ${cardCount} cards will be gone for good. This can't be undone.`}>
+      <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete this set?" description={`“${set.title}” and its ${plural(cardCount, 'card')} will be gone for good. This can't be undone.`}>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button variant="secondary" onClick={() => setDeleteOpen(false)}>Keep it</Button>
           <Button variant="danger" loading={deleting} onClick={handleDelete}>Delete set</Button>

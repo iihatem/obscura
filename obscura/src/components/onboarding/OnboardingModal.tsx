@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { PROVIDERS } from '@/lib/apiKey'
-import { dismissOnboarding, isOnboardingDismissed, restoreOnboarding } from '@/lib/onboarding'
+import { dismissOnboarding } from '@/lib/onboarding'
 import Icon from '@/components/ui/Icon'
 
 interface Step {
@@ -50,7 +50,6 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
   const router = useRouter()
   const ref = useRef<HTMLDialogElement>(null)
   const [step, setStep] = useState(0)
-  const [dontShow, setDontShow] = useState(false)
 
   const steps: Step[] = [
     {
@@ -193,11 +192,10 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
   const last = step === steps.length - 1
   const current = steps[step]
 
-  // Reflect the stored preference, and always restart the tour from step 1.
+  // Always restart the tour from step 1.
   useEffect(() => {
-    if (!open) return
-    setStep(0)
-    setDontShow(isOnboardingDismissed())
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset when reopened
+    if (open) setStep(0)
   }, [open])
 
   useEffect(() => {
@@ -206,12 +204,6 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
     if (open && !dialog.open) dialog.showModal()
     if (!open && dialog.open) dialog.close()
   }, [open])
-
-  function toggleDontShow(checked: boolean) {
-    setDontShow(checked)
-    if (checked) dismissOnboarding()
-    else restoreOnboarding()
-  }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLDialogElement>) {
     if (e.key === 'ArrowRight' && !last) setStep((s) => s + 1)
@@ -269,15 +261,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
         {/* Footer */}
         <div className="shrink-0 border-t border-line bg-paper px-6 py-4 sm:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <label className="flex cursor-pointer select-none items-center gap-2 text-xs font-medium text-ink-muted">
-              <input
-                type="checkbox"
-                checked={dontShow}
-                onChange={(e) => toggleDontShow(e.target.checked)}
-                className="h-4 w-4 cursor-pointer accent-accent"
-              />
-              Don&apos;t show again
-            </label>
+            <span className="text-[13px] text-ink-muted">Step {step + 1} of {steps.length}</span>
 
             <div className="flex items-center gap-3">
               {/* Step dots */}

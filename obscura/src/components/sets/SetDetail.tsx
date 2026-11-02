@@ -253,10 +253,9 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
             {isOwner && (
               <Menu
                 trigger={(props) => (
-                  <Button variant="secondary" {...props}>
+                  <Button variant="secondary" {...props} aria-label="Add cards" className="w-10 shrink-0 px-0 sm:w-auto sm:px-4.5">
                     <Plus className="h-4 w-4" aria-hidden />
                     <span className="hidden sm:inline">Add cards</span>
-                    <span className="sm:hidden">Add</span>
                   </Button>
                 )}
               >

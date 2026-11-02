@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Check, Copy, Globe, Link2, Lock, Pencil, Play, Share2, Star } from 'lucide-react'
+import { ArrowLeft, BookPlus, Check, Copy, Globe, Link2, Lock, Pencil, Play, Share2, Star } from 'lucide-react'
 import type { Set } from '@/types'
 import Button, { buttonClass } from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
@@ -72,6 +72,21 @@ export default function SetHeader({ set, flashcardCount, diagramCount, isOwner, 
       })
       .catch(() => {})
   }, [set.id, isOwner])
+
+  const [copying, setCopying] = useState(false)
+  async function copyToLibrary() {
+    setCopying(true)
+    try {
+      const res = await apiFetch(`/sets/${set.id}/fork`, { method: 'POST' })
+      if (!res.ok) throw new Error(await errorMessage(res, "Couldn't copy this set. Please try again."))
+      const { new_set_id } = await res.json()
+      toast('Copied to your library')
+      router.push(`/sets/${new_set_id}`)
+    } catch (err) {
+      toast((err as Error).message, 'error')
+      setCopying(false)
+    }
+  }
 
   async function handleStarToggle() {
     const wasStarred = starred
@@ -211,11 +226,15 @@ export default function SetHeader({ set, flashcardCount, diagramCount, isOwner, 
                 </IconButton>
               </>
             ) : (
-              <Button variant="secondary" size="lg" aria-pressed={starred} onClick={handleStarToggle}>
-                <Star className={cn('h-4 w-4', starred && 'fill-current text-warn')} aria-hidden />
-                {starred ? 'Starred' : 'Star'}
-                <span className="tabular-nums text-ink-muted">{starCount}</span>
-              </Button>
+              <>
+                <Button variant="secondary" size="lg" loading={copying} onClick={copyToLibrary}>
+                  {!copying && <BookPlus className="h-4 w-4" aria-hidden />}
+                  Copy to library
+                </Button>
+                <IconButton label={starred ? `Unstar (${starCount})` : `Star (${starCount})`} variant="outline" className="h-12 w-12" aria-pressed={starred} onClick={handleStarToggle}>
+                  <Star className={cn('h-4 w-4', starred && 'fill-current text-warn')} aria-hidden />
+                </IconButton>
+              </>
             )}
           </div>
         </div>

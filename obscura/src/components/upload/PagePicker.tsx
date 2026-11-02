@@ -135,14 +135,14 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
         <div className="flex items-center gap-2">
           <button
             onClick={selectAll}
-            className="text-xs text-ink-muted hover:text-ink-muted underline underline-offset-2 transition-colors"
+            className="rounded-full px-2 py-1.5 text-[13px] font-medium text-ink-muted transition-colors hover:bg-paper-2 hover:text-ink"
           >
             Select all
           </button>
           <span className="text-line">·</span>
           <button
             onClick={deselectAll}
-            className="text-xs text-ink-muted hover:text-ink-muted underline underline-offset-2 transition-colors"
+            className="rounded-full px-2 py-1.5 text-[13px] font-medium text-ink-muted transition-colors hover:bg-paper-2 hover:text-ink"
           >
             Deselect all
           </button>
@@ -163,7 +163,7 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
               key={page.pageIndex}
               className={cn(
                 'group relative flex flex-col overflow-hidden rounded-lg border-2 cursor-pointer transition-all',
-                isSelected ? 'border-ink shadow-sm' : 'border-line hover:border-line'
+                isSelected ? 'border-accent' : 'border-line hover:border-ink-muted/50'
               )}
             >
               {/* Thumbnail */}
@@ -198,15 +198,15 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
                   className={cn(
                     'absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all',
                     isSelected
-                      ? 'border-ink bg-ink text-on-ink'
-                      : 'border-surface/80 bg-surface/60 text-transparent group-hover:border-line'
+                      ? 'border-accent bg-accent text-surface'
+                      : 'border-surface bg-surface/70 text-transparent group-hover:border-ink-muted'
                   )}
                 >
                   <CheckIcon />
                 </div>
 
                 {/* Page number */}
-                <div className="absolute bottom-2 left-2 rounded px-1.5 py-0.5 text-[10px] font-medium bg-scrim text-on-ink">
+                <div className="absolute bottom-2 left-2 rounded-md bg-cover/85 px-1.5 py-0.5 text-[11px] font-semibold text-on-cover">
                   {page.pageIndex + 1}
                 </div>
               </div>
@@ -225,7 +225,7 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
                       aria-label={`Page ${page.pageIndex + 1}: text — make flashcards`}
                       onClick={() => setType(page.pageIndex, 'flashcard')}
                       className={cn(
-                        'flex-1 py-1.5 text-[11px] font-medium transition-colors',
+                        'flex-1 py-2.5 text-xs font-semibold transition-colors sm:py-1.5',
                         type === 'flashcard'
                           ? 'bg-accent-soft text-accent'
                           : 'text-ink-muted hover:text-ink-muted'
@@ -240,7 +240,7 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
                       aria-label={`Page ${page.pageIndex + 1}: diagram — make a labelling quiz`}
                       onClick={() => setType(page.pageIndex, 'diagram')}
                       className={cn(
-                        'flex-1 py-1.5 text-[11px] font-medium transition-colors',
+                        'flex-1 py-2.5 text-xs font-semibold transition-colors sm:py-1.5',
                         type === 'diagram'
                           ? 'bg-warn-soft text-warn'
                           : 'text-ink-muted hover:text-ink-muted'
@@ -256,21 +256,21 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
         })}
       </div>
 
-      {/* Generate button */}
-      <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
+      {/* Generate button, kept in view on long decks */}
+      <div className="sticky bottom-0 -mx-5 flex flex-col gap-3 border-t border-line bg-surface px-5 py-4 sm:-mx-6 sm:flex-row sm:items-center sm:justify-end sm:px-6">
         {quota && !ownKey && (
-          <p className={cn('text-xs sm:mr-auto', overAllowance ? 'text-warn' : 'text-ink-muted')} role="status">
+          <p className={cn('text-[13px] sm:mr-auto', overAllowance ? 'text-warn' : 'text-ink-muted')} role="status">
             {!quota.shared_key ? (
               <>AI generation needs your own API key on this server. <a href="/profile" target="_blank" rel="noopener" className="font-bold underline">Add one ↗</a></>
             ) : remaining === null ? (
-              <>Each page uses 1 generation from your free daily allowance.</>
+              <>Each page counts toward your free daily allowance.</>
             ) : overAllowance ? (
               <>
-                You have {remaining} generation{remaining !== 1 ? 's' : ''} left today — pages past that will fail.
-                Deselect some, or <a href="/profile" target="_blank" rel="noopener" className="font-bold underline">add your own key ↗</a> for no limit.
+                You have {remaining} page{remaining !== 1 ? 's' : ''} left today, so the rest won&apos;t generate.
+                Deselect some, or <a href="/profile" target="_blank" rel="noopener" className="font-semibold underline">add your own key ↗</a> for no limit.
               </>
             ) : (
-              <>Each page uses 1 generation · {remaining} of {quota.limit} left today.</>
+              <>{remaining} of {quota.limit} pages left today.</>
             )}
           </p>
         )}
@@ -279,7 +279,7 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
           disabled={selectedCount === 0}
           size="lg"
         >
-          Generate cards from {selectedCount} page{selectedCount !== 1 ? 's' : ''}
+          Make cards from {selectedCount} page{selectedCount !== 1 ? 's' : ''}
         </Button>
       </div>
     </div>

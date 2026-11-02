@@ -7,6 +7,7 @@ import Menu, { MenuItem, MenuSeparator } from '@/components/ui/Menu'
 import SegmentedControl from '@/components/ui/SegmentedControl'
 import { createClient } from '@/lib/supabase/client'
 import { clearAllDrafts } from '@/lib/drafts'
+import { clearAllProgress } from '@/lib/studyProgress'
 import { applyTheme, parseTheme, THEME_COOKIE, type Theme } from '@/lib/theme'
 import { useOnboarding } from '@/components/onboarding/OnboardingProvider'
 import type { Profile } from '@/types'
@@ -35,6 +36,7 @@ export default function AvatarMenu({ profile }: { profile: Profile | null }) {
   async function signOut() {
     await createClient().auth.signOut()
     await clearAllDrafts()
+    clearAllProgress()
     router.push('/login')
     router.refresh()
   }

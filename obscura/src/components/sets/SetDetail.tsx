@@ -146,7 +146,11 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
     setEditor((s) => ({ ...s, open: false }))
   }
 
+  // Bumped after each save so the next new card starts from a blank editor.
+  const [editorRun, setEditorRun] = useState(0)
+
   function handleSave(saved: Card) {
+    setEditorRun((n) => n + 1)
     const isNew = !cards.some((c) => c.id === saved.id)
     setCards((prev) => (isNew ? [...prev, saved] : prev.map((c) => (c.id === saved.id ? saved : c))))
     if (isNew) setSet((s) => ({ ...s, card_count: s.card_count + 1 }))
@@ -304,7 +308,7 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
         className="sm:max-w-xl"
       >
         <CardEditor
-          key={editor.card?.id ?? `new-${editor.mode}`}
+          key={editor.card?.id ?? `new-${editor.mode}-${editorRun}`}
           mode={editor.mode}
           setId={set.id}
           userId={userId}

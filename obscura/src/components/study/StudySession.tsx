@@ -14,9 +14,10 @@ import Modal from '@/components/ui/Modal'
 import Button, { buttonClass } from '@/components/ui/Button'
 import EmptyState from '@/components/ui/EmptyState'
 import ProgressBar from '@/components/ui/ProgressBar'
+import { clearProgress, loadProgress, saveProgress, type SavedProgress } from '@/lib/studyProgress'
 
 type StudyMode = 'flashcard' | 'diagram' | 'mixed'
-type Phase = 'picking' | 'studying' | 'results'
+type Phase = 'starting' | 'resume' | 'picking' | 'studying' | 'results'
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
@@ -46,14 +47,17 @@ export default function StudySession({ set, cards }: StudySessionProps) {
   // With only one kind of card there's nothing to choose — go straight in.
   const onlyMode: StudyMode | null = cards.length && (!flashcards.length || !diagrams.length) ? detectMode(cards) : null
 
-  const [phase, setPhase] = useState<Phase>(onlyMode ? 'studying' : 'picking')
+  // Decided after mount, once this browser's saved progress can be read.
+  const [phase, setPhase] = useState<Phase>('starting')
+  const [resumable, setResumable] = useState<SavedProgress | null>(null)
+  const modeRef = useRef<StudyMode>(onlyMode ?? 'mixed')
   const sessionRef = useRef<Promise<string | null> | null>(null)
   // The index of the card already graded. A double press or key auto-repeat
   // can call handleAnswer twice before re-render; both calls would see the
   // same state, skip a card and drop an answer.
   const gradedIndex = useRef(-1)
   const [resultsSaved, setResultsSaved] = useState(true)
-  const [deck, setDeck] = useState<Card[]>(() => (onlyMode ? shuffle(cards) : []))
+  const [deck, setDeck] = useState<Card[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<CardAnswer[]>([])
   // When the current card appeared; a ref, since it never affects what's drawn.
@@ -76,16 +80,43 @@ export default function StudySession({ set, cards }: StudySessionProps) {
     if (phase === 'studying') cardShownAt.current = Date.now()
   }, [phase, deck])
 
-  // A session that started without the picker still needs its record.
+  // Offer back an unfinished session from this browser; otherwise go straight
+  // in when there's only one kind of card, or ask which kind.
   const started = useRef(false)
   useEffect(() => {
-    if (onlyMode && !started.current) {
-      started.current = true
+    if (started.current || !cards.length) return
+    started.current = true
+    const saved = loadProgress(set.id, new Set(cards.map((c) => c.id)))
+    /* eslint-disable react-hooks/set-state-in-effect -- reads browser storage after mount */
+    if (saved) {
+      setResumable(saved)
+      setPhase('resume')
+    } else if (onlyMode) {
+      modeRef.current = onlyMode
       startRecord(onlyMode)
+      setDeck(shuffle(cards))
+      setPhase('studying')
+    } else {
+      setPhase('picking')
     }
-  }, [onlyMode, startRecord])
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [cards, onlyMode, set.id, startRecord])
+
+  function resume(saved: SavedProgress) {
+    const byId = new Map(cards.map((c) => [c.id, c]))
+    modeRef.current = saved.mode
+    startRecord(saved.mode)
+    setResultsSaved(true)
+    setDeck(saved.deck.map((id) => byId.get(id)!))
+    setAnswers(saved.answers.map((a) => ({ card: byId.get(a.cardId)!, grade: a.grade, time_taken_ms: a.time_taken_ms, labelGrades: a.labelGrades })))
+    gradedIndex.current = saved.answers.length - 1
+    setCurrentIndex(saved.answers.length)
+    setPhase('studying')
+  }
 
   function beginStudy(mode: StudyMode, cardList: Card[]) {
+    clearProgress(set.id)
+    modeRef.current = mode
     setResultsSaved(true)
     startRecord(mode)
     gradedIndex.current = -1
@@ -106,6 +137,7 @@ export default function StudySession({ set, cards }: StudySessionProps) {
       setAnswers(newAnswers)
 
       if (currentIndex + 1 >= deck.length) {
+        clearProgress(set.id)
         // Show the score straight away; recording it is best-effort.
         setPhase('results')
         window.scrollTo(0, 0)
@@ -129,6 +161,12 @@ export default function StudySession({ set, cards }: StudySessionProps) {
         }
         setResultsSaved(ok)
       } else {
+        saveProgress(set.id, {
+          mode: modeRef.current,
+          deck: deck.map((c) => c.id),
+          answers: newAnswers.map((a) => ({ cardId: a.card.id, grade: a.grade, time_taken_ms: a.time_taken_ms, labelGrades: a.labelGrades })),
+          savedAt: Date.now(),
+        })
         setCurrentIndex((i) => i + 1)
         cardShownAt.current = Date.now()
         window.scrollTo(0, 0)
@@ -149,6 +187,36 @@ export default function StudySession({ set, cards }: StudySessionProps) {
           subtext="This set has no cards. Add some from a lecture or by hand, then come back."
           action={{ label: 'Back to the set', href: `/sets/${set.id}` }}
         />
+      </div>
+    )
+  }
+
+  if (phase === 'starting') {
+    return <div className="min-h-dvh" aria-busy />
+  }
+
+  if (phase === 'resume' && resumable) {
+    const total = resumable.deck.length
+    const done = resumable.answers.length
+    return (
+      <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-4 py-10">
+        <p className="text-sm font-semibold text-accent">{set.title}</p>
+        <h1 className="mt-2 text-[28px] font-extrabold text-ink">Pick up where you stopped?</h1>
+        <p className="mt-2 text-ink-muted">You answered {done} of {total} cards last time.</p>
+        <ProgressBar value={done / total} label="Earlier progress" className="mt-5" />
+        <div className="mt-8 flex flex-col gap-2 sm:flex-row">
+          <Button size="lg" className="sm:flex-1" onClick={() => resume(resumable)}>
+            Continue from card {done + 1}
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </Button>
+          <Button size="lg" variant="secondary" onClick={() => {
+            clearProgress(set.id)
+            if (onlyMode) beginStudy(onlyMode, cards)
+            else setPhase('picking')
+          }}>
+            Start over
+          </Button>
+        </div>
       </div>
     )
   }
@@ -230,7 +298,7 @@ export default function StudySession({ set, cards }: StudySessionProps) {
         <DiagramQuiz key={`${currentCard.id}-${currentIndex}`} card={currentCard} onAnswer={handleAnswer} />
       )}
 
-      <Modal open={confirmLeave} onClose={() => setConfirmLeave(false)} title="Leave this session?" description={`You've answered ${answers.length} of ${deck.length}. Leaving now won't save this session to your history.`}>
+      <Modal open={confirmLeave} onClose={() => setConfirmLeave(false)} title="Leave this session?" description={`You've answered ${answers.length} of ${deck.length}. Your answers stay on this device, so you can pick up where you stopped next time.`}>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Link href={`/sets/${set.id}`} className={buttonClass('secondary', 'md')}>Leave</Link>
           <Button onClick={() => setConfirmLeave(false)}>Keep studying</Button>

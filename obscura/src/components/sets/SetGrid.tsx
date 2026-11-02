@@ -1,85 +1,88 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import type { Set } from '@/types'
+import { Compass, Search, Upload, X } from 'lucide-react'
 import { draftSetIds } from '@/lib/drafts'
-import SetCard from './SetCard'
-import EmptyState from '@/components/ui/EmptyState'
-import Icon from '@/components/ui/Icon'
+import { filterAndSort, type SortKey } from '@/lib/library'
+import { buttonClass } from '@/components/ui/Button'
+import SegmentedControl from '@/components/ui/SegmentedControl'
+import SetCard, { type LibrarySet } from './SetCard'
 
-const StackIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 2L2 7l10 5 10-5-10-5z" />
-    <path d="M2 17l10 5 10-5" />
-    <path d="M2 12l10 5 10-5" />
-  </svg>
-)
-
-interface SetGridProps {
-  sets: Set[]
-  emptyAction?: { label: string; href?: string; onClick?: () => void }
-  searchable?: boolean
-}
-
-export default function SetGrid({ sets, emptyAction, searchable }: SetGridProps) {
+export default function SetGrid({ sets }: { sets: LibrarySet[] }) {
   const [query, setQuery] = useState('')
+  const [sort, setSort] = useState<SortKey>('recent')
   // Sets with generated cards not yet saved, so they're easy to find again.
   const [drafts, setDrafts] = useState<ReadonlySet<string>>(new Set())
   useEffect(() => {
     draftSetIds().then((ids) => setDrafts(new Set(ids)))
   }, [])
 
-  const filtered = query.trim()
-    ? sets.filter((s) =>
-        s.title.toLowerCase().includes(query.toLowerCase()) ||
-        (s.subject ?? '').toLowerCase().includes(query.toLowerCase())
-      )
-    : sets
-
   if (sets.length === 0) {
     return (
-      <EmptyState
-        icon={<StackIcon />}
-        heading="No sets yet"
-        subtext="Create your first set by uploading lecture slides or adding cards manually."
-        action={emptyAction ?? { label: 'New set', href: '/sets/new' }}
-      />
+      <section className="flex flex-col items-center rounded-3xl border border-dashed border-line px-6 py-14 text-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-soft text-accent-ink">
+          <Upload className="h-6 w-6" aria-hidden />
+        </span>
+        <h2 className="mt-5 text-[22px] font-bold text-ink">Make your first study set</h2>
+        <p className="mt-2 max-w-md text-ink-muted">
+          Upload a lecture PDF and Obscura turns the text into flashcards and the diagrams into label quizzes. You review every card before it&apos;s saved.
+        </p>
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+          <Link href="/sets/new" className={buttonClass('primary', 'lg')}>
+            <Upload className="h-4 w-4" aria-hidden />
+            Upload a lecture
+          </Link>
+          <Link href="/explore" className={buttonClass('secondary', 'lg')}>
+            <Compass className="h-4 w-4" aria-hidden />
+            Browse public sets
+          </Link>
+        </div>
+      </section>
     )
   }
 
+  const visible = filterAndSort(sets, query, sort)
+
   return (
-    <div className="space-y-6">
-      {searchable && (
-        <div className="relative max-w-sm">
-          <Icon name="search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search sets…"
-            className="w-full pl-9 pr-4 h-10 rounded-lg bg-surface border border-line text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
+    <section className="flex flex-col gap-4" aria-label="Your sets">
+      {sets.length > 3 && (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:max-w-xs">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" aria-hidden />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Filter your sets"
+              aria-label="Filter your sets"
+              className="h-11 w-full rounded-full border border-line bg-surface pl-10 pr-10 text-[15px] text-ink placeholder:text-ink-muted focus:border-accent focus:outline-none focus:ring-3 focus:ring-accent/20 [&::-webkit-search-cancel-button]:hidden"
+            />
+            {query && (
+              <button type="button" onClick={() => setQuery('')} aria-label="Clear filter" className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-ink-muted hover:bg-paper-2 hover:text-ink">
+                <X className="h-4 w-4" aria-hidden />
+              </button>
+            )}
+          </div>
+          <SegmentedControl
+            label="Sort sets"
+            size="sm"
+            value={sort}
+            onChange={setSort}
+            options={[{ value: 'recent', label: 'Recent' }, { value: 'title', label: 'A–Z' }]}
           />
-          {query && (
-            <button
-              onClick={() => setQuery('')}
-              aria-label="Clear search"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink transition-colors"
-            >
-              <Icon name="close" size={18} />
-            </button>
-          )}
         </div>
       )}
 
-      {filtered.length === 0 ? (
-        <p className="text-sm text-ink-muted font-medium">No sets match &quot;{query}&quot;</p>
+      {visible.length === 0 ? (
+        <p className="py-10 text-center text-ink-muted">No sets match “{query.trim()}”.</p>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((set) => (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {visible.map((set) => (
             <SetCard key={set.id} set={set} hasDraft={drafts.has(set.id)} />
           ))}
         </div>
       )}
-    </div>
+    </section>
   )
 }

@@ -1,12 +1,14 @@
 'use client'
 
 import Link from 'next/link'
+import { ArrowLeft, RotateCcw, Target } from 'lucide-react'
 import type { Card, Set } from '@/types'
 import type { Grade } from '@/lib/scoring'
+import { tally, verdict } from '@/lib/study'
 import { cn } from '@/lib/utils'
-import Icon from '@/components/ui/Icon'
+import Button, { buttonClass } from '@/components/ui/Button'
 
-interface CardAnswer {
+export interface CardAnswer {
   card: Card
   grade: Grade
   time_taken_ms: number
@@ -16,129 +18,105 @@ interface CardAnswer {
 interface ResultsSummaryProps {
   set: Set
   answers: CardAnswer[]
-  onRetryMissed: (cards: Card[]) => void
+  saved: boolean
+  onReview: (cards: Card[]) => void
   onStudyAgain: () => void
 }
 
-const gradeConfig: Record<Grade, { label: string; bg: string; text: string; dot: string }> = {
-  correct: { label: 'Correct', bg: 'bg-good-soft', text: 'text-good', dot: 'bg-good' },
-  close: { label: 'Close', bg: 'bg-warn-soft', text: 'text-warn', dot: 'bg-warn' },
-  wrong: { label: 'Missed', bg: 'bg-bad-soft', text: 'text-bad', dot: 'bg-bad' },
-  empty: { label: 'Skipped', bg: 'bg-paper-2', text: 'text-ink-muted', dot: 'bg-line' },
-}
+const groups: { key: string; title: string; grades: Grade[]; dot: string }[] = [
+  { key: 'missed', title: 'Need review', grades: ['wrong', 'empty'], dot: 'bg-bad' },
+  { key: 'close', title: 'Almost', grades: ['close'], dot: 'bg-warn' },
+  { key: 'correct', title: 'Confident', grades: ['correct'], dot: 'bg-good' },
+]
 
 function cardLabel(card: Card): string {
-  if (card.type === 'flashcard') return card.front.length > 80 ? card.front.slice(0, 80) + '…' : card.front
-  return `Diagram (${card.labels.length} labels)`
+  if (card.type === 'flashcard') return card.front
+  return `Diagram · ${card.labels.length} label${card.labels.length === 1 ? '' : 's'}`
 }
 
-export default function ResultsSummary({ set, answers, onRetryMissed, onStudyAgain }: ResultsSummaryProps) {
-  const total = answers.length
-  const correct = answers.filter((a) => a.grade === 'correct').length
-  const close = answers.filter((a) => a.grade === 'close').length
-  const wrong = answers.filter((a) => a.grade === 'wrong').length
-  const empty = answers.filter((a) => a.grade === 'empty').length
-  const pct = total > 0 ? Math.round(((correct + close * 0.5) / total) * 100) : 0
-
-  const missedCards = answers
-    .filter((a) => a.grade === 'wrong' || a.grade === 'empty')
-    .map((a) => a.card)
+export default function ResultsSummary({ set, answers, saved, onReview, onStudyAgain }: ResultsSummaryProps) {
+  const t = tally(answers.map((a) => a.grade))
+  // Almost isn't known yet, so it goes back in the review pile too.
+  const toReview = answers.filter((a) => a.grade !== 'correct').map((a) => a.card)
 
   return (
-    <div className="flex flex-col gap-8 w-full max-w-2xl mx-auto">
+    <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))]">
+      <Link href={`/sets/${set.id}`} className="flex w-fit items-center gap-1.5 rounded-full py-2 text-sm font-medium text-ink-muted hover:text-ink">
+        <ArrowLeft className="h-4 w-4" aria-hidden />
+        {set.title}
+      </Link>
 
-      {/* Score hero */}
-      <div className="rounded-xl bg-surface border border-line p-8 text-center shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-ink via-accent to-ink" />
-        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-accent block mb-2">
-          Session Complete
-        </span>
-        <p className="font-headline text-7xl font-black text-ink tabular-nums">
-          {pct}%
-        </p>
-        <p className="mt-2 text-sm text-ink-muted">
-          {correct} correct · {close} close · {wrong + empty} missed
-        </p>
+      <section className="mt-6 rounded-3xl border border-line bg-surface p-6 sm:p-8">
+        <p className="text-sm font-semibold text-accent">Session complete</p>
+        <div className="mt-2 flex flex-wrap items-end gap-x-4 gap-y-1">
+          <p className="font-headline text-6xl font-extrabold tabular-nums text-ink">{t.pct}%</p>
+          <p className="pb-2 text-ink-muted">
+            {t.correct} of {t.total} confident{t.close ? `, ${t.close} almost` : ''}
+          </p>
+        </div>
+        <p className="mt-3 text-lg text-ink">{verdict(t.pct)}</p>
 
-        {/* Score bar */}
-        <div className="mt-6 flex h-2.5 w-full overflow-hidden rounded-full bg-paper-2">
-          {total > 0 && (
+        <div className="mt-6 flex h-2.5 w-full overflow-hidden rounded-full bg-paper-2" aria-hidden>
+          <div className="bg-good" style={{ width: `${(t.correct / Math.max(1, t.total)) * 100}%` }} />
+          <div className="bg-warn" style={{ width: `${(t.close / Math.max(1, t.total)) * 100}%` }} />
+          <div className="bg-bad" style={{ width: `${(t.missed / Math.max(1, t.total)) * 100}%` }} />
+        </div>
+
+        {!saved && (
+          <p role="status" className="mt-5 rounded-xl bg-warn-soft px-4 py-3 text-sm text-warn">
+            This score couldn&apos;t be saved to your history because the study server didn&apos;t respond. The results here are still right.
+          </p>
+        )}
+
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+          {toReview.length > 0 ? (
             <>
-              <div className="bg-good transition-all" style={{ width: `${(correct / total) * 100}%` }} />
-              <div className="bg-warn transition-all" style={{ width: `${(close / total) * 100}%` }} />
-              <div className="bg-bad transition-all" style={{ width: `${(wrong / total) * 100}%` }} />
-              <div className="bg-line transition-all" style={{ width: `${(empty / total) * 100}%` }} />
+              <Button size="lg" onClick={() => onReview(toReview)} className="sm:flex-1">
+                <Target className="h-4 w-4" aria-hidden />
+                Review the {toReview.length} you weren&apos;t sure of
+              </Button>
+              <Button size="lg" variant="secondary" onClick={onStudyAgain}>
+                <RotateCcw className="h-4 w-4" aria-hidden />
+                Study all again
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link href={`/sets/${set.id}`} className={cn(buttonClass('primary', 'lg'), 'sm:flex-1')}>Back to the set</Link>
+              <Button size="lg" variant="secondary" onClick={onStudyAgain}>
+                <RotateCcw className="h-4 w-4" aria-hidden />
+                Study again
+              </Button>
             </>
           )}
         </div>
+      </section>
 
-        <div className="mt-3 flex justify-center gap-4 text-xs text-ink-muted">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-good" /> {correct} correct
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-warn" /> {close} close
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-bad" /> {wrong} missed
-          </span>
-          {empty > 0 && (
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-line" /> {empty} skipped
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Per-card breakdown */}
-      <div>
-        <h2 className="font-headline text-sm font-bold text-ink mb-3 uppercase tracking-widest">
-          Card Breakdown
-        </h2>
-        <div className="flex flex-col gap-1.5">
-          {answers.map((answer, i) => {
-            const cfg = gradeConfig[answer.grade]
-            return (
-              <div key={i} className={cn('flex items-center gap-3 rounded-lg px-3 py-2.5', cfg.bg)}>
-                <span className={cn('w-2 h-2 rounded-full shrink-0', cfg.dot)} />
-                <p className="flex-1 text-sm text-ink truncate">{cardLabel(answer.card)}</p>
-                <span className={cn('text-xs font-medium shrink-0', cfg.text)}>{cfg.label}</span>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Link
-          href={`/sets/${set.id}`}
-          className="text-sm font-medium text-ink-muted hover:text-ink transition-colors flex items-center gap-1"
-        >
-          <Icon name="arrow_back" size={16} />
-          Back to set
-        </Link>
-
-        <div className="flex gap-3">
-          {missedCards.length > 0 && (
-            <button
-              onClick={() => onRetryMissed(missedCards)}
-              className="rounded-lg border border-line bg-surface px-4 py-2 text-sm font-bold text-ink hover:bg-paper-2 transition-colors"
-            >
-              Retry {missedCards.length} missed
-            </button>
-          )}
-          {/* A link to this same URL wouldn't reset the session — restart it in place. */}
-          <button
-            type="button"
-            onClick={onStudyAgain}
-            className="rounded-lg bg-ink px-4 py-2 text-sm font-bold text-on-ink hover:opacity-90 transition-all flex items-center gap-2"
-          >
-            <Icon name="replay" size={16} />
-            Study again
-          </button>
-        </div>
-      </div>
+      <section className="mt-8 flex flex-col gap-6">
+        {groups.map((g) => {
+          const items = answers.filter((a) => g.grades.includes(a.grade))
+          if (!items.length) return null
+          return (
+            <div key={g.key}>
+              <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink">
+                <span className={cn('h-2 w-2 rounded-full', g.dot)} aria-hidden />
+                {g.title}
+                <span className="font-normal text-ink-muted">{items.length}</span>
+              </h2>
+              <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+                {items.map((a, i) => (
+                  <li key={`${a.card.id}-${i}`} className="px-4 py-3 text-[15px] text-ink">
+                    <p className="line-clamp-2">{cardLabel(a.card)}</p>
+                    {a.card.type === 'flashcard' && g.key !== 'correct' && (
+                      <p className="mt-1 line-clamp-2 text-sm text-ink-muted">{a.card.back}</p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )
+        })}
+      </section>
     </div>
   )
 }

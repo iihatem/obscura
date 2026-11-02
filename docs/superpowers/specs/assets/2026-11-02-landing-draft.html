@@ -1,0 +1,664 @@
+<title>Obscura Landing Page</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Layout: one argument, top to bottom. Hero = a working "lecture → quiz" bench. Then the two fears answered,
+     the diagram drill as the signature, how a slide becomes cards, phone study, real public sets, one closing ask.
+     Signature device: the page tag ("p. 12") that ties every card back to the slide it came from. */
+  :root {
+    --paper: #F6F5F1; --paper-2: #EFEDE7; --surface: #FFFFFF;
+    --ink: #1E2A32; --ink-muted: #66706F; --line: #E4E1D9;
+    --accent: #2F7A7E; --accent-ink: #1F5C60; --accent-soft: #E3EEEC;
+    --good: #2E7D4F; --good-soft: #E2F1E7; --warn: #946410; --warn-soft: #F6ECD6; --bad: #A63D2F; --bad-soft: #F5E2DE;
+    --cover: #1E2A32; --on-ink: #F6F5F1;
+    --dg-fill: #FBFAF6; --dg-stroke: #8A8F8C; --dg-tint: #E8EEEA;
+    --head: "Manrope", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --body: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --lift: 0 1px 2px rgba(30,42,50,.05), 0 18px 40px -12px rgba(30,42,50,.18);
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --paper: #161A1D; --paper-2: #1A1F22; --surface: #1F2428; --ink: #E8E6E1; --ink-muted: #9AA3A7; --line: #2E353A;
+    --accent: #5CC6C2; --accent-ink: #8ED9D5; --accent-soft: #173A3B;
+    --good: #7FCB9B; --good-soft: #1C3527; --warn: #E3B862; --warn-soft: #3A3020; --bad: #EE9A8D; --bad-soft: #3D2421;
+    --cover: #0E1214; --on-ink: #161A1D; --dg-fill: #1A1F22; --dg-stroke: #7E8A8E; --dg-tint: #22302E;
+    --lift: 0 1px 2px rgba(0,0,0,.3), 0 18px 40px -12px rgba(0,0,0,.6); color-scheme: dark } }
+  :root[data-theme="dark"] {
+    --paper: #161A1D; --paper-2: #1A1F22; --surface: #1F2428; --ink: #E8E6E1; --ink-muted: #9AA3A7; --line: #2E353A;
+    --accent: #5CC6C2; --accent-ink: #8ED9D5; --accent-soft: #173A3B;
+    --good: #7FCB9B; --good-soft: #1C3527; --warn: #E3B862; --warn-soft: #3A3020; --bad: #EE9A8D; --bad-soft: #3D2421;
+    --cover: #0E1214; --on-ink: #161A1D; --dg-fill: #1A1F22; --dg-stroke: #7E8A8E; --dg-tint: #22302E;
+    --lift: 0 1px 2px rgba(0,0,0,.3), 0 18px 40px -12px rgba(0,0,0,.6); color-scheme: dark }
+
+  * { box-sizing: border-box; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1140px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+  h1, h2, h3 { font-family: var(--head); letter-spacing: -.028em; text-wrap: balance; margin: 0; }
+  p { margin: 0; }
+  a { color: inherit; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+  svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 600 15px/1 var(--body); border-radius: 999px; padding: 13px 20px; text-decoration: none; border: 1px solid transparent; cursor: pointer; transition: transform .15s ease, background .15s ease, border-color .15s ease; white-space: nowrap; }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--ink); color: var(--on-ink); }
+  .btn-primary:hover { background: color-mix(in srgb, var(--ink) 86%, var(--accent)); }
+  .btn-quiet { background: var(--surface); border-color: var(--line); }
+  .btn-quiet:hover { border-color: var(--ink-muted); }
+  .btn-sm { padding: 9px 14px; font-size: 14px; }
+
+  /* Page tag: the signature device */
+  .ptag { display: inline-flex; align-items: center; gap: 5px; font: 600 11px/1 var(--body); color: var(--ink-muted); background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 4px 7px; white-space: nowrap; }
+  .ptag::before { content: ""; width: 8px; height: 10px; border: 1.4px solid currentColor; border-radius: 2px; }
+
+  .design-note { background: var(--accent-soft); color: var(--accent-ink); font-size: 13px; padding-block: 9px; }
+
+  /* Header */
+  .site-head { padding-block: 18px; }
+  .site-head .wrap { display: flex; align-items: center; gap: 18px; }
+  .logo { display: flex; align-items: center; gap: 9px; font: 800 18px/1 var(--head); letter-spacing: -.03em; text-decoration: none; }
+  .mark { width: 22px; height: 22px; border-radius: 7px; background: var(--ink); position: relative; flex: none; }
+  .mark::after { content: ""; position: absolute; right: 4px; bottom: 4px; width: 7px; height: 7px; border-radius: 2px; background: var(--accent); }
+  .head-links { display: flex; gap: 24px; margin-left: 26px; font-size: 14px; color: var(--ink-muted); }
+  .head-links a { text-decoration: none; } .head-links a:hover { color: var(--ink); }
+  .spacer { flex: 1; }
+  .signin { font-size: 14px; font-weight: 500; text-decoration: none; color: var(--ink-muted); }
+  .signin:hover { color: var(--ink); }
+
+  /* Hero */
+  .hero { padding-block: 36px 64px; }
+  .hero .wrap { display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); gap: 52px; align-items: start; }
+  .hero-copy { padding-top: 26px; }
+  .hero h1 { font-size: clamp(40px, 5.6vw, 66px); line-height: 1.02; font-weight: 800; }
+  .hero h1 .soft { color: var(--accent); }
+  .lede { font-size: 18.5px; color: var(--ink-muted); margin-top: 22px; max-width: 42ch; }
+  .lede b { color: var(--ink); font-weight: 600; }
+  .assure { list-style: none; padding: 0; margin: 28px 0 0; display: flex; flex-direction: column; gap: 10px; font-size: 15px; }
+  .assure li { display: flex; gap: 10px; align-items: flex-start; }
+  .assure svg.i { color: var(--accent); margin-top: 3px; width: 17px; height: 17px; }
+
+  /* The bench */
+  .bench { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--lift); overflow: hidden; }
+  .bench-top { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--ink-muted); }
+  .dots { display: flex; gap: 5px; } .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
+  .bench-body { padding: 18px; min-height: 420px; display: flex; flex-direction: column; }
+  .state { display: none; flex: 1; flex-direction: column; gap: 14px; }
+  .state.on { display: flex; }
+
+  .drop { flex: 1; border: 1.5px dashed color-mix(in srgb, var(--ink-muted) 45%, transparent); border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; padding: 28px 18px; background: var(--paper); transition: border-color .15s ease, background .15s ease; }
+  .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .drop-ico { width: 52px; height: 52px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); display: grid; place-items: center; color: var(--accent); }
+  .drop-ico svg.i { width: 24px; height: 24px; }
+  .drop h3 { font-size: 20px; font-weight: 800; }
+  .drop p { color: var(--ink-muted); font-size: 14px; max-width: 34ch; }
+  .drop .btn { margin-top: 4px; }
+  .samples { display: flex; flex-direction: column; gap: 8px; }
+  .samples-label { font-size: 13px; color: var(--ink-muted); }
+  .sample-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .sample { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; transition: border-color .15s ease, transform .15s ease; }
+  .sample:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .sample b { font: 700 13.5px/1.25 var(--head); }
+  .sample span { font-size: 12px; color: var(--ink-muted); }
+
+  .proc-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .proc-head b { font: 700 16px var(--head); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .proc-head span { font-size: 13px; color: var(--ink-muted); white-space: nowrap; }
+  .pages { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .pg { border: 1px solid var(--line); border-radius: 10px; background: var(--paper); padding: 9px; display: flex; flex-direction: column; gap: 7px; opacity: .45; transition: opacity .3s ease, border-color .3s ease; }
+  .pg.live { opacity: 1; border-color: var(--accent); }
+  .pg.done { opacity: 1; }
+  .pg-art { aspect-ratio: 4/3; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); position: relative; padding: 7px; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+  .pg-art i { height: 3.5px; border-radius: 2px; background: var(--line); display: block; }
+  .pg-art i:nth-child(2) { width: 75%; } .pg-art i:nth-child(3) { width: 55%; }
+  .pg-art.dia::after { content: ""; position: absolute; right: 10px; top: 12px; width: 34%; aspect-ratio: 1; border-radius: 50%; border: 1.6px solid var(--dg-stroke); background: var(--dg-tint); }
+  .pg-meta { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--ink-muted); gap: 6px; }
+  .pg-meta em { font-style: normal; font-weight: 600; font-size: 10.5px; padding: 2px 7px; border-radius: 99px; background: var(--accent-soft); color: var(--accent-ink); }
+  .pg-meta em.d { background: var(--warn-soft); color: var(--warn); }
+  .pg-meta .st { display: inline-flex; align-items: center; gap: 4px; }
+  .spin { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .proc-bar { height: 5px; border-radius: 5px; background: var(--line); overflow: hidden; }
+  .proc-bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 5px; transition: width .5s ease; }
+  .proc-note { font-size: 13px; color: var(--ink-muted); }
+
+  .res-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .res-head b { font: 800 18px var(--head); letter-spacing: -.02em; }
+  .seg { display: inline-flex; background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+  .seg button { border: 0; background: none; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 500; color: var(--ink-muted); cursor: pointer; }
+  .seg button[aria-selected="true"] { background: var(--ink); color: var(--on-ink); font-weight: 600; }
+  .pane { display: none; flex-direction: column; gap: 10px; }
+  .pane.on { display: flex; }
+
+  .qcard { border: 1px solid var(--line); background: var(--paper); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; cursor: pointer; text-align: left; width: 100%; }
+  .qcard:hover { border-color: color-mix(in srgb, var(--ink-muted) 60%, transparent); }
+  .qcard-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .qcard small { font: 600 10.5px/1 var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+  .qcard .q { font: 700 15.5px/1.35 var(--head); letter-spacing: -.01em; }
+  .qcard .a { font-size: 14px; color: var(--ink-muted); display: none; padding-top: 8px; border-top: 1px dashed var(--line); }
+  .qcard.open .a { display: block; }
+  .qcard .tapnote { font-size: 12px; color: var(--ink-muted); }
+  .qcard.open .tapnote { display: none; }
+
+  .save-bar { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--line); }
+  .save-bar p { font-size: 13.5px; color: var(--ink-muted); max-width: 30ch; }
+  .preview-note { font-size: 12.5px; color: var(--warn); background: var(--warn-soft); border-radius: 8px; padding: 7px 10px; }
+
+  .signin-sheet { display: none; position: relative; border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: var(--paper); gap: 10px; flex-direction: column; }
+  .signin-sheet.on { display: flex; }
+  .signin-sheet b { font: 800 17px var(--head); }
+  .signin-sheet p { font-size: 13.5px; color: var(--ink-muted); }
+  .gbtn { background: var(--surface); border: 1px solid var(--line); }
+  .gdot { width: 16px; height: 16px; border-radius: 50%; background: conic-gradient(#EA4335 0 25%, #FBBC05 0 50%, #34A853 0 75%, #4285F4 0); }
+
+  /* Diagram stage (shared by bench + diagram section) */
+  .stage { position: relative; aspect-ratio: 520 / 300; max-width: 100%; background: var(--dg-fill); border-radius: 12px; border: 1px solid var(--line); overflow: hidden; }
+  .stage svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .d-cell { fill: var(--dg-tint); stroke: var(--dg-stroke); stroke-width: 2.2; }
+  .d-line { fill: none; stroke: var(--dg-stroke); stroke-width: 1.6; }
+  .d-fill { fill: var(--dg-fill); stroke: var(--dg-stroke); stroke-width: 1.8; }
+  .d-dot { fill: var(--dg-stroke); }
+  .d-lead { stroke: var(--ink-muted); stroke-width: 1.2; }
+  .d-end { fill: var(--ink-muted); }
+  .lbl { position: absolute; transform: translate(-50%, -50%); min-width: 23%; height: 11.5%; border-radius: 6px; border: 2px solid transparent; background: var(--cover); color: var(--on-ink);
+    font: 600 clamp(10px, 1.4vw, 13px)/1 var(--body); display: grid; place-items: center; padding: 0 8px; cursor: pointer; white-space: nowrap; transition: background .2s ease, color .2s ease, border-color .2s ease; }
+  .lbl .n { opacity: .55; }
+  .lbl[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 28%, transparent); }
+  .lbl.correct { background: var(--good-soft); color: var(--good); border-color: var(--good); }
+  .lbl.close { background: var(--warn-soft); color: var(--warn); border-color: var(--warn); }
+  .lbl.wrong { background: var(--bad-soft); color: var(--bad); border-color: var(--bad); }
+  .drill-form { display: flex; gap: 8px; }
+  .drill-form input { flex: 1; min-width: 0; font: 500 15px var(--body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 11px 13px; }
+  .drill-form input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+  .fb { font-size: 13.5px; min-height: 1.5em; color: var(--ink-muted); }
+  .fb.correct { color: var(--good); } .fb.close { color: var(--warn); } .fb.wrong { color: var(--bad); }
+  .linkbtn { background: none; border: 0; padding: 0; font-size: 13px; color: var(--ink-muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .linkbtn:hover { color: var(--ink); }
+
+  /* Sections */
+  .sec { padding-block: 96px; }
+  .band { background: var(--paper-2); border-block: 1px solid var(--line); }
+  .sec-head { max-width: 620px; display: flex; flex-direction: column; gap: 14px; }
+  .sec-head h2 { font-size: clamp(32px, 4vw, 46px); line-height: 1.06; font-weight: 800; }
+  .sec-head p { color: var(--ink-muted); font-size: 17.5px; }
+
+  /* Fears */
+  .fears { padding-block: 56px; border-block: 1px solid var(--line); }
+  .fears .wrap { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; }
+  .fear h3 { font-size: 19px; font-weight: 800; margin-bottom: 6px; }
+  .fear p { font-size: 15px; color: var(--ink-muted); }
+  .fear .ptag { margin-bottom: 14px; }
+  .fear-ico { width: 34px; height: 34px; border-radius: 10px; background: var(--accent-soft); color: var(--accent-ink); display: grid; place-items: center; margin-bottom: 14px; }
+
+  /* Diagram section */
+  .dia { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 56px; align-items: center; }
+  .dia-copy .sec-head { margin-bottom: 26px; }
+  .verdicts { display: flex; flex-direction: column; gap: 8px; }
+  .verdict-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14.5px; }
+  .verdict-row s { color: var(--ink-muted); text-decoration: none; font-size: 13px; margin-left: 6px; }
+  .vd { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 99px; }
+  .vd.g { background: var(--good-soft); color: var(--good); } .vd.c { background: var(--warn-soft); color: var(--warn); } .vd.b { background: var(--bad-soft); color: var(--bad); }
+  .dia-card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--lift); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .dia-card-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-muted); }
+  .dia-card-top b { color: var(--ink); }
+  .done-row { display: none; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .done-row.on { display: flex; }
+  .done-row b { font: 800 17px var(--head); }
+
+  /* Slide → cards */
+  .flow { margin-top: 48px; display: grid; grid-template-columns: minmax(0, 1fr) 70px minmax(0, 1fr); gap: 14px; align-items: center; }
+  .slide-big { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; aspect-ratio: 16/10; padding: 26px 28px; display: flex; flex-direction: column; gap: 14px; position: relative; box-shadow: var(--lift); }
+  .slide-big .ptag { position: absolute; top: 14px; right: 14px; }
+  .slide-big h4 { margin: 0; font: 800 clamp(16px, 2vw, 22px)/1.2 var(--head); letter-spacing: -.02em; }
+  .slide-big ul { margin: 0; padding-left: 18px; font-size: clamp(12px, 1.25vw, 14.5px); color: var(--ink-muted); display: flex; flex-direction: column; gap: 6px; }
+  .slide-big mark { background: var(--accent-soft); color: var(--accent-ink); border-radius: 3px; padding: 0 2px; }
+  .arrow { display: grid; place-items: center; color: var(--accent); }
+  .arrow svg.i { width: 30px; height: 30px; }
+  .made { display: flex; flex-direction: column; gap: 10px; }
+  .made .qcard { cursor: default; background: var(--surface); }
+  .made .qcard .a { display: block; }
+  .steps-inline { margin-top: 40px; display: flex; flex-wrap: wrap; gap: 10px 28px; color: var(--ink-muted); font-size: 15px; }
+  .steps-inline span { display: inline-flex; align-items: center; gap: 8px; }
+  .steps-inline b { color: var(--ink); font-family: var(--head); }
+
+  /* Phone */
+  .phone-sec { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: center; }
+  .phones { display: flex; justify-content: center; gap: 22px; }
+  .phone { width: 220px; border-radius: 34px; padding: 12px; border: 1px solid var(--line); box-shadow: var(--lift); display: flex; flex-direction: column; gap: 10px; height: 430px; }
+  .phone.light { background: #F6F5F1; color: #1E2A32; border-color: #E4E1D9; }
+  .phone.dark { background: #161A1D; color: #E8E6E1; border-color: #2E353A; margin-top: 40px; }
+  .ph-top { display: flex; justify-content: space-between; align-items: center; font-size: 11px; padding: 4px 6px 0; }
+  .ph-x { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; }
+  .phone.light .ph-x { background: #FFFFFF; border: 1px solid #E4E1D9; } .phone.dark .ph-x { background: #1F2428; border: 1px solid #2E353A; }
+  .ph-bar { height: 4px; border-radius: 4px; }
+  .phone.light .ph-bar { background: linear-gradient(90deg, #2F7A7E 45%, #E4E1D9 45%); }
+  .phone.dark .ph-bar { background: linear-gradient(90deg, #5CC6C2 45%, #2E353A 45%); }
+  .ph-card { flex: 1; border-radius: 18px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 16px; gap: 10px; }
+  .phone.light .ph-card { background: #FFFFFF; border: 1px solid #E4E1D9; } .phone.dark .ph-card { background: #1F2428; border: 1px solid #2E353A; }
+  .ph-card small { font: 600 9.5px/1 var(--body); letter-spacing: .1em; text-transform: uppercase; }
+  .phone.light .ph-card small { color: #2F7A7E; } .phone.dark .ph-card small { color: #5CC6C2; }
+  .ph-card p { font: 700 15px/1.35 var(--head); }
+  .ph-src { font-size: 10px; opacity: .6; }
+  .ph-grades { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .ph-grades span { font-size: 10.5px; font-weight: 600; text-align: center; padding: 10px 2px; border-radius: 10px; }
+  .phone.light .ph-grades span:nth-child(1) { background: #E2F1E7; color: #2E7D4F; } .phone.light .ph-grades span:nth-child(2) { background: #F6ECD6; color: #946410; } .phone.light .ph-grades span:nth-child(3) { background: #F5E2DE; color: #A63D2F; }
+  .phone.dark .ph-grades span:nth-child(1) { background: #1C3527; color: #7FCB9B; } .phone.dark .ph-grades span:nth-child(2) { background: #3A3020; color: #E3B862; } .phone.dark .ph-grades span:nth-child(3) { background: #3D2421; color: #EE9A8D; }
+  .points { list-style: none; padding: 0; margin: 28px 0 0; display: flex; flex-direction: column; gap: 14px; }
+  .points li { display: flex; gap: 12px; }
+  .points .fear-ico { margin: 0; flex: none; }
+  .points b { display: block; font-family: var(--head); font-size: 16px; }
+  .points span { color: var(--ink-muted); font-size: 14.5px; }
+
+  /* Public sets */
+  .sets { margin-top: 40px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  .set { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .set-course { font: 600 11.5px/1 var(--body); color: var(--accent-ink); letter-spacing: .04em; }
+  .set b { font: 700 15.5px/1.3 var(--head); letter-spacing: -.01em; }
+  .set-meta { font-size: 13px; color: var(--ink-muted); display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: auto; }
+  .set-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; font-size: 13px; }
+  .set-foot a { font-weight: 600; text-decoration: none; color: var(--accent-ink); }
+  .live-note { margin-top: 14px; font-size: 13px; color: var(--ink-muted); }
+
+  /* Closing */
+  .closing { text-align: center; padding-block: 110px; }
+  .closing h2 { font-size: clamp(36px, 5vw, 60px); line-height: 1.03; font-weight: 800; max-width: 16ch; margin: 0 auto; }
+  .closing p { color: var(--ink-muted); font-size: 18px; margin-top: 18px; }
+  .closing .btn { margin-top: 30px; }
+  footer { border-top: 1px solid var(--line); padding-block: 28px; font-size: 13.5px; color: var(--ink-muted); }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: center; }
+  footer a { text-decoration: none; } footer a:hover { color: var(--ink); }
+
+  @media (max-width: 980px) {
+    .hero .wrap, .dia, .phone-sec { grid-template-columns: minmax(0, 1fr); gap: 40px; }
+    .hero-copy { padding-top: 0; }
+    .sets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .head-links { display: none; }
+  }
+  @media (max-width: 680px) {
+    .sec { padding-block: 72px; }
+    .fears .wrap { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+    .flow { grid-template-columns: minmax(0, 1fr); }
+    .arrow { transform: rotate(90deg); height: 40px; }
+    .sets { grid-template-columns: minmax(0, 1fr); }
+    .sample-row { grid-template-columns: minmax(0, 1fr); }
+    .pages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .phone { width: 180px; height: 370px; }
+    .phone.dark { display: none; }
+    .signin { display: none; }
+    .lede { font-size: 17px; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+  <symbol id="i-brain" viewBox="0 0 24 24"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+</svg>
+
+<!-- The diagram, defined once and reused -->
+<template id="cell-svg">
+  <svg viewBox="0 0 520 300" role="img" aria-label="Diagram of an animal cell with four covered labels">
+    <path class="d-cell" d="M262 34c86 0 166 38 170 112 4 80-74 124-168 124-98 0-180-36-182-114C80 80 168 34 262 34z"/>
+    <path class="d-line" d="M172 92c10-14 30-16 40-4s30 12 40 0"/><path class="d-line" d="M164 104c12-14 34-16 46-4s34 12 46-2"/><path class="d-line" d="M170 200c12 12 30 12 42 0s30-12 42 0"/>
+    <circle class="d-fill" cx="218" cy="150" r="44"/><circle class="d-dot" cx="228" cy="142" r="12" opacity=".55"/>
+    <g transform="rotate(-18 340 104)"><ellipse class="d-fill" cx="340" cy="104" rx="42" ry="20"/><path class="d-line" d="M306 104l8-12 8 24 8-24 8 24 8-24 8 24 8-24 8 12"/></g>
+    <path class="d-line" d="M318 186c18-16 50-16 68 0"/><path class="d-line" d="M314 198c20-18 56-18 76 0"/><path class="d-line" d="M318 210c18-16 50-16 68 0"/>
+    <circle class="d-fill" cx="398" cy="186" r="5"/><circle class="d-fill" cx="402" cy="204" r="4"/>
+    <circle class="d-dot" cx="150" cy="130" r="2.4"/><circle class="d-dot" cx="286" cy="70" r="2.4"/><circle class="d-dot" cx="292" cy="236" r="2.4"/><circle class="d-dot" cx="140" cy="176" r="2.4"/><circle class="d-dot" cx="372" cy="150" r="2.4"/><circle class="d-dot" cx="256" cy="232" r="2.4"/>
+    <line class="d-lead" x1="218" y1="150" x2="70" y2="58"/><circle class="d-end" cx="218" cy="150" r="3"/>
+    <line class="d-lead" x1="352" y1="100" x2="452" y2="52"/><circle class="d-end" cx="352" cy="100" r="3"/>
+    <line class="d-lead" x1="352" y1="196" x2="452" y2="252"/><circle class="d-end" cx="352" cy="196" r="3"/>
+    <line class="d-lead" x1="98" y1="214" x2="70" y2="252"/><circle class="d-end" cx="98" cy="214" r="3"/>
+  </svg>
+</template>
+
+<div class="design-note"><div class="wrap"><b>Design draft v2.</b> The hero simulates the real upload-before-signup flow with sample output. Try a sample lecture, or drop any PDF.</div></div>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="logo" href="#top"><span class="mark" aria-hidden="true"></span>Obscura</a>
+    <nav class="head-links" aria-label="Page sections"><a href="#diagrams">Diagrams</a><a href="#how">How it works</a><a href="#sets">Public sets</a></nav>
+    <span class="spacer"></span>
+    <a class="signin" href="#">Sign in</a>
+    <a class="btn btn-primary btn-sm" href="#bench">Make my first quiz</a>
+  </div>
+</header>
+
+<main id="top">
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-copy">
+        <h1>Turn your lecture into a quiz. <span class="soft">Diagrams included.</span></h1>
+        <p class="lede">Drop in your slides. Obscura writes flashcards from the text and <b>covers every label on the diagrams</b>, so you practise remembering instead of rereading.</p>
+        <ul class="assure">
+          <li><svg class="i"><use href="#i-check"/></svg>Try it with your own lecture. No account needed.</li>
+          <li><svg class="i"><use href="#i-check"/></svg>Every card shows the slide it came from.</li>
+          <li><svg class="i"><use href="#i-check"/></svg>Edit or delete anything before it's saved.</li>
+        </ul>
+      </div>
+
+      <div class="bench" id="bench">
+        <div class="bench-top"><span class="dots"><i></i><i></i><i></i></span><span id="bench-title">New study set</span></div>
+        <div class="bench-body">
+          <!-- 1. idle -->
+          <div class="state on" id="s-idle">
+            <label class="drop" id="drop" for="file">
+              <span class="drop-ico"><svg class="i"><use href="#i-upload"/></svg></span>
+              <h3>Drop your lecture here</h3>
+              <p>A PDF of your slides, or a photo of one diagram. We'll make cards from the first few pages.</p>
+              <span class="btn btn-primary btn-sm">Choose a file</span>
+              <input id="file" type="file" accept=".pdf,image/jpeg,image/png,image/webp" hidden>
+            </label>
+            <div class="samples">
+              <span class="samples-label">No lecture handy? Try one of ours:</span>
+              <div class="sample-row">
+                <button class="sample" type="button" data-s="bio"><b>Cell structure</b><span>BIO 110 · 6 pages</span></button>
+                <button class="sample" type="button" data-s="bio"><b>The heart</b><span>ANAT 201 · 5 pages</span></button>
+                <button class="sample" type="button" data-s="bio"><b>Alkene reactions</b><span>CHEM 231 · 6 pages</span></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. processing -->
+          <div class="state" id="s-proc">
+            <div class="proc-head"><b id="proc-name">BIO110_Lecture04.pdf</b><span id="proc-count">Reading pages…</span></div>
+            <div class="proc-bar"><i id="proc-fill"></i></div>
+            <div class="pages" id="pages"></div>
+            <p class="proc-note">Text pages become flashcards. Pages with a labelled diagram become a drill.</p>
+          </div>
+
+          <!-- 3. results -->
+          <div class="state" id="s-res">
+            <div class="res-head">
+              <b>9 cards from 6 pages</b>
+              <div class="seg" role="tablist">
+                <button type="button" role="tab" aria-selected="true" data-p="fc">Flashcards · 8</button>
+                <button type="button" role="tab" aria-selected="false" data-p="dg">Diagram · 1</button>
+              </div>
+            </div>
+            <p class="preview-note" id="pnote" hidden>Design preview: your file isn't uploaded here, so these are sample cards.</p>
+            <div class="pane on" id="p-fc">
+              <button class="qcard" type="button"><span class="qcard-top"><small>Question</small><span class="ptag">p. 3</span></span><span class="q">What does the mitochondrial inner membrane fold into?</span><span class="a">Cristae, which add surface area for the electron transport chain.</span><span class="tapnote">Tap to see the answer</span></button>
+              <button class="qcard" type="button"><span class="qcard-top"><small>Question</small><span class="ptag">p. 4</span></span><span class="q">Which organelle modifies and packages proteins for secretion?</span><span class="a">The Golgi apparatus.</span><span class="tapnote">Tap to see the answer</span></button>
+              <button class="qcard" type="button"><span class="qcard-top"><small>Question</small><span class="ptag">p. 2</span></span><span class="q">What makes the cell membrane selectively permeable?</span><span class="a">Its phospholipid bilayer, plus channel and carrier proteins.</span><span class="tapnote">Tap to see the answer</span></button>
+            </div>
+            <div class="pane" id="p-dg">
+              <div class="stage" data-drill="bench"></div>
+              <form class="drill-form" data-form="bench" autocomplete="off"><input aria-label="Name the highlighted label" placeholder="Name label 1"><button class="btn btn-primary btn-sm" type="submit">Check</button></form>
+              <p class="fb" data-fb="bench">Tap any covered box to pick it.</p>
+            </div>
+            <div class="signin-sheet" id="sheet">
+              <b>Keep these 9 cards</b>
+              <p>Sign in and they go straight into your library, ready to study on your phone.</p>
+              <span style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn gbtn btn-sm" href="#"><span class="gdot" aria-hidden="true"></span>Continue with Google</a><a class="btn btn-quiet btn-sm" href="#">Use email</a></span>
+            </div>
+            <div class="save-bar" id="savebar">
+              <p>Cards stay in this browser until you save them.</p>
+              <span style="display:flex;gap:8px"><button class="btn btn-quiet btn-sm" type="button" id="restart"><svg class="i" style="width:15px;height:15px"><use href="#i-reset"/></svg>Start over</button><button class="btn btn-primary btn-sm" type="button" id="save"><svg class="i" style="width:15px;height:15px"><use href="#i-save"/></svg>Save my cards</button></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEARS -->
+  <section class="fears band">
+    <div class="wrap">
+      <div class="fear"><span class="fear-ico"><svg class="i"><use href="#i-brain"/></svg></span><h3>You do the remembering</h3><p>Obscura only asks the questions. Every answer comes out of your own head, which is how studying is supposed to work.</p></div>
+      <div class="fear"><span class="ptag">p. 12</span><h3>Check any card against your slides</h3><p>Every card is tagged with the page it came from, so you can see exactly where an answer came from.</p></div>
+      <div class="fear"><span class="fear-ico"><svg class="i"><use href="#i-pencil"/></svg></span><h3>Nothing is saved until you say so</h3><p>Read every card first. Reword it, delete it, or move a label box, then save.</p></div>
+    </div>
+  </section>
+
+  <!-- DIAGRAMS -->
+  <section id="diagrams">
+    <div class="wrap sec dia">
+      <div class="dia-copy">
+        <div class="sec-head">
+          <h2>Half your lecture is pictures. Now you can study them.</h2>
+          <p>Flashcard apps skip diagrams. Obscura covers every label and asks you to name what's underneath. Small spelling slips still count.</p>
+        </div>
+        <div class="verdicts">
+          <div class="verdict-row"><span>Golgi apparatus</span><span class="vd g">Correct</span></div>
+          <div class="verdict-row"><span>mitocondria <s>for Mitochondrion</s></span><span class="vd c">Almost</span></div>
+          <div class="verdict-row"><span>ribosome <s>for Nucleus</s></span><span class="vd b">Not quite</span></div>
+        </div>
+      </div>
+      <div class="dia-card">
+        <div class="dia-card-top"><span><b>BIO 110 · Cell structure</b></span><span class="ptag">p. 5</span></div>
+        <div class="stage" data-drill="main"></div>
+        <form class="drill-form" data-form="main" autocomplete="off"><input aria-label="Name the highlighted label" placeholder="Name label 1"><button class="btn btn-primary btn-sm" type="submit">Check</button></form>
+        <p class="fb" data-fb="main">Your turn. Tap any covered box, or just start typing.</p>
+        <div class="done-row" data-done="main"><b data-score="main"></b><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-quiet btn-sm" type="button" data-again="main">Try again</button><a class="btn btn-primary btn-sm" href="#bench">Try it with your lecture</a></span></div>
+        <button class="linkbtn" type="button" data-reveal="main" style="align-self:flex-start">Show answers</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW -->
+  <section class="band" id="how">
+    <div class="wrap sec">
+      <div class="sec-head">
+        <h2>One slide in. The questions your exam will ask, out.</h2>
+        <p>Obscura reads each page the way you would and writes cards about what matters, in plain words you can edit.</p>
+      </div>
+      <div class="flow">
+        <div class="slide-big">
+          <span class="ptag">p. 3</span>
+          <h4>Mitochondria: the cell's power plant</h4>
+          <ul>
+            <li>Double membrane: smooth outer, folded inner (<mark>cristae</mark>)</li>
+            <li>Cristae <mark>increase surface area</mark> for the electron transport chain</li>
+            <li><mark>ATP synthase</mark> uses the proton gradient to make ATP</li>
+            <li>Has its own circular DNA</li>
+          </ul>
+        </div>
+        <div class="arrow" aria-hidden="true"><svg class="i"><use href="#i-arrow"/></svg></div>
+        <div class="made">
+          <div class="qcard"><span class="qcard-top"><small>Question</small><span class="ptag">p. 3</span></span><span class="q">What are the folds of the inner mitochondrial membrane called?</span><span class="a">Cristae.</span></div>
+          <div class="qcard"><span class="qcard-top"><small>Question</small><span class="ptag">p. 3</span></span><span class="q">Why does the inner membrane fold?</span><span class="a">To increase surface area for the electron transport chain.</span></div>
+          <div class="qcard"><span class="qcard-top"><small>Question</small><span class="ptag">p. 3</span></span><span class="q">What does ATP synthase use to make ATP?</span><span class="a">The proton gradient across the inner membrane.</span></div>
+        </div>
+      </div>
+      <div class="steps-inline">
+        <span><b>Upload</b> a PDF or a photo</span><span><b>Pick</b> the pages that matter</span><span><b>Review</b> every card</span><span><b>Study</b> anywhere</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- PHONE -->
+  <section>
+    <div class="wrap sec phone-sec">
+      <div class="phones" aria-hidden="true">
+        <div class="phone light">
+          <div class="ph-top"><span class="ph-x">×</span><span>12 of 26</span></div>
+          <div class="ph-bar"></div>
+          <div class="ph-card"><small>Question</small><p>Which organelle packages proteins for secretion?</p><span class="ph-src">from p. 4</span></div>
+          <div class="ph-grades"><span>Confident</span><span>Almost</span><span>Need review</span></div>
+        </div>
+        <div class="phone dark">
+          <div class="ph-top"><span class="ph-x">×</span><span>13 of 26</span></div>
+          <div class="ph-bar"></div>
+          <div class="ph-card"><small>Answer</small><p>Cristae, which add surface area for the electron transport chain.</p><span class="ph-src">from p. 3</span></div>
+          <div class="ph-grades"><span>Confident</span><span>Almost</span><span>Need review</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-head">
+          <h2>Make it on your laptop. Study it on the bus.</h2>
+          <p>Your sets sync the moment you save them. Studying fills the whole screen, with the buttons where your thumb already is.</p>
+        </div>
+        <ul class="points">
+          <li><span class="fear-ico"><svg class="i"><use href="#i-phone"/></svg></span><div><b>Made for one hand</b><span>Tap to flip, then Confident, Almost or Need review.</span></div></li>
+          <li><span class="fear-ico"><svg class="i"><use href="#i-moon"/></svg></span><div><b>Dark at night</b><span>Follows your phone's setting, so late study doesn't feel like staring at a lamp.</span></div></li>
+          <li><span class="fear-ico"><svg class="i"><use href="#i-save"/></svg></span><div><b>Never loses your work</b><span>Close the tab halfway through and your new cards are still there.</span></div></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- PUBLIC SETS -->
+  <section class="band" id="sets">
+    <div class="wrap sec">
+      <div class="sec-head">
+        <h2>Someone in your course might have started already.</h2>
+        <p>Students share their sets publicly. Copy one into your library and make it yours.</p>
+      </div>
+      <div class="sets">
+        <div class="set"><span class="set-course">BIO 110</span><b>Cell structure and organelles</b><span class="set-meta"><span>34 flashcards</span><span>4 diagrams</span></span><div class="set-foot"><span style="color:var(--ink-muted)">Copied 41 times</span><a href="#">Copy</a></div></div>
+        <div class="set"><span class="set-course">ANAT 201</span><b>Heart: chambers, valves and flow</b><span class="set-meta"><span>22 flashcards</span><span>3 diagrams</span></span><div class="set-foot"><span style="color:var(--ink-muted)">Copied 27 times</span><a href="#">Copy</a></div></div>
+        <div class="set"><span class="set-course">PSYC 100</span><b>Memory: encoding to retrieval</b><span class="set-meta"><span>40 flashcards</span></span><div class="set-foot"><span style="color:var(--ink-muted)">Copied 18 times</span><a href="#">Copy</a></div></div>
+        <div class="set"><span class="set-course">GEOG 120</span><b>Plate boundaries and landforms</b><span class="set-meta"><span>16 flashcards</span><span>5 diagrams</span></span><div class="set-foot"><span style="color:var(--ink-muted)">Copied 9 times</span><a href="#">Copy</a></div></div>
+      </div>
+      <p class="live-note">Example sets shown. The real page shows the most-copied public sets, live.</p>
+    </div>
+  </section>
+
+  <!-- CLOSING -->
+  <section>
+    <div class="wrap closing">
+      <h2>Your next lecture is already a quiz.</h2>
+      <p>It just hasn't been uploaded yet.</p>
+      <a class="btn btn-primary" href="#bench">Make my first quiz <svg class="i"><use href="#i-arrow"/></svg></a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a class="logo" href="#top" style="font-size:15px"><span class="mark" aria-hidden="true" style="width:18px;height:18px"></span>Obscura</a>
+    <span class="spacer"></span>
+    <a href="#sets">Public sets</a><a href="#">Sign in</a><a href="#">Privacy</a><span>© 2026</span>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+  // ── Grading: identical rule to the app (src/lib/scoring.ts) ──
+  const norm = (s) => s.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+  function lev(a, b) {
+    const dp = Array.from({ length: a.length + 1 }, (_, i) => Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)));
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    return dp[a.length][b.length];
+  }
+  function grade(input, correct) {
+    if (!input.trim()) return 'empty';
+    const d = lev(norm(input), norm(correct));
+    if (d <= 1) return 'correct';
+    if (d <= Math.max(2, Math.floor(norm(correct).length * 0.3))) return 'close';
+    return 'wrong';
+  }
+
+  // ── Diagram drill, mounted twice ──
+  const ANSWERS = ['Nucleus', 'Mitochondrion', 'Golgi apparatus', 'Cell membrane'];
+  const SPOTS = [[13.5, 19], [86.5, 17], [86.5, 84], [13.5, 84]];
+  function mountDrill(key) {
+    const stage = $(`[data-drill="${key}"]`);
+    stage.appendChild($('#cell-svg').content.cloneNode(true));
+    const boxes = SPOTS.map(([x, y], i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'lbl'; b.style.left = x + '%'; b.style.top = y + '%';
+      b.innerHTML = `<span class="n">${i + 1}</span>`;
+      stage.appendChild(b); return b;
+    });
+    const form = $(`[data-form="${key}"]`), input = $('input', form), fb = $(`[data-fb="${key}"]`);
+    const done = $(`[data-done="${key}"]`), score = $(`[data-score="${key}"]`);
+    let res = [null, null, null, null], cur = 0;
+    const select = (i, focus) => { cur = i; boxes.forEach((b, k) => b.setAttribute('aria-pressed', String(k === i && !res[k]))); input.placeholder = `Name label ${i + 1}`; if (focus) input.focus({ preventScroll: true }); };
+    const finish = () => {
+      if (!done) return;
+      const c = res.filter((r) => r === 'correct').length, a = res.filter((r) => r === 'close').length;
+      score.textContent = `${c} of 4 correct` + (a ? `, ${a} almost` : '');
+      form.hidden = true; fb.textContent = ''; done.classList.add('on');
+    };
+    boxes.forEach((b, i) => b.addEventListener('click', () => { if (!res[i]) select(i, true); }));
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const g = grade(input.value, ANSWERS[cur]);
+      if (g === 'empty') { fb.className = 'fb'; fb.textContent = 'Type an answer first.'; return; }
+      res[cur] = g; const b = boxes[cur];
+      b.classList.add(g); b.textContent = g === 'correct' ? ANSWERS[cur] : input.value.trim(); b.setAttribute('aria-pressed', 'false');
+      fb.className = 'fb ' + g;
+      fb.textContent = g === 'correct' ? 'Correct.' : g === 'close' ? `Almost: it's “${ANSWERS[cur]}”.` : `Not quite: it's “${ANSWERS[cur]}”.`;
+      input.value = '';
+      const n = res.findIndex((r) => !r);
+      if (n === -1) setTimeout(finish, 700); else select(n, true);
+    });
+    const rev = $(`[data-reveal="${key}"]`);
+    if (rev) rev.addEventListener('click', () => { boxes.forEach((b, i) => { if (!res[i]) { res[i] = 'wrong'; b.classList.add('wrong'); b.textContent = ANSWERS[i]; } }); finish(); });
+    const again = $(`[data-again="${key}"]`);
+    if (again) again.addEventListener('click', () => {
+      res = [null, null, null, null];
+      boxes.forEach((b, i) => { b.className = 'lbl'; b.innerHTML = `<span class="n">${i + 1}</span>`; });
+      done.classList.remove('on'); form.hidden = false; fb.className = 'fb'; fb.textContent = 'Tap any covered box, or just start typing.'; select(0, true);
+    });
+    select(0, false);
+  }
+  mountDrill('main');
+  mountDrill('bench');
+
+  // ── The bench: idle → processing → results ──
+  const states = { idle: $('#s-idle'), proc: $('#s-proc'), res: $('#s-res') };
+  const show = (k) => Object.entries(states).forEach(([n, el]) => el.classList.toggle('on', n === k));
+  const PAGES = [['Title slide', 'skip'], ['Membranes', 'text'], ['Mitochondria', 'text'], ['Golgi & ER', 'text'], ['Cell diagram', 'diagram'], ['Summary', 'text']];
+  let timers = [];
+
+  function run(name, fromFile) {
+    timers.forEach(clearTimeout); timers = [];
+    $('#proc-name').textContent = name;
+    $('#bench-title').textContent = name.replace(/\.[^.]+$/, '');
+    $('#pnote').hidden = !fromFile;
+    const grid = $('#pages'); grid.innerHTML = '';
+    PAGES.forEach(([t, kind], i) => {
+      const el = document.createElement('div'); el.className = 'pg';
+      el.innerHTML = `<div class="pg-art ${kind === 'diagram' ? 'dia' : ''}"><i></i><i></i><i></i></div>
+        <div class="pg-meta"><span>p. ${i + 1}</span>${kind === 'skip' ? '<em style="background:var(--line);color:var(--ink-muted)">Skipped</em>' : `<em class="${kind === 'diagram' ? 'd' : ''}">${kind === 'diagram' ? 'Diagram' : 'Text'}</em>`}<span class="st"></span></div>`;
+      grid.appendChild(el);
+    });
+    $('#proc-fill').style.width = '0';
+    $('#proc-count').textContent = 'Reading pages…';
+    show('proc');
+    const cards = $$('.pg', grid);
+    cards.forEach((el, i) => {
+      timers.push(setTimeout(() => { el.classList.add('live'); $('.st', el).innerHTML = '<span class="spin"></span>'; }, 250 + i * 420));
+      timers.push(setTimeout(() => {
+        el.classList.remove('live'); el.classList.add('done');
+        $('.st', el).innerHTML = '<svg class="i" style="width:13px;height:13px;color:var(--good)"><use href="#i-check"/></svg>';
+        $('#proc-fill').style.width = ((i + 1) / cards.length * 100) + '%';
+        $('#proc-count').textContent = `${i + 1} of ${cards.length} pages`;
+      }, 250 + i * 420 + 700));
+    });
+    timers.push(setTimeout(() => { show('res'); }, 250 + cards.length * 420 + 1100));
+  }
+
+  $$('.sample').forEach((b) => b.addEventListener('click', () => run(b.querySelector('b').textContent + '.pdf', false)));
+  $('#file').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) run(f.name, true); });
+  const drop = $('#drop');
+  ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', (e) => { const f = e.dataTransfer.files[0]; if (f) run(f.name, true); });
+
+  $$('.seg button').forEach((b) => b.addEventListener('click', () => {
+    $$('.seg button').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+    $('#p-fc').classList.toggle('on', b.dataset.p === 'fc');
+    $('#p-dg').classList.toggle('on', b.dataset.p === 'dg');
+  }));
+  $$('#p-fc .qcard').forEach((c) => c.addEventListener('click', () => c.classList.toggle('open')));
+  $('#save').addEventListener('click', () => { $('#sheet').classList.add('on'); $('#savebar').hidden = true; });
+  $('#restart').addEventListener('click', () => { $('#sheet').classList.remove('on'); $('#savebar').hidden = false; $('#bench-title').textContent = 'New study set'; show('idle'); });
+})();
+</script>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface ModalProps {
@@ -18,6 +19,7 @@ interface ModalProps {
   children: ReactNode
 }
 
+/** Centered on laptops; a sheet that rises from the bottom on phones. */
 export default function Modal({
   open,
   onClose,
@@ -52,27 +54,30 @@ export default function Modal({
       onCancel={handleCancel}
       aria-labelledby={title ? titleId : undefined}
       className={cn(
-        'fixed inset-0 m-auto w-full max-w-md max-h-[90vh] overflow-y-auto',
-        'rounded-xl border border-stone-200 bg-white p-0 shadow-lg',
-        'backdrop:bg-black/40',
-        'open:animate-in open:fade-in-0 open:zoom-in-95',
+        'dialog-animate fixed inset-0 overflow-y-auto overscroll-contain border border-line bg-surface p-0 text-ink shadow-lift',
+        'backdrop:bg-scrim',
+        // Phone: a bottom sheet, full width, clear of the home indicator.
+        'mx-0 mb-0 mt-auto max-h-[92dvh] w-full max-w-none rounded-t-3xl pb-[env(safe-area-inset-bottom)]',
+        // Laptop: a centered dialog.
+        'sm:m-auto sm:max-h-[90vh] sm:max-w-md sm:rounded-3xl sm:pb-0',
         className
       )}
     >
-      <div className="relative p-6">
+      <div className="relative p-5 sm:p-6">
+        <div className="mx-auto -mt-2 mb-3 h-1 w-10 rounded-full bg-line sm:hidden" aria-hidden />
         <button
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute right-3 top-3 rounded-lg p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition-colors"
+          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-paper-2 hover:text-ink"
         >
-          <span className="material-symbols-outlined text-[20px]" aria-hidden>close</span>
+          <X className="h-5 w-5" aria-hidden />
         </button>
         {title && (
-          <h2 id={titleId} className="text-lg font-semibold text-stone-900 mb-1 pr-8">{title}</h2>
+          <h2 id={titleId} className="mb-1 pr-10 text-[22px] font-bold text-ink">{title}</h2>
         )}
         {description && (
-          <p className="text-sm text-stone-500 mb-4">{description}</p>
+          <p className="mb-5 text-sm text-ink-muted">{description}</p>
         )}
         {children}
       </div>

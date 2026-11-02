@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { apiFetch, withColdStartRetry } from '@/lib/api'
+import Icon from '@/components/ui/Icon'
 
 function Spinner() {
   return (
@@ -50,7 +51,7 @@ export default function ForkCTA({ setId, token }: { setId: string; token: string
   // still checking auth
   if (authed === null) {
     return (
-      <div className="h-12 w-48 rounded-xl bg-[#e7e8e9] animate-pulse" />
+      <div className="h-12 w-48 rounded-xl bg-line animate-pulse" />
     )
   }
 
@@ -59,14 +60,14 @@ export default function ForkCTA({ setId, token }: { setId: string; token: string
       <div className="flex flex-col items-center gap-3">
         <a
           href={`/signup?redirect=${encodeURIComponent(`/s/${token}`)}`}
-          className="inline-flex items-center gap-2 px-8 py-3 scholar-gradient text-white rounded-xl font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[#051125]/20"
+          className="inline-flex items-center gap-2 px-8 py-3 bg-ink text-on-ink rounded-xl font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-ink/20"
         >
-          <span className="material-symbols-outlined text-[18px]" aria-hidden>library_add</span>
+          <Icon name="library_add" size={18} />
           Sign up free to copy
         </a>
-        <p className="text-xs text-[#75777d]">
+        <p className="text-xs text-ink-muted">
           Already have an account?{' '}
-          <a href={`/login?redirect=${encodeURIComponent(`/s/${token}`)}`} className="font-bold text-[#006972] hover:underline">
+          <a href={`/login?redirect=${encodeURIComponent(`/s/${token}`)}`} className="font-bold text-accent hover:underline">
             Sign in
           </a>
         </p>
@@ -79,12 +80,12 @@ export default function ForkCTA({ setId, token }: { setId: string; token: string
       <button
         onClick={handleFork}
         disabled={forking}
-        className="inline-flex items-center gap-2 px-8 py-3 scholar-gradient text-white rounded-xl font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[#051125]/20 disabled:opacity-60 disabled:pointer-events-none"
+        className="inline-flex items-center gap-2 px-8 py-3 bg-ink text-on-ink rounded-xl font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-ink/20 disabled:opacity-60 disabled:pointer-events-none"
       >
-        {forking ? <Spinner /> : <span className="material-symbols-outlined text-[18px]" aria-hidden>library_add</span>}
+        {forking ? <Spinner /> : <Icon name="library_add" size={18} />}
         {forking ? 'Copying…' : 'Copy to my library'}
       </button>
-      {error && <p className="text-xs text-[#ba1a1a]">{error}</p>}
+      {error && <p className="text-xs text-bad">{error}</p>}
     </div>
   )
 }

@@ -6,6 +6,7 @@ import type { ExploreSet } from '@/types'
 import { apiFetch, errorMessage, withColdStartRetry } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { proxyImageUrl } from '@/lib/utils'
+import Icon from '@/components/ui/Icon'
 
 function Spinner({ className = 'h-4 w-4' }: { className?: string }) {
   return (
@@ -44,14 +45,14 @@ function ExploreSetCard({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl bg-white p-6 border border-[#e7e8e9] shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+    <div className="flex flex-col gap-4 rounded-xl bg-surface p-6 border border-line shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
       {/* Thumbnail */}
       {set.thumbnail_url && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={proxyImageUrl(set.thumbnail_url)}
           alt=""
-          className="w-full h-28 object-cover rounded-lg bg-[#edeeef]"
+          className="w-full h-28 object-cover rounded-lg bg-paper-2"
         />
       )}
 
@@ -59,7 +60,7 @@ function ExploreSetCard({
       <div className="flex items-start justify-between gap-2">
         <div>
           {set.subject && (
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#006972]">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-accent">
               {set.subject}
             </span>
           )}
@@ -68,45 +69,36 @@ function ExploreSetCard({
           onClick={() => onStarToggle(set.id)}
           aria-pressed={set.starred_by_me}
           aria-label={`${set.starred_by_me ? 'Unstar' : 'Star'} ${set.title} (${set.star_count})`}
-          className="flex items-center gap-1 text-xs font-bold text-[#45474d] hover:text-[#e8b400] transition-colors"
+          className="flex items-center gap-1 text-xs font-bold text-ink-muted hover:text-warn transition-colors"
         >
-          <span
-            className="material-symbols-outlined text-[18px] transition-colors" aria-hidden
-            style={{
-              color: set.starred_by_me ? '#e8b400' : '#c5c6cd',
-              fontVariationSettings: set.starred_by_me ? "'FILL' 1" : "'FILL' 0",
-            }}
-          >
-            star
-          </span>
+          <Icon name="star" size={18} filled={set.starred_by_me} className={set.starred_by_me ? 'text-warn' : 'text-ink-muted'} />
           <span>{set.star_count}</span>
         </button>
       </div>
 
       {/* Title */}
       <h3
-        className="text-base font-bold text-[#051125] leading-snug line-clamp-2"
-        style={{ fontFamily: 'var(--font-manrope)' }}
+        className="font-headline text-base font-bold text-ink leading-snug line-clamp-2"
       >
         {set.title}
       </h3>
 
       {/* Stats */}
-      <div className="flex flex-wrap items-center gap-3 text-xs text-[#75777d] font-medium">
+      <div className="flex flex-wrap items-center gap-3 text-xs text-ink-muted font-medium">
         <div className="flex items-center gap-1">
-          <span className="material-symbols-outlined text-[15px]" aria-hidden>quiz</span>
+          <Icon name="quiz" size={15} />
           {set.card_count} {set.card_count === 1 ? 'card' : 'cards'}
         </div>
       </div>
 
       {/* Copy to library */}
-      <div className="mt-auto pt-4 border-t border-[#edeeef]">
+      <div className="mt-auto pt-4 border-t border-paper-2">
         <button
           onClick={handleFork}
           disabled={forking}
-          className="w-full inline-flex items-center justify-center gap-2 h-9 rounded-lg border border-[#051125] text-xs font-bold text-[#051125] hover:bg-[#051125] hover:text-white transition-colors disabled:opacity-50 disabled:pointer-events-none"
+          className="w-full inline-flex items-center justify-center gap-2 h-9 rounded-lg border border-ink text-xs font-bold text-ink hover:bg-ink hover:text-on-ink transition-colors disabled:opacity-50 disabled:pointer-events-none"
         >
-          {forking ? <Spinner /> : <span className="material-symbols-outlined text-[16px]" aria-hidden>library_add</span>}
+          {forking ? <Spinner /> : <Icon name="library_add" size={16} />}
           Copy to library
         </button>
       </div>
@@ -186,31 +178,28 @@ export default function ExplorePage() {
   }
 
   return (
-    <div className="p-8 lg:p-12 space-y-8">
+    <div className="py-4 sm:py-8 space-y-8">
       {/* Header */}
       <section className="space-y-2">
         <h2
-          className="text-4xl font-extrabold tracking-tight text-[#051125]"
-          style={{ fontFamily: 'var(--font-manrope)' }}
+          className="font-headline text-4xl font-extrabold tracking-tight text-ink"
         >
           Public Library
         </h2>
-        <p className="text-[#45474d] max-w-md">
+        <p className="text-ink-muted max-w-md">
           Browse and copy study sets shared by the community.
         </p>
       </section>
 
       {/* Search */}
       <div className="relative max-w-md">
-        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#75777d] text-[18px] pointer-events-none" aria-hidden>
-          search
-        </span>
+        <Icon name="search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
         <input
           type="text"
           placeholder="Search by title or subject…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full rounded-lg bg-white border border-[#e7e8e9] pl-9 pr-4 py-2.5 text-sm text-[#191c1d] placeholder:text-[#75777d] focus:outline-none focus:ring-2 focus:ring-[#006972]/20 focus:border-[#006972]/40 transition-all"
+          className="w-full rounded-lg bg-surface border border-line pl-9 pr-4 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40 transition-all"
         />
       </div>
 
@@ -221,8 +210,8 @@ export default function ExplorePage() {
             onClick={() => setActiveSubject(null)}
             className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${
               activeSubject === null
-                ? 'bg-[#051125] text-white'
-                : 'bg-[#f3f4f5] text-[#45474d] hover:bg-[#e7e8e9]'
+                ? 'bg-ink text-on-ink'
+                : 'bg-paper text-ink-muted hover:bg-line'
             }`}
           >
             All
@@ -233,8 +222,8 @@ export default function ExplorePage() {
               onClick={() => setActiveSubject(activeSubject === subj ? null : subj)}
               className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${
                 activeSubject === subj
-                  ? 'bg-[#006972] text-white'
-                  : 'bg-[#f3f4f5] text-[#45474d] hover:bg-[#e7e8e9]'
+                  ? 'bg-accent text-on-ink'
+                  : 'bg-paper text-ink-muted hover:bg-line'
               }`}
             >
               {subj}
@@ -245,25 +234,25 @@ export default function ExplorePage() {
 
       {/* Grid */}
       {loading ? (
-        <div className="flex items-center justify-center py-24 text-[#75777d] gap-2">
+        <div className="flex items-center justify-center py-24 text-ink-muted gap-2">
           <Spinner className="h-5 w-5" />
           <span className="text-sm">Loading…</span>
         </div>
       ) : loadError ? (
-        <div className="flex flex-col items-center justify-center py-24 text-[#75777d] gap-3">
-          <span className="material-symbols-outlined text-[48px]" aria-hidden>cloud_off</span>
+        <div className="flex flex-col items-center justify-center py-24 text-ink-muted gap-3">
+          <Icon name="cloud_off" size={48} />
           <p className="text-sm font-medium">Couldn&apos;t load public sets — the study server didn&apos;t respond.</p>
           <button
             type="button"
             onClick={load}
-            className="rounded-lg border border-[#e7e8e9] bg-white px-4 py-2 text-sm font-bold text-[#051125] hover:bg-[#edeeef] transition-colors"
+            className="rounded-lg border border-line bg-surface px-4 py-2 text-sm font-bold text-ink hover:bg-paper-2 transition-colors"
           >
             Try again
           </button>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-[#75777d] gap-3">
-          <span className="material-symbols-outlined text-[48px]" aria-hidden>search_off</span>
+        <div className="flex flex-col items-center justify-center py-24 text-ink-muted gap-3">
+          <Icon name="search_off" size={48} />
           <p className="text-sm font-medium">
             {sets.length === 0 ? 'No public sets yet' : 'No sets match your search'}
           </p>

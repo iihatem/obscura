@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { apiFetch, withColdStartRetry } from '@/lib/api'
 import { cn } from '@/lib/utils'
+import Icon from '@/components/ui/Icon'
 
 export interface PageData {
   dataUrl: string
@@ -19,9 +20,7 @@ interface FileUploaderProps {
 const MAX_FILE_BYTES = 50 * 1024 * 1024
 
 const UploadIcon = () => (
-  <span className="material-symbols-outlined text-[#006972] text-5xl" aria-hidden style={{ fontVariationSettings: "'wght' 200" }}>
-    cloud_upload
-  </span>
+  <Icon name="cloud_upload" size={48} className="text-accent" />
 )
 
 export default function FileUploader({ onPagesReady }: FileUploaderProps) {
@@ -105,7 +104,7 @@ export default function FileUploader({ onPagesReady }: FileUploaderProps) {
 
   return (
     <div className="relative group">
-      <div className="absolute -inset-1 bg-[#006972]/5 rounded-xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="absolute -inset-1 bg-accent/5 rounded-xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
       <div
         onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
         onDragLeave={() => setIsDragging(false)}
@@ -124,8 +123,8 @@ export default function FileUploader({ onPagesReady }: FileUploaderProps) {
         className={cn(
           'relative flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed p-16 transition-all cursor-pointer text-center',
           isDragging
-            ? 'border-[#006972]/50 bg-[#006972]/5'
-            : 'border-[#c5c6cd]/50 hover:border-[#006972]/50',
+            ? 'border-accent/50 bg-accent/5'
+            : 'border-line/50 hover:border-accent/50',
           isProcessing && 'pointer-events-none'
         )}
       >
@@ -139,27 +138,27 @@ export default function FileUploader({ onPagesReady }: FileUploaderProps) {
 
         {isProcessing ? (
           <div className="flex flex-col items-center gap-4">
-            <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#edeeef] border-t-[#006972]" />
-            <p className="text-sm font-bold text-[#051125]" style={{ fontFamily: 'var(--font-manrope)' }}>
+            <div className="h-10 w-10 animate-spin rounded-full border-2 border-paper-2 border-t-accent" />
+            <p className="font-headline text-sm font-bold text-ink">
               {progress ?? 'Processing…'}
             </p>
           </div>
         ) : (
           <>
-            <div className="w-20 h-20 bg-[#f3f4f5] rounded-full flex items-center justify-center mb-2">
+            <div className="w-20 h-20 bg-paper rounded-full flex items-center justify-center mb-2">
               <UploadIcon />
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-[#051125] mb-2" style={{ fontFamily: 'var(--font-manrope)' }}>
+              <h3 className="font-headline text-2xl font-bold text-ink mb-2">
                 Upload a PDF or image
               </h3>
-              <p className="text-[#45474d] max-w-sm mb-6 leading-relaxed text-sm">
+              <p className="text-ink-muted max-w-sm mb-6 leading-relaxed text-sm">
                 Drop in lecture slides, notes or a diagram. You&apos;ll pick which pages to turn into flashcards and diagram quizzes.
               </p>
-              <span className="inline-block px-8 py-3 scholar-gradient text-white rounded-lg font-bold text-sm shadow-xl shadow-[#051125]/10 hover:scale-[1.02] active:scale-95 transition-all">
+              <span className="inline-block px-8 py-3 bg-ink text-on-ink rounded-lg font-bold text-sm shadow-xl shadow-ink/10 hover:scale-[1.02] active:scale-95 transition-all">
                 Choose file
               </span>
-              <p className="mt-4 text-[11px] text-[#75777d] tracking-wider uppercase font-bold">
+              <p className="mt-4 text-[11px] text-ink-muted tracking-wider uppercase font-bold">
                 PDF, JPG, PNG or WebP (Max 50MB)
               </p>
             </div>
@@ -167,7 +166,7 @@ export default function FileUploader({ onPagesReady }: FileUploaderProps) {
         )}
 
         {error && (
-          <p role="alert" className="absolute bottom-3 px-4 text-xs text-[#ba1a1a]">{error}</p>
+          <p role="alert" className="absolute bottom-3 px-4 text-xs text-bad">{error}</p>
         )}
       </div>
     </div>

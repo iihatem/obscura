@@ -11,6 +11,7 @@ import Modal from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
 import { apiFetch, errorMessage } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import Icon from '@/components/ui/Icon'
 
 const visibilityOptions = [
   { value: 'private', label: 'Private' },
@@ -135,28 +136,27 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
 
   return (
     <>
-      <div className="bg-[#f8f9fa]/80 backdrop-blur-md border-b border-[#c5c6cd]/20 px-6 py-5 lg:px-8">
+      <div className="py-4 sm:py-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-2">
               {set.subject && (
-                <span className="text-[10px] font-bold uppercase tracking-widest text-[#006972]">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-accent">
                   {set.subject}
                 </span>
               )}
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#75777d]">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
                 {visLabel}
               </span>
-              <span className="text-xs text-[#45474d]">{cardCount} {cardCount === 1 ? 'card' : 'cards'}</span>
+              <span className="text-xs text-ink-muted">{cardCount} {cardCount === 1 ? 'card' : 'cards'}</span>
             </div>
             <h1
-              className="text-2xl font-extrabold text-[#051125] truncate tracking-tight"
-              style={{ fontFamily: 'var(--font-manrope)' }}
+              className="font-headline text-2xl font-extrabold text-ink truncate tracking-tight"
             >
               {set.title}
             </h1>
             {set.description && (
-              <p className="mt-1 text-sm text-[#45474d] line-clamp-2">{set.description}</p>
+              <p className="mt-1 text-sm text-ink-muted line-clamp-2">{set.description}</p>
             )}
           </div>
 
@@ -166,17 +166,9 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
               onClick={handleStarToggle}
               aria-pressed={starred}
               aria-label={`${starred ? 'Unstar' : 'Star'} this set (${starCount} star${starCount === 1 ? '' : 's'})`}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#e7e8e9] bg-white px-3 text-xs font-bold text-[#45474d] hover:bg-[#edeeef] transition-colors"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-xs font-bold text-ink-muted hover:bg-paper-2 transition-colors"
             >
-              <span
-                className="material-symbols-outlined text-[16px]" aria-hidden
-                style={{
-                  color: starred ? '#e8b400' : '#c5c6cd',
-                  fontVariationSettings: starred ? "'FILL' 1" : "'FILL' 0",
-                }}
-              >
-                star
-              </span>
+              <Icon name="star" size={16} filled={starred} className={starred ? 'text-warn' : 'text-ink-muted'} />
               {starCount}
             </button>
 
@@ -184,11 +176,9 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
             {(set.visibility === 'link' || set.visibility === 'public') && set.share_token && (
               <button
                 onClick={copyShareLink}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#e7e8e9] bg-white px-3 text-xs font-bold text-[#051125] hover:bg-[#edeeef] transition-colors"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-xs font-bold text-ink hover:bg-paper-2 transition-colors"
               >
-                <span className="material-symbols-outlined text-[16px]" aria-hidden>
-                  {copied ? 'check' : 'link'}
-                </span>
+                <Icon name={copied ? 'check' : 'link'} size={16} />
                 {copied ? 'Copied!' : 'Share link'}
               </button>
             )}
@@ -196,9 +186,9 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
             {isOwner && (
               <button
                 onClick={openEdit}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#e7e8e9] bg-white px-3 text-xs font-bold text-[#051125] hover:bg-[#edeeef] transition-colors"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-xs font-bold text-ink hover:bg-paper-2 transition-colors"
               >
-                <span className="material-symbols-outlined text-[16px]" aria-hidden>edit</span>
+                <Icon name="edit" size={16} />
                 Edit
               </button>
             )}
@@ -207,11 +197,11 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
               className={cn(
                 'inline-flex h-9 items-center gap-1.5 rounded-lg px-4 text-xs font-bold transition-all',
                 cardCount === 0
-                  ? 'pointer-events-none bg-[#edeeef] text-[#45474d]'
-                  : 'scholar-gradient text-white hover:opacity-90 shadow-lg shadow-[#051125]/20'
+                  ? 'pointer-events-none bg-paper-2 text-ink-muted'
+                  : 'bg-ink text-on-ink hover:opacity-90 shadow-lg shadow-ink/20'
               )}
             >
-              <span className="material-symbols-outlined text-[16px]" aria-hidden>play_arrow</span>
+              <Icon name="play_arrow" size={16} />
               Study
             </Link>
           </div>
@@ -234,14 +224,14 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
             required
           />
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="edit-set-description" className="text-xs font-bold uppercase tracking-widest text-[#45474d]">Description</label>
+            <label htmlFor="edit-set-description" className="text-xs font-bold uppercase tracking-widest text-ink-muted">Description</label>
             <textarea
               id="edit-set-description"
               maxLength={2000}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
-              className="w-full rounded-lg bg-[#f3f4f5] border-none px-3 py-2 text-sm text-[#191c1d] placeholder:text-[#75777d] focus:outline-none focus:ring-2 focus:ring-[#006972]/20 resize-none"
+              className="w-full rounded-lg bg-paper border-none px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none"
               placeholder="What is this set about?"
             />
           </div>
@@ -253,7 +243,7 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
             placeholder="e.g. Anatomy, Physiology"
           />
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold uppercase tracking-widest text-[#45474d]">Visibility</label>
+            <label className="text-xs font-bold uppercase tracking-widest text-ink-muted">Visibility</label>
             <div className="grid grid-cols-3 gap-2">
               {visibilityOptions.map((opt) => (
                 <button
@@ -264,8 +254,8 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
                   className={cn(
                     'rounded-lg border px-3 py-2 text-sm font-bold transition-colors',
                     visibility === opt.value
-                      ? 'border-[#051125] bg-[#051125] text-white'
-                      : 'border-[#e7e8e9] text-[#45474d] hover:border-[#006972]/40'
+                      ? 'border-ink bg-ink text-on-ink'
+                      : 'border-line text-ink-muted hover:border-accent/40'
                   )}
                 >
                   {opt.label}
@@ -274,19 +264,19 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
             </div>
           </div>
 
-          {error && <p role="alert" className="text-sm text-[#ba1a1a] bg-[#ffdad6] rounded-lg px-4 py-2">{error}</p>}
+          {error && <p role="alert" className="text-sm text-bad bg-bad-soft rounded-lg px-4 py-2">{error}</p>}
 
           <div className="flex items-center justify-between pt-1">
             {!deleteConfirm ? (
               <button
                 onClick={() => setDeleteConfirm(true)}
-                className="text-xs text-[#45474d] hover:text-[#ba1a1a] transition-colors"
+                className="text-xs text-ink-muted hover:text-bad transition-colors"
               >
                 Delete set
               </button>
             ) : (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-stone-500">Are you sure?</span>
+                <span className="text-xs text-ink-muted">Are you sure?</span>
                 <Button variant="danger" size="sm" loading={deleting} onClick={handleDelete}>
                   Delete
                 </Button>

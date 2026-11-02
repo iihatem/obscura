@@ -106,20 +106,20 @@ async function httpError(res: Response, fallback: string): Promise<HttpError> {
 
 const StatusIcon = ({ status }: { status: PageStatus }) => {
   if (status === 'done') return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-green-600">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-good">
       <polyline points="20 6 9 17 4 12" />
     </svg>
   )
   if (status === 'error') return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-red-500">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-bad">
       <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   )
   if (status === 'pending') return (
-    <div className="h-3.5 w-3.5 rounded-full border-2 border-stone-200" />
+    <div className="h-3.5 w-3.5 rounded-full border-2 border-line" />
   )
   return (
-    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-stone-200 border-t-stone-600" />
+    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-line border-t-ink-muted" />
   )
 }
 
@@ -442,34 +442,34 @@ export default function GenerationProgress({ pages, setId, userId, restored, onD
             key={r.page.pageData.pageIndex}
             className={cn(
               'flex items-center gap-3 rounded-lg border px-4 py-3',
-              r.status === 'done' && 'border-green-100 bg-green-50',
-              r.status === 'error' && 'border-red-100 bg-red-50',
-              (r.status === 'pending' || r.status === 'generating') && 'border-stone-100 bg-white'
+              r.status === 'done' && 'border-good-soft bg-good-soft',
+              r.status === 'error' && 'border-bad-soft bg-bad-soft',
+              (r.status === 'pending' || r.status === 'generating') && 'border-paper-2 bg-surface'
             )}
           >
             <StatusIcon status={r.status} />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-stone-700">
+              <p className="text-sm font-medium text-ink-muted">
                 Page {r.page.pageData.pageIndex + 1}
                 <span className={cn(
                   'ml-2 text-xs font-normal',
-                  r.page.type === 'diagram' ? 'text-violet-600' : 'text-blue-600'
+                  r.page.type === 'diagram' ? 'text-warn' : 'text-accent'
                 )}>
                   {r.page.type === 'diagram' ? 'Diagram' : 'Text'}
                 </span>
               </p>
               {r.status === 'generating' && r.note && (
-                <p className="text-xs text-stone-500">{r.note}</p>
+                <p className="text-xs text-ink-muted">{r.note}</p>
               )}
               {r.status === 'error' && r.error && (
-                <p className="text-xs text-red-600 break-words">{r.error}</p>
+                <p className="text-xs text-bad break-words">{r.error}</p>
               )}
               {r.status === 'error' && (
                 <div className="flex flex-wrap gap-x-4">
                   {r.httpStatus !== 429 && (
                     <button
                       onClick={() => retryPage(r.page.pageData.pageIndex)}
-                      className="text-xs text-[#006972] font-medium hover:underline"
+                      className="text-xs text-accent font-medium hover:underline"
                     >
                       Retry
                     </button>
@@ -480,7 +480,7 @@ export default function GenerationProgress({ pages, setId, userId, restored, onD
                       href="/profile"
                       target="_blank"
                       rel="noopener"
-                      className="text-xs text-[#006972] font-medium hover:underline"
+                      className="text-xs text-accent font-medium hover:underline"
                     >
                       Add your own API key ↗
                     </a>
@@ -488,24 +488,24 @@ export default function GenerationProgress({ pages, setId, userId, restored, onD
                 </div>
               )}
               {r.status === 'done' && r.page.type === 'diagram' && (
-                <p className="text-xs text-stone-400">
+                <p className="text-xs text-ink-muted">
                   {r.labels?.length ?? 0} labels detected{r.model?.startsWith('openai:') ? ' · via OpenAI' : ''}
                 </p>
               )}
               {r.status === 'done' && r.page.type === 'flashcard' && (
-                <p className="text-xs text-stone-400">
+                <p className="text-xs text-ink-muted">
                   {r.cards?.length ?? 0} cards generated{r.model?.startsWith('openai:') ? ' · via OpenAI' : ''}
                 </p>
               )}
             </div>
-            <span className="text-xs text-stone-400 shrink-0">{statusLabel[r.status]}</span>
+            <span className="text-xs text-ink-muted shrink-0">{statusLabel[r.status]}</span>
           </div>
         ))}
       </div>
 
       {allDone && (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-stone-200 bg-stone-50 px-6 py-5 text-center">
-          <p className="text-sm font-medium text-stone-700">
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-line bg-paper px-6 py-5 text-center">
+          <p className="text-sm font-medium text-ink-muted">
             {successCount === 0
               ? 'Nothing was generated — see the errors above.'
               : successCount === results.length
@@ -559,9 +559,9 @@ function ReviewStep({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-ink-muted">
           Review and edit before saving.{' '}
-          <span className="font-medium text-stone-700">{draftCards.length} cards total</span>
+          <span className="font-medium text-ink-muted">{draftCards.length} cards total</span>
         </p>
         <Button onClick={onSave} loading={saving} size="lg">
           Save {draftCards.length} card{draftCards.length !== 1 ? 's' : ''} to set
@@ -569,7 +569,7 @@ function ReviewStep({
       </div>
 
       {saveError && (
-        <p className="rounded-lg bg-red-50 border border-red-100 px-4 py-2.5 text-sm text-red-600">
+        <p className="rounded-lg bg-bad-soft border border-bad-soft px-4 py-2.5 text-sm text-bad">
           {saveError}
         </p>
       )}
@@ -578,7 +578,7 @@ function ReviewStep({
       <fieldset disabled={saving} className={cn('flex flex-col gap-6', saving && 'pointer-events-none opacity-60')}>
       {flashcards.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
             Flashcards ({flashcards.length})
           </h3>
           <div className="flex flex-col gap-2">
@@ -596,7 +596,7 @@ function ReviewStep({
 
       {diagrams.length > 0 && (
         <section className="flex flex-col gap-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
             Diagram cards ({diagrams.length})
           </h3>
           <div className="flex flex-col gap-4">
@@ -634,10 +634,10 @@ interface FlashcardReviewCardProps {
 
 function FlashcardReviewCard({ card, onUpdate, onDelete }: FlashcardReviewCardProps) {
   return (
-    <div className="group relative flex flex-col gap-2 rounded-xl border border-stone-200 bg-white p-4">
+    <div className="group relative flex flex-col gap-2 rounded-xl border border-line bg-surface p-4">
       <button
         onClick={onDelete}
-        className="absolute right-3 top-3 flex rounded p-1 text-stone-300 hover:bg-red-50 hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-colors"
+        className="absolute right-3 top-3 flex rounded p-1 text-line hover:bg-bad-soft hover:text-bad md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-colors"
         title="Delete card"
         aria-label="Delete card"
       >
@@ -646,21 +646,21 @@ function FlashcardReviewCard({ card, onUpdate, onDelete }: FlashcardReviewCardPr
         </svg>
       </button>
       <div className="flex flex-col gap-1.5">
-        <label className="text-[11px] font-semibold uppercase tracking-wide text-stone-400">Front</label>
+        <label className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">Front</label>
         <textarea
           value={card.front}
           onChange={(e) => onUpdate('front', e.target.value)}
           rows={2}
-          className="w-full resize-none rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 focus:outline-none focus:ring-1 focus:ring-stone-400"
+          className="w-full resize-none rounded-md border border-line bg-paper px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-ink-muted"
         />
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="text-[11px] font-semibold uppercase tracking-wide text-stone-400">Back</label>
+        <label className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">Back</label>
         <textarea
           value={card.back}
           onChange={(e) => onUpdate('back', e.target.value)}
           rows={2}
-          className="w-full resize-none rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 focus:outline-none focus:ring-1 focus:ring-stone-400"
+          className="w-full resize-none rounded-md border border-line bg-paper px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-ink-muted"
         />
       </div>
     </div>
@@ -717,10 +717,10 @@ function DiagramReviewCard({ card, onUpdateLabel, onDeleteLabel, onDelete, onLab
   }
 
   return (
-    <div className="group relative rounded-xl border border-stone-200 bg-white p-4">
+    <div className="group relative rounded-xl border border-line bg-surface p-4">
       <button
         onClick={onDelete}
-        className="absolute right-3 top-3 flex rounded p-1 text-stone-300 hover:bg-red-50 hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-colors"
+        className="absolute right-3 top-3 flex rounded p-1 text-line hover:bg-bad-soft hover:text-bad md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-colors"
         title="Delete card"
         aria-label="Delete card"
       >
@@ -733,7 +733,7 @@ function DiagramReviewCard({ card, onUpdateLabel, onDeleteLabel, onDelete, onLab
         {/* Image with draggable + resizable label boxes */}
         <div
           ref={containerRef}
-          className="relative flex-shrink-0 select-none rounded-lg bg-stone-100 lg:w-96"
+          className="relative flex-shrink-0 select-none rounded-lg bg-paper-2 lg:w-96"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={card.dataUrl} alt="Diagram" className="w-full h-auto block rounded-lg" draggable={false} />
@@ -741,7 +741,7 @@ function DiagramReviewCard({ card, onUpdateLabel, onDeleteLabel, onDelete, onLab
             <div
               key={label.id}
               onMouseDown={(e) => onLabelDrag(e, label, containerRef)}
-              className="absolute cursor-move border-2 border-stone-900 bg-black"
+              className="absolute cursor-move border-2 border-ink bg-scrim"
               style={{
                 left: `${label.x}%`,
                 top: `${label.y}%`,
@@ -754,7 +754,7 @@ function DiagramReviewCard({ card, onUpdateLabel, onDeleteLabel, onDelete, onLab
                 <div
                   key={c}
                   onMouseDown={(e) => startResize(e, c, label)}
-                  className="absolute w-2.5 h-2.5 bg-white border border-stone-700 rounded-sm z-10"
+                  className="absolute w-2.5 h-2.5 bg-surface border border-ink-muted rounded-sm z-10"
                   style={{
                     cursor: `${c === 'tl' ? 'nw' : c === 'tr' ? 'ne' : c === 'bl' ? 'sw' : 'se'}-resize`,
                     top:    c === 'tl' || c === 'tr' ? -5 : undefined,
@@ -770,21 +770,21 @@ function DiagramReviewCard({ card, onUpdateLabel, onDeleteLabel, onDelete, onLab
 
         {/* Labels list */}
         <div className="flex flex-1 flex-col gap-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-400">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
             Labels ({card.labels.length})
           </p>
           <div className="flex flex-col gap-1.5 overflow-y-auto max-h-72">
             {card.labels.map((label) => (
               <div key={label.id} className="group/label flex items-center gap-2">
-                <div className="h-2.5 w-2.5 rounded-full bg-violet-500 shrink-0" />
+                <div className="h-2.5 w-2.5 rounded-full bg-warn shrink-0" />
                 <input
                   value={label.label}
                   onChange={(e) => onUpdateLabel(label.id, 'label', e.target.value)}
-                  className="flex-1 rounded border border-stone-200 bg-stone-50 px-2 py-1 text-sm text-stone-800 focus:outline-none focus:ring-1 focus:ring-stone-400"
+                  className="flex-1 rounded border border-line bg-paper px-2 py-1 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-ink-muted"
                 />
                 <button
                   onClick={() => onDeleteLabel(label.id)}
-                  className="text-stone-300 hover:text-red-500 md:opacity-0 md:group-hover/label:opacity-100 focus:opacity-100 transition-colors"
+                  className="text-line hover:text-bad md:opacity-0 md:group-hover/label:opacity-100 focus:opacity-100 transition-colors"
                   title="Remove label"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -794,7 +794,7 @@ function DiagramReviewCard({ card, onUpdateLabel, onDeleteLabel, onDelete, onLab
               </div>
             ))}
             {card.labels.length === 0 && (
-              <p className="text-xs text-stone-400 italic">No labels detected</p>
+              <p className="text-xs text-ink-muted italic">No labels detected</p>
             )}
           </div>
         </div>

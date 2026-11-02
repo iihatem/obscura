@@ -15,6 +15,7 @@ import PagePicker, { type SelectedPage } from '@/components/upload/PagePicker'
 import GenerationProgress, { type GenerationSnapshot } from '@/components/upload/GenerationProgress'
 import { clearDraft, loadDraft } from '@/lib/drafts'
 import { cn } from '@/lib/utils'
+import Icon from '@/components/ui/Icon'
 
 type TabType = 'flashcard' | 'diagram'
 
@@ -192,7 +193,7 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
       />
 
       {/* Tabs + Upload button */}
-      <div className="border-b border-stone-200 bg-white px-6 lg:px-8">
+      <div className="border-b border-line">
         <div className="flex items-center justify-between">
         <div className="flex gap-0">
           {tabs.map((tab) => (
@@ -202,8 +203,8 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
               className={cn(
                 'flex items-center gap-1.5 border-b-2 px-1 pb-3 pt-3 text-sm font-medium mr-6 transition-colors',
                 activeTab === tab.key
-                  ? 'border-stone-900 text-stone-900'
-                  : 'border-transparent text-stone-500 hover:text-stone-700'
+                  ? 'border-ink text-ink'
+                  : 'border-transparent text-ink-muted hover:text-ink-muted'
               )}
             >
               {tab.label}
@@ -211,8 +212,8 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
                 className={cn(
                   'rounded-full px-1.5 py-0.5 text-[11px] font-medium',
                   activeTab === tab.key
-                    ? 'bg-stone-900 text-white'
-                    : 'bg-stone-100 text-stone-500'
+                    ? 'bg-ink text-on-ink'
+                    : 'bg-paper-2 text-ink-muted'
                 )}
               >
                 {tab.count}
@@ -235,10 +236,10 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
       </div>
 
       {isOwner && uploadInProgress && !uploadOpen && (
-        <div className="mx-6 mt-6 flex flex-col gap-3 rounded-xl border border-[#006972]/20 bg-[#006972]/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:mx-8">
+        <div className="mx-6 mt-6 flex flex-col gap-3 rounded-xl border border-accent/20 bg-accent/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:mx-8">
           <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined mt-0.5 text-[20px] text-[#006972]" aria-hidden>pending_actions</span>
-            <p className="text-sm text-[#051125]">
+            <Icon name="pending_actions" size={20} className="mt-0.5 text-accent" />
+            <p className="text-sm text-ink">
               {uploadStep === 'pick'
                 ? `Your upload is waiting — ${uploadPages.length} page${uploadPages.length !== 1 ? 's' : ''} ready to pick from.`
                 : 'You have generated cards that aren’t saved to this set yet.'}
@@ -256,17 +257,17 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
       )}
 
       {/* Content */}
-      <div className="p-6 lg:p-8">
+      <div className="py-6">
         {isOwner && cards.length === 0 ? (
           // An empty set's next step is almost always the upload, not typing cards by hand.
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#006972]/10">
-              <span className="material-symbols-outlined text-[28px] text-[#006972]" aria-hidden>cloud_upload</span>
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10">
+              <Icon name="cloud_upload" size={28} className="text-accent" />
             </div>
-            <h3 className="text-base font-bold text-[#051125]" style={{ fontFamily: 'var(--font-manrope)' }}>
+            <h3 className="font-headline text-base font-bold text-ink">
               Add your lecture material
             </h3>
-            <p className="mt-1 max-w-sm text-sm text-[#45474d]">
+            <p className="mt-1 max-w-sm text-sm text-ink-muted">
               Upload a PDF or image and we&apos;ll draft flashcards and diagram quizzes for you to review.
             </p>
             <Button onClick={openUpload} size="lg" className="mt-5 gap-1.5">
@@ -276,7 +277,7 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
             <button
               type="button"
               onClick={() => openNewEditor(activeTab)}
-              className="mt-3 text-sm text-[#45474d] hover:text-[#051125] hover:underline"
+              className="mt-3 text-sm text-ink-muted hover:text-ink hover:underline"
             >
               or add a {activeTab === 'flashcard' ? 'flashcard' : 'diagram'} by hand
             </button>
@@ -305,7 +306,7 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
                 {isOwner && (
                   <button
                     onClick={() => openNewEditor('flashcard')}
-                    className="flex items-center gap-2 rounded-xl border-2 border-dashed border-stone-200 px-5 py-4 text-sm text-stone-400 hover:border-stone-300 hover:text-stone-600 transition-colors"
+                    className="flex items-center gap-2 rounded-xl border-2 border-dashed border-line px-5 py-4 text-sm text-ink-muted hover:border-line hover:text-ink-muted transition-colors"
                   >
                     <PlusIcon />
                     Add flashcard
@@ -340,7 +341,7 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
                 {isOwner && (
                   <button
                     onClick={() => openNewEditor('diagram')}
-                    className="flex items-center gap-2 rounded-xl border-2 border-dashed border-stone-200 px-5 py-4 text-sm text-stone-400 hover:border-stone-300 hover:text-stone-600 transition-colors"
+                    className="flex items-center gap-2 rounded-xl border-2 border-dashed border-line px-5 py-4 text-sm text-ink-muted hover:border-line hover:text-ink-muted transition-colors"
                   >
                     <PlusIcon />
                     Add diagram
@@ -409,14 +410,14 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
           )}
         </div>
         {uploadInProgress && (
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-stone-100 pt-4">
-            <p className="text-xs text-stone-500">
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-paper-2 pt-4">
+            <p className="text-xs text-ink-muted">
               Closing this keeps your progress — pick it up from the set page.
             </p>
             <button
               type="button"
               onClick={discardUpload}
-              className="text-xs font-medium text-stone-500 hover:text-red-600 hover:underline"
+              className="text-xs font-medium text-ink-muted hover:text-bad hover:underline"
             >
               Discard and start over
             </button>

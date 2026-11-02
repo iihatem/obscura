@@ -5,6 +5,7 @@ import type { DiagramCard, Label } from '@/types'
 import type { Grade } from '@/lib/scoring'
 import { gradeAnswer } from '@/lib/scoring'
 import { cn, proxyImageUrl } from '@/lib/utils'
+import Icon from '@/components/ui/Icon'
 
 interface DiagramQuizProps {
   card: DiagramCard
@@ -12,10 +13,10 @@ interface DiagramQuizProps {
 }
 
 const gradeStyle: Record<Grade, string> = {
-  correct: 'border-emerald-500 bg-emerald-400/35',
-  close: 'border-amber-500 bg-amber-400/35',
-  wrong: 'border-red-500 bg-red-400/35',
-  empty: 'border-red-500 bg-red-400/35',
+  correct: 'border-good bg-good/35',
+  close: 'border-warn bg-warn/35',
+  wrong: 'border-bad bg-bad/35',
+  empty: 'border-bad bg-bad/35',
 }
 
 function aggregateGrades(grades: Grade[]): Grade {
@@ -30,7 +31,7 @@ export default function DiagramQuiz({ card, onAnswer }: DiagramQuizProps) {
   if (card.labels.length === 0) {
     return (
       <div className="flex flex-col items-center gap-5 py-16 text-center w-full max-w-3xl mx-auto">
-        <div className="relative rounded-xl overflow-hidden border border-[#e7e8e9] bg-[#edeeef] w-full">
+        <div className="relative rounded-xl overflow-hidden border border-line bg-paper-2 w-full">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={proxyImageUrl(card.image_url)}
@@ -38,19 +39,19 @@ export default function DiagramQuiz({ card, onAnswer }: DiagramQuizProps) {
             className="w-full h-auto block opacity-50"
           />
         </div>
-        <span className="material-symbols-outlined text-[40px] text-[#c5c6cd]" aria-hidden>label_off</span>
+        <Icon name="label_off" size={40} className="text-line" />
         <div>
-          <p className="font-bold text-[#051125]" style={{ fontFamily: 'var(--font-manrope)' }}>
+          <p className="font-headline font-bold text-ink">
             No labels on this diagram
           </p>
-          <p className="text-sm text-[#45474d] mt-1">This card has no label boxes to fill in.</p>
+          <p className="text-sm text-ink-muted mt-1">This card has no label boxes to fill in.</p>
         </div>
         <button
           onClick={() => onAnswer('empty', [])}
-          className="inline-flex items-center gap-2 rounded-lg border border-[#e7e8e9] bg-white px-5 py-2.5 text-sm font-bold text-[#051125] hover:bg-[#f3f4f5] transition-colors"
+          className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-5 py-2.5 text-sm font-bold text-ink hover:bg-paper transition-colors"
         >
           Skip
-          <span className="material-symbols-outlined text-[16px]" aria-hidden>arrow_forward</span>
+          <Icon name="arrow_forward" size={16} />
         </button>
       </div>
     )
@@ -121,7 +122,7 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
           IMPORTANT: the overlay <div>s are positioned as % of THIS container.
           The img must render at its natural aspect ratio (w-full h-auto) with NO
           object-contain / max-height, otherwise letterboxing shifts the coordinates. */}
-      <div className="relative rounded-xl overflow-hidden border border-[#e7e8e9] bg-[#edeeef]">
+      <div className="relative rounded-xl overflow-hidden border border-line bg-paper-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={proxyImageUrl(card.image_url)}
@@ -140,8 +141,8 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
                 submitted && grade
                   ? gradeStyle[grade]
                   : hintActive
-                    ? 'border-stone-400 bg-black/20'
-                    : 'border-stone-900 bg-black'
+                    ? 'border-ink-muted bg-scrim'
+                    : 'border-ink bg-scrim'
               )}
               style={{
                 left: `${label.x}%`,
@@ -154,7 +155,7 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
                 // Show the right answer — colour alone never told the user what it was.
                 <span
                   title={`You typed: ${answers[i] || '—'}`}
-                  className="m-auto max-w-full truncate rounded bg-white/85 px-1 text-[10px] font-bold leading-tight text-[#051125]"
+                  className="m-auto max-w-full truncate rounded bg-surface/85 px-1 text-[10px] font-bold leading-tight text-ink"
                 >
                   {label.label}
                 </span>
@@ -170,7 +171,7 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
                   }}
                   onKeyDown={(e) => handleKeyDown(e, i)}
                   placeholder="?"
-                  className="w-full h-full bg-transparent text-white text-xs px-1 focus:outline-none placeholder:text-stone-500"
+                  className="w-full h-full bg-transparent text-on-ink text-xs px-1 focus:outline-none placeholder:text-ink-muted"
                   autoComplete="off"
                   spellCheck={false}
                 />
@@ -182,24 +183,24 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
 
       {/* Hint text */}
       {!submitted && (
-        <p className="text-xs text-[#75777d] text-center">
+        <p className="text-xs text-ink-muted text-center">
           Type labels into each box · Enter to advance · Use Hint to peek at the diagram
         </p>
       )}
 
       {/* After submit: grade legend */}
       {submitted && (
-        <div className="flex items-center justify-center gap-4 text-xs text-[#45474d]">
+        <div className="flex items-center justify-center gap-4 text-xs text-ink-muted">
           <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded-sm bg-emerald-500 inline-block" />
+            <span className="w-3 h-3 rounded-sm bg-good inline-block" />
             Correct ({labelGrades.filter((g) => g === 'correct').length})
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded-sm bg-amber-500 inline-block" />
+            <span className="w-3 h-3 rounded-sm bg-warn inline-block" />
             Close ({labelGrades.filter((g) => g === 'close').length})
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded-sm bg-red-500 inline-block" />
+            <span className="w-3 h-3 rounded-sm bg-bad inline-block" />
             Missed ({labelGrades.filter((g) => g === 'wrong' || g === 'empty').length})
           </span>
         </div>
@@ -217,11 +218,11 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
               className={cn(
                 'flex items-center gap-2 rounded-lg border px-5 py-2.5 text-sm font-bold transition-all active:scale-95',
                 hintActive
-                  ? 'border-amber-300 bg-amber-50 text-amber-700'
-                  : 'border-[#e7e8e9] bg-white text-[#051125] hover:bg-[#f3f4f5]'
+                  ? 'border-warn bg-warn-soft text-warn'
+                  : 'border-line bg-surface text-ink hover:bg-paper'
               )}
             >
-              <span className="material-symbols-outlined text-[16px]" aria-hidden>lightbulb</span>
+              <Icon name="lightbulb" size={16} />
               Hint
               {hintCount > 0 && (
                 <span className="text-[11px] font-medium opacity-60">{hintCount}×</span>
@@ -229,20 +230,20 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
             </button>
             <button
               onClick={handleSubmit}
-              className="flex items-center gap-2 rounded-lg scholar-gradient px-6 py-2.5 text-sm font-bold text-white hover:opacity-90 active:scale-95 transition-all"
+              className="flex items-center gap-2 rounded-lg bg-ink px-6 py-2.5 text-sm font-bold text-on-ink hover:opacity-90 active:scale-95 transition-all"
             >
               Submit
-              <span className="material-symbols-outlined text-[16px]" aria-hidden>check</span>
+              <Icon name="check" size={16} />
             </button>
           </>
         ) : (
           <button
             ref={continueRef}
             onClick={handleContinue}
-            className="flex items-center gap-2 rounded-lg scholar-gradient px-6 py-2.5 text-sm font-bold text-white hover:opacity-90 active:scale-95 transition-all"
+            className="flex items-center gap-2 rounded-lg bg-ink px-6 py-2.5 text-sm font-bold text-on-ink hover:opacity-90 active:scale-95 transition-all"
           >
             Continue
-            <span className="material-symbols-outlined text-[16px]" aria-hidden>arrow_forward</span>
+            <Icon name="arrow_forward" size={16} />
           </button>
         )}
       </div>

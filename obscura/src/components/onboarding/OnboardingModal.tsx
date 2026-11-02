@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { PROVIDERS } from '@/lib/apiKey'
 import { dismissOnboarding, isOnboardingDismissed, restoreOnboarding } from '@/lib/onboarding'
+import Icon from '@/components/ui/Icon'
 
 interface Step {
   icon: string
@@ -16,10 +17,8 @@ interface Step {
 function Bullet({ icon, children }: { icon: string; children: ReactNode }) {
   return (
     <li className="flex gap-3">
-      <span className="material-symbols-outlined text-[18px] text-[#006972] mt-0.5 shrink-0" aria-hidden>
-        {icon}
-      </span>
-      <span className="text-sm text-[#45474d] leading-relaxed">{children}</span>
+      <Icon name={icon} size={18} className="text-accent mt-0.5 shrink-0" />
+      <span className="text-sm text-ink-muted leading-relaxed">{children}</span>
     </li>
   )
 }
@@ -30,16 +29,14 @@ function ExternalLink({ href, icon, label, hint }: { href: string; icon: string;
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-3 rounded-lg border border-[#e7e8e9] bg-white px-4 py-3 hover:border-[#006972]/40 hover:bg-[#006972]/[0.03] transition-colors group"
+      className="flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-3 hover:border-accent/40 hover:bg-accent/[0.03] transition-colors group"
     >
-      <span className="material-symbols-outlined text-[20px] text-[#006972] shrink-0" aria-hidden>{icon}</span>
+      <Icon name={icon} size={20} className="text-accent shrink-0" />
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-bold text-[#051125]">{label}</span>
-        <span className="block text-xs text-[#75777d]">{hint}</span>
+        <span className="block text-sm font-bold text-ink">{label}</span>
+        <span className="block text-xs text-ink-muted">{hint}</span>
       </span>
-      <span className="material-symbols-outlined text-[16px] text-[#75777d] group-hover:text-[#006972] transition-colors" aria-hidden>
-        open_in_new
-      </span>
+      <Icon name="open_in_new" size={16} className="text-ink-muted group-hover:text-accent transition-colors" />
     </a>
   )
 }
@@ -62,7 +59,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
       title: 'Obscura turns your slides into study sets',
       body: (
         <>
-          <p className="text-sm text-[#45474d] leading-relaxed">
+          <p className="text-sm text-ink-muted leading-relaxed">
             Upload a lecture PDF or a diagram and Obscura writes the study material for you —
             flashcards for the concepts, labelled-diagram quizzes for the visuals.
           </p>
@@ -79,16 +76,16 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
       title: 'Create a set',
       body: (
         <>
-          <p className="text-sm text-[#45474d] leading-relaxed">
-            A set is one topic&apos;s worth of cards. Hit <strong className="text-[#051125]">New Set</strong> in
+          <p className="text-sm text-ink-muted leading-relaxed">
+            A set is one topic&apos;s worth of cards. Hit <strong className="text-ink">New Set</strong> in
             the sidebar or on your Library, then give it a title.
           </p>
           <ul className="space-y-3">
             <Bullet icon="sell">Add a subject so it&apos;s easy to find later.</Bullet>
             <Bullet icon="visibility">
-              Choose who sees it: <strong className="text-[#051125]">Private</strong> (just you),{' '}
-              <strong className="text-[#051125]">Link only</strong>, or{' '}
-              <strong className="text-[#051125]">Public</strong> — public sets show up in Explore.
+              Choose who sees it: <strong className="text-ink">Private</strong> (just you),{' '}
+              <strong className="text-ink">Link only</strong>, or{' '}
+              <strong className="text-ink">Public</strong> — public sets show up in Explore.
             </Bullet>
           </ul>
         </>
@@ -100,8 +97,8 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
       title: 'Add your material',
       body: (
         <>
-          <p className="text-sm text-[#45474d] leading-relaxed">
-            Open a set and choose <strong className="text-[#051125]">Upload</strong>. Drop in a PDF, JPG,
+          <p className="text-sm text-ink-muted leading-relaxed">
+            Open a set and choose <strong className="text-ink">Upload</strong>. Drop in a PDF, JPG,
             PNG or WebP — Obscura renders the pages so you can pick only the ones worth studying.
           </p>
           <ul className="space-y-3">
@@ -121,11 +118,11 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
       title: 'Study and track your score',
       body: (
         <>
-          <p className="text-sm text-[#45474d] leading-relaxed">
-            Hit <strong className="text-[#051125]">Study</strong> on a set and pick a mode:{' '}
-            <strong className="text-[#051125]">Flashcards</strong>,{' '}
-            <strong className="text-[#051125]">Diagrams</strong>, or{' '}
-            <strong className="text-[#051125]">Mixed</strong>.
+          <p className="text-sm text-ink-muted leading-relaxed">
+            Hit <strong className="text-ink">Study</strong> on a set and pick a mode:{' '}
+            <strong className="text-ink">Flashcards</strong>,{' '}
+            <strong className="text-ink">Diagrams</strong>, or{' '}
+            <strong className="text-ink">Mixed</strong>.
           </p>
           <ul className="space-y-3">
             <Bullet icon="replay">
@@ -144,7 +141,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
       title: 'Use your own API key',
       body: (
         <>
-          <p className="text-sm text-[#45474d] leading-relaxed">
+          <p className="text-sm text-ink-muted leading-relaxed">
             Everyone gets a free daily allowance of AI generations on our shared key. Add a key of
             your own — from either provider — to skip that cap entirely, and generations bill to
             your account instead.
@@ -177,13 +174,13 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
               onClose()
               router.push('/profile')
             }}
-            className="w-full flex items-center justify-center gap-2 rounded-lg scholar-gradient px-4 py-3 text-sm font-bold text-white hover:opacity-90 transition-opacity"
+            className="w-full flex items-center justify-center gap-2 rounded-lg bg-ink px-4 py-3 text-sm font-bold text-on-ink hover:opacity-90 transition-opacity"
           >
-            <span className="material-symbols-outlined text-[18px]" aria-hidden>manage_accounts</span>
+            <Icon name="manage_accounts" size={18} />
             Paste your key in Profile
           </button>
 
-          <p className="text-xs text-[#75777d] leading-relaxed">
+          <p className="text-xs text-ink-muted leading-relaxed">
             Anthropic keys start with <code className="font-mono">sk-ant-</code>, OpenAI keys with{' '}
             <code className="font-mono">sk-</code>. Both are stored only in this browser — they never
             reach our database, so you&apos;ll re-enter them on other devices.
@@ -229,29 +226,26 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
       aria-labelledby="onboarding-title"
       className={cn(
         'fixed inset-0 m-auto w-[calc(100%-2rem)] max-w-lg max-h-[90vh] overflow-hidden',
-        'rounded-xl border border-[#e7e8e9] bg-white p-0 shadow-2xl backdrop:bg-[#051125]/50'
+        'rounded-xl border border-line bg-surface p-0 shadow-2xl backdrop:bg-ink/50'
       )}
     >
       <div className="flex max-h-[90vh] flex-col">
         {/* Gradient hairline, matching the set pages */}
-        <div className="h-1 w-full shrink-0 bg-gradient-to-r from-[#051125] via-[#006972] to-[#051125]" />
+        <div className="h-1 w-full shrink-0 bg-gradient-to-r from-ink via-accent to-ink" />
 
         {/* Header */}
         <div className="flex items-start justify-between gap-4 px-6 pt-6 sm:px-8">
           <div className="flex items-start gap-4 min-w-0">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#006972]/10">
-              <span className="material-symbols-outlined text-[22px] text-[#006972]" aria-hidden>
-                {current.icon}
-              </span>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-accent/10">
+              <Icon name={current.icon} size={22} className="text-accent" />
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#006972]">
+              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-accent">
                 {current.eyebrow}
               </p>
               <h2
                 id="onboarding-title"
-                className="mt-1 text-xl font-extrabold tracking-tight text-[#051125]"
-                style={{ fontFamily: 'var(--font-manrope)' }}
+                className="font-headline mt-1 text-xl font-extrabold tracking-tight text-ink"
               >
                 {current.title}
               </h2>
@@ -261,9 +255,9 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="shrink-0 rounded-lg p-1 text-[#75777d] hover:bg-[#f3f4f5] hover:text-[#051125] transition-colors"
+            className="shrink-0 rounded-lg p-1 text-ink-muted hover:bg-paper hover:text-ink transition-colors"
           >
-            <span className="material-symbols-outlined text-[20px]" aria-hidden>close</span>
+            <Icon name="close" size={20} />
           </button>
         </div>
 
@@ -273,14 +267,14 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
         </div>
 
         {/* Footer */}
-        <div className="shrink-0 border-t border-[#e7e8e9] bg-[#f8f9f9] px-6 py-4 sm:px-8">
+        <div className="shrink-0 border-t border-line bg-paper px-6 py-4 sm:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <label className="flex cursor-pointer select-none items-center gap-2 text-xs font-medium text-[#45474d]">
+            <label className="flex cursor-pointer select-none items-center gap-2 text-xs font-medium text-ink-muted">
               <input
                 type="checkbox"
                 checked={dontShow}
                 onChange={(e) => toggleDontShow(e.target.checked)}
-                className="h-4 w-4 cursor-pointer accent-[#006972]"
+                className="h-4 w-4 cursor-pointer accent-accent"
               />
               Don&apos;t show again
             </label>
@@ -293,7 +287,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
                     key={s.eyebrow + s.title}
                     className={cn(
                       'h-1.5 rounded-full transition-all',
-                      i === step ? 'w-5 bg-[#006972]' : 'w-1.5 bg-[#c5c6cd]'
+                      i === step ? 'w-5 bg-accent' : 'w-1.5 bg-line'
                     )}
                   />
                 ))}
@@ -303,7 +297,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
                 <button
                   type="button"
                   onClick={() => setStep((s) => s - 1)}
-                  className="h-9 rounded-lg border border-[#e7e8e9] bg-white px-4 text-xs font-bold text-[#45474d] hover:bg-[#f3f4f5] transition-colors"
+                  className="h-9 rounded-lg border border-line bg-surface px-4 text-xs font-bold text-ink-muted hover:bg-paper transition-colors"
                 >
                   Back
                 </button>
@@ -317,7 +311,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
                   onClose()
                   router.push('/sets/new')
                 }}
-                className="h-9 rounded-lg scholar-gradient px-5 text-xs font-bold text-white hover:opacity-90 transition-opacity"
+                className="h-9 rounded-lg bg-ink px-5 text-xs font-bold text-on-ink hover:opacity-90 transition-opacity"
               >
                 {last ? 'Create my first set' : 'Next'}
               </button>

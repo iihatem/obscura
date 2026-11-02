@@ -2,7 +2,7 @@ import { Skeleton, SkeletonSetGrid } from '@/components/ui/Skeleton'
 
 export default function LibraryLoading() {
   return (
-    <div className="p-8 lg:p-12 space-y-12">
+    <div className="py-4 sm:py-8 space-y-12">
       {/* Header */}
       <section className="flex items-end justify-between">
         <div className="space-y-2">

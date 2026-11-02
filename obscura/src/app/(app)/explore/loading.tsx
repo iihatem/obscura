@@ -2,7 +2,7 @@ import { Skeleton, SkeletonSetGrid } from '@/components/ui/Skeleton'
 
 export default function ExploreLoading() {
   return (
-    <div className="p-8 lg:p-12 space-y-8">
+    <div className="py-4 sm:py-8 space-y-8">
       {/* Header */}
       <div className="space-y-2">
         <Skeleton className="h-10 w-48" />

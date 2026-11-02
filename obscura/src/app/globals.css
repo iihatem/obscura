@@ -55,7 +55,7 @@
   }
 }
 
-:root[data-theme="dark"] {
+:root[data-theme="dark"], .theme-dark {
   --paper: #161A1D;
   --paper-2: #1A1F22;
   --surface: #1F2428;
@@ -77,6 +77,30 @@
   --scrim: rgb(0 0 0 / 0.6);
   --lift: 0 1px 2px rgb(0 0 0 / 0.3), 0 18px 40px -12px rgb(0 0 0 / 0.6);
   color-scheme: dark;
+}
+
+.theme-light {
+  --paper: #F6F5F1;
+  --paper-2: #EFEDE7;
+  --surface: #FFFFFF;
+  --ink: #1E2A32;
+  --ink-muted: #66706F;
+  --line: #E4E1D9;
+  --accent: #2F7A7E;
+  --accent-ink: #1F5C60;
+  --accent-soft: #E3EEEC;
+  --good: #2E7D4F;
+  --good-soft: #E2F1E7;
+  --warn: #946410;
+  --warn-soft: #F6ECD6;
+  --bad: #A63D2F;
+  --bad-soft: #F5E2DE;
+  --cover: #1E2A32;
+  --on-cover: #FFFFFF;
+  --on-ink: #F6F5F1;
+  --scrim: rgb(30 42 50 / 0.45);
+  --lift: 0 1px 2px rgb(30 42 50 / 0.05), 0 18px 40px -12px rgb(30 42 50 / 0.18);
+  color-scheme: light;
 }
 
 @theme inline {

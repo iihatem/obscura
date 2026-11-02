@@ -51,13 +51,13 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-paper-2 flex flex-col">
+    <div className="flex min-h-dvh flex-col bg-paper">
       {/* Nav */}
-      <header className="px-8 py-5 flex items-center justify-between">
+      <header className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/frog.svg" alt="Obscura logo" className="w-7 h-7 rounded-md" />
-          <span className="font-headline text-xl font-black text-ink tracking-tight">
+          <span className="font-headline text-lg font-extrabold tracking-tight text-ink">
             Obscura
           </span>
         </Link>
@@ -70,20 +70,21 @@ function LoginForm() {
         <div className="w-full max-w-sm">
           {/* Heading */}
           <div className="mb-8">
-            <h1 className="font-headline text-3xl font-extrabold text-ink mb-2">
+            <h1 className="mb-1 text-[28px] font-extrabold text-ink">
               Welcome back
             </h1>
-            <p className="text-ink-muted text-sm">Sign in to continue studying</p>
+            <p className="text-ink-muted">
+              {redirect === '/claim' ? 'Sign in and your new cards go straight into your library.' : 'Sign in to keep studying.'}
+            </p>
           </div>
 
           {/* Card */}
-          <div className="bg-surface rounded-xl p-8 border border-line shadow-sm relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-ink via-accent to-ink" />
+          <div className="rounded-3xl border border-line bg-surface p-6 sm:p-8">
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               <GoogleButton redirect={redirect} onError={setError} />
               <div>
-                <label htmlFor="login-email" className="block text-xs font-bold uppercase tracking-widest text-ink-muted mb-2">
+                <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-ink">
                   Email
                 </label>
                 <input
@@ -93,12 +94,12 @@ function LoginForm() {
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
                   required
-                  className="w-full bg-paper-2 border-none rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all"
+                  className="h-11 w-full rounded-lg border border-line bg-surface px-3.5 text-[15px] text-ink placeholder:text-ink-muted/80 transition-[border-color,box-shadow] focus:border-accent focus:outline-none focus:ring-3 focus:ring-accent/20"
                   placeholder="you@university.edu"
                 />
               </div>
               <div>
-                <label htmlFor="login-password" className="block text-xs font-bold uppercase tracking-widest text-ink-muted mb-2">
+                <label htmlFor="login-password" className="mb-1.5 block text-sm font-medium text-ink">
                   Password
                 </label>
                 <input
@@ -108,7 +109,7 @@ function LoginForm() {
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
                   required
-                  className="w-full bg-paper-2 border-none rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all"
+                  className="h-11 w-full rounded-lg border border-line bg-surface px-3.5 text-[15px] text-ink placeholder:text-ink-muted/80 transition-[border-color,box-shadow] focus:border-accent focus:outline-none focus:ring-3 focus:ring-accent/20"
                   placeholder="••••••••"
                 />
               </div>
@@ -120,7 +121,7 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-ink text-paper-2 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 mt-1"
+                className="mt-1 h-12 w-full rounded-full bg-ink text-[15px] font-semibold text-on-ink transition hover:bg-ink/88 active:scale-[0.98] disabled:opacity-50"
               >
                 {loading ? 'Signing in...' : 'Sign in'}
               </button>
@@ -129,7 +130,7 @@ function LoginForm() {
 
           <p className="text-center text-sm text-ink-muted mt-6">
             No account?{' '}
-            <Link href={`/signup?redirect=${encodeURIComponent(redirect)}`} className="text-accent font-bold hover:underline">
+            <Link href={`/signup?redirect=${encodeURIComponent(redirect)}`} className="font-semibold text-accent-ink hover:underline">
               Sign up free
             </Link>
           </p>

@@ -96,12 +96,12 @@ function SignupForm() {
 
   if (checkEmail) {
     return (
-      <div className="min-h-screen bg-paper-2 flex flex-col">
+      <div className="flex min-h-dvh flex-col bg-paper">
         <header className="px-8 py-5">
           <Link href="/" className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/frog.svg" alt="Obscura logo" className="w-7 h-7 rounded-md" />
-            <span className="font-headline text-xl font-black text-ink tracking-tight">
+            <span className="font-headline text-lg font-extrabold tracking-tight text-ink">
               Obscura
             </span>
           </Link>
@@ -123,7 +123,7 @@ function SignupForm() {
               {resent ? (
                 <span className="font-bold text-ink">we sent another one.</span>
               ) : (
-                <button type="button" onClick={handleResend} className="text-accent font-bold hover:underline">
+                <button type="button" onClick={handleResend} className="font-semibold text-accent-ink hover:underline">
                   send it again
                 </button>
               )}
@@ -134,12 +134,12 @@ function SignupForm() {
               <button
                 type="button"
                 onClick={() => { setCheckEmail(false); setResent(false); setError('') }}
-                className="text-accent font-bold hover:underline"
+                className="font-semibold text-accent-ink hover:underline"
               >
                 Change it
               </button>
               {' · '}
-              <Link href={`/login?redirect=${encodeURIComponent(redirect)}`} className="text-accent font-bold hover:underline">
+              <Link href={`/login?redirect=${encodeURIComponent(redirect)}`} className="font-semibold text-accent-ink hover:underline">
                 Sign in
               </Link>
             </p>
@@ -150,13 +150,13 @@ function SignupForm() {
   }
 
   return (
-    <div className="min-h-screen bg-paper-2 flex flex-col">
+    <div className="flex min-h-dvh flex-col bg-paper">
       {/* Nav */}
-      <header className="px-8 py-5 flex items-center justify-between">
+      <header className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/frog.svg" alt="Obscura logo" className="w-7 h-7 rounded-md" />
-          <span className="font-headline text-xl font-black text-ink tracking-tight">
+          <span className="font-headline text-lg font-extrabold tracking-tight text-ink">
             Obscura
           </span>
         </Link>
@@ -169,20 +169,23 @@ function SignupForm() {
         <div className="w-full max-w-sm">
           {/* Heading */}
           <div className="mb-8">
-            <h1 className="font-headline text-3xl font-extrabold text-ink mb-2">
-              Create an account
+            <h1 className="mb-1 text-[28px] font-extrabold text-ink">
+              {redirect === '/claim' ? 'Save your cards' : 'Create your account'}
             </h1>
-            <p className="text-ink-muted text-sm">Start curating your study library today</p>
+            <p className="text-ink-muted">
+              {redirect === '/claim'
+                ? 'Make a free account and they go straight into your library.'
+                : 'Turn your lectures into quizzes. Free to start.'}
+            </p>
           </div>
 
           {/* Card */}
-          <div className="bg-surface rounded-xl p-8 border border-line shadow-sm relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-ink via-accent to-ink" />
+          <div className="rounded-3xl border border-line bg-surface p-6 sm:p-8">
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               <GoogleButton redirect={redirect} onError={setError} />
               <div>
-                <label htmlFor="signup-name" className="block text-xs font-bold uppercase tracking-widest text-ink-muted mb-2">
+                <label htmlFor="signup-name" className="mb-1.5 block text-sm font-medium text-ink">
                   Display name
                 </label>
                 <input
@@ -193,11 +196,11 @@ function SignupForm() {
                   autoComplete="name"
                   placeholder="e.g. Alex"
                   required
-                  className="w-full bg-paper-2 border-none rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all"
+                  className="h-11 w-full rounded-lg border border-line bg-surface px-3.5 text-[15px] text-ink placeholder:text-ink-muted/80 transition-[border-color,box-shadow] focus:border-accent focus:outline-none focus:ring-3 focus:ring-accent/20"
                 />
               </div>
               <div>
-                <label htmlFor="signup-email" className="block text-xs font-bold uppercase tracking-widest text-ink-muted mb-2">
+                <label htmlFor="signup-email" className="mb-1.5 block text-sm font-medium text-ink">
                   Email
                 </label>
                 <input
@@ -207,12 +210,12 @@ function SignupForm() {
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
                   required
-                  className="w-full bg-paper-2 border-none rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all"
+                  className="h-11 w-full rounded-lg border border-line bg-surface px-3.5 text-[15px] text-ink placeholder:text-ink-muted/80 transition-[border-color,box-shadow] focus:border-accent focus:outline-none focus:ring-3 focus:ring-accent/20"
                   placeholder="you@university.edu"
                 />
               </div>
               <div>
-                <label htmlFor="signup-password" className="block text-xs font-bold uppercase tracking-widest text-ink-muted mb-2">
+                <label htmlFor="signup-password" className="mb-1.5 block text-sm font-medium text-ink">
                   Password
                 </label>
                 <input
@@ -223,7 +226,7 @@ function SignupForm() {
                   autoComplete="new-password"
                   minLength={8}
                   required
-                  className="w-full bg-paper-2 border-none rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all"
+                  className="h-11 w-full rounded-lg border border-line bg-surface px-3.5 text-[15px] text-ink placeholder:text-ink-muted/80 transition-[border-color,box-shadow] focus:border-accent focus:outline-none focus:ring-3 focus:ring-accent/20"
                   placeholder="Min 8 characters"
                 />
               </div>
@@ -235,7 +238,7 @@ function SignupForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-ink text-paper-2 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 mt-1"
+                className="mt-1 h-12 w-full rounded-full bg-ink text-[15px] font-semibold text-on-ink transition hover:bg-ink/88 active:scale-[0.98] disabled:opacity-50"
               >
                 {loading ? 'Creating account...' : 'Create account'}
               </button>
@@ -244,7 +247,7 @@ function SignupForm() {
 
           <p className="text-center text-sm text-ink-muted mt-6">
             Already have an account?{' '}
-            <Link href={`/login?redirect=${encodeURIComponent(redirect)}`} className="text-accent font-bold hover:underline">
+            <Link href={`/login?redirect=${encodeURIComponent(redirect)}`} className="font-semibold text-accent-ink hover:underline">
               Sign in
             </Link>
           </p>

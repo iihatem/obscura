@@ -51,7 +51,7 @@ export default function GoogleButton({ redirect, onError }: GoogleButtonProps) {
         type="button"
         onClick={handleClick}
         disabled={loading}
-        className="w-full flex items-center justify-center gap-3 rounded-lg border border-line bg-surface py-3 text-sm font-bold text-ink hover:bg-paper active:scale-95 transition-all disabled:opacity-50"
+        className="flex h-12 w-full items-center justify-center gap-3 rounded-full border border-line bg-surface text-[15px] font-semibold text-ink transition hover:border-ink-muted active:scale-[0.98] disabled:opacity-50"
       >
         <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden>
           <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
@@ -61,9 +61,9 @@ export default function GoogleButton({ redirect, onError }: GoogleButtonProps) {
         </svg>
         {loading ? 'Redirecting to Google…' : 'Continue with Google'}
       </button>
-      <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-ink-muted">
+      <div className="flex items-center gap-3 text-[13px] text-ink-muted">
         <span className="h-px flex-1 bg-line" />
-        or
+        or with email
         <span className="h-px flex-1 bg-line" />
       </div>
     </>

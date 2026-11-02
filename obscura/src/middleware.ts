@@ -1,9 +1,10 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { safeRedirect } from '@/lib/utils'
 
 // Paths under (app) route group — these don't include (app) in the URL
-const PROTECTED_PREFIXES = ['/library', '/explore', '/sets', '/profile']
+const PROTECTED_PREFIXES = ['/library', '/explore', '/sets', '/profile', '/claim']
 const AUTH_PREFIXES = ['/login', '/signup']
 
 export async function middleware(request: NextRequest) {
@@ -48,9 +49,8 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && isAuthPage) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/library'
-    return NextResponse.redirect(url)
+    // Already signed in: go where the page was going to send them.
+    return NextResponse.redirect(new URL(safeRedirect(request.nextUrl.searchParams.get('redirect')), request.url))
   }
 
   return supabaseResponse

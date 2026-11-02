@@ -6,6 +6,7 @@ import type { Grade } from '@/lib/scoring'
 import { swipeGrade, SWIPE_THRESHOLD } from '@/lib/study'
 import { cn } from '@/lib/utils'
 import Button from '@/components/ui/Button'
+import PageTag from '@/components/ui/PageTag'
 
 interface FlashcardQuizProps {
   card: FlashCard
@@ -100,6 +101,7 @@ export default function FlashcardQuiz({ card, onAnswer }: FlashcardQuizProps) {
                 <span className="h-px w-12 bg-line" />
                 <span className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">Answer</span>
                 <span className="whitespace-pre-wrap text-lg leading-relaxed text-ink sm:text-[22px]">{card.back}</span>
+                <PageTag page={card.source_page} className="mt-2" />
               </div>
             </div>
           </div>

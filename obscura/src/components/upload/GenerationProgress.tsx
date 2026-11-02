@@ -5,6 +5,10 @@ import { cn } from '@/lib/utils'
 import { apiFetch, ApiUnavailableError, withColdStartRetry } from '@/lib/api'
 import { clearDraft, saveDraftPages, saveDraftState } from '@/lib/drafts'
 import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
+import Textarea from '@/components/ui/Textarea'
+import PageTag from '@/components/ui/PageTag'
+import { Trash2 } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import type { SelectedPage } from './PagePicker'
 import type { Label } from '@/types'
@@ -36,6 +40,8 @@ interface DraftLabel extends Label {
 interface DraftDiagram {
   type: 'diagram'
   id: string
+  /** The lecture page it came from, 1-based. */
+  sourcePage?: number
   /** Local data URL — used for preview; uploaded to Supabase at save time */
   dataUrl: string
   /** Set once the image is uploaded, so retrying a failed save doesn't upload it twice. */
@@ -46,6 +52,7 @@ interface DraftDiagram {
 interface DraftFlashcardCard {
   type: 'flashcard'
   id: string
+  sourcePage?: number
   front: string
   back: string
 }
@@ -280,12 +287,13 @@ export default function GenerationProgress({ pages, setId, userId, restored, onD
         cards.push({
           type: 'diagram',
           id: draftId(),
+          sourcePage: r.page.pageData.pageIndex + 1,
           dataUrl: r.croppedDataUrl ?? r.page.pageData.dataUrl,
           labels: r.labels.map((l) => ({ ...l, id: draftId() })),
         })
       } else if (r.page.type === 'flashcard' && r.cards) {
         for (const c of r.cards) {
-          cards.push({ type: 'flashcard', id: draftId(), front: c.front, back: c.back })
+          cards.push({ type: 'flashcard', id: draftId(), sourcePage: r.page.pageData.pageIndex + 1, front: c.front, back: c.back })
         }
       }
     }
@@ -367,8 +375,8 @@ export default function GenerationProgress({ pages, setId, userId, restored, onD
           set_id: setId,
           cards: draftCards.map((card) =>
             card.type === 'flashcard'
-              ? { type: 'flashcard', front: card.front, back: card.back }
-              : { type: 'diagram', image_url: imageUrls.get(card.id), labels: card.labels }
+              ? { type: 'flashcard', front: card.front, back: card.back, source_page: card.sourcePage }
+              : { type: 'diagram', image_url: imageUrls.get(card.id), labels: card.labels, source_page: card.sourcePage }
           ),
         }),
       })
@@ -390,7 +398,7 @@ export default function GenerationProgress({ pages, setId, userId, restored, onD
   // ── Drag to reposition label boxes ───────────────────────────────────────
 
   function handleLabelDrag(
-    e: React.MouseEvent<HTMLDivElement>,
+    e: React.PointerEvent<HTMLDivElement>,
     cardId: string,
     label: DraftLabel,
     containerRef: React.RefObject<HTMLDivElement | null>
@@ -404,18 +412,18 @@ export default function GenerationProgress({ pages, setId, userId, restored, onD
     const startLabelX = label.x
     const startLabelY = label.y
 
-    function onMouseMove(ev: MouseEvent) {
+    function onMouseMove(ev: PointerEvent) {
       const dx = ((ev.clientX - startX) / rect.width) * 100
       const dy = ((ev.clientY - startY) / rect.height) * 100
       updateLabel(cardId, label.id, 'x', Math.max(0, Math.min(100 - label.width, startLabelX + dx)))
       updateLabel(cardId, label.id, 'y', Math.max(0, Math.min(100 - label.height, startLabelY + dy)))
     }
     function onMouseUp() {
-      document.removeEventListener('mousemove', onMouseMove)
-      document.removeEventListener('mouseup', onMouseUp)
+      document.removeEventListener('pointermove', onMouseMove)
+      document.removeEventListener('pointerup', onMouseUp)
     }
-    document.addEventListener('mousemove', onMouseMove)
-    document.addEventListener('mouseup', onMouseUp)
+    document.addEventListener('pointermove', onMouseMove)
+    document.addEventListener('pointerup', onMouseUp)
   }
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -541,7 +549,7 @@ interface ReviewStepProps {
   onUpdateLabel: (cardId: string, labelId: string, field: keyof DraftLabel, value: string | number) => void
   onDeleteLabel: (cardId: string, labelId: string) => void
   onLabelDrag: (
-    e: React.MouseEvent<HTMLDivElement>,
+    e: React.PointerEvent<HTMLDivElement>,
     cardId: string,
     label: DraftLabel,
     containerRef: React.RefObject<HTMLDivElement | null>
@@ -558,13 +566,12 @@ function ReviewStep({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-ink-muted">
-          Review and edit before saving.{' '}
-          <span className="font-medium text-ink-muted">{draftCards.length} cards total</span>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-[15px] text-ink-muted">
+          Nothing is saved until you say so. Fix any wording, delete what you don&apos;t need, and check a card against its page.
         </p>
-        <Button onClick={onSave} loading={saving} size="lg">
-          Save {draftCards.length} card{draftCards.length !== 1 ? 's' : ''} to set
+        <Button onClick={onSave} loading={saving} size="lg" className="shrink-0" disabled={draftCards.length === 0}>
+          Save {draftCards.length} card{draftCards.length !== 1 ? 's' : ''}
         </Button>
       </div>
 
@@ -578,8 +585,8 @@ function ReviewStep({
       <fieldset disabled={saving} className={cn('flex flex-col gap-6', saving && 'pointer-events-none opacity-60')}>
       {flashcards.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-            Flashcards ({flashcards.length})
+          <h3 className="text-sm font-semibold text-ink">
+            Flashcards <span className="font-normal text-ink-muted">{flashcards.length}</span>
           </h3>
           <div className="flex flex-col gap-2">
             {flashcards.map((card) => (
@@ -596,8 +603,8 @@ function ReviewStep({
 
       {diagrams.length > 0 && (
         <section className="flex flex-col gap-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-            Diagram cards ({diagrams.length})
+          <h3 className="text-sm font-semibold text-ink">
+            Diagrams <span className="font-normal text-ink-muted">{diagrams.length}</span>
           </h3>
           <div className="flex flex-col gap-4">
             {diagrams.map((card) => (
@@ -634,35 +641,15 @@ interface FlashcardReviewCardProps {
 
 function FlashcardReviewCard({ card, onUpdate, onDelete }: FlashcardReviewCardProps) {
   return (
-    <div className="group relative flex flex-col gap-2 rounded-xl border border-line bg-surface p-4">
-      <button
-        onClick={onDelete}
-        className="absolute right-3 top-3 flex rounded p-1 text-line hover:bg-bad-soft hover:text-bad md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-colors"
-        title="Delete card"
-        aria-label="Delete card"
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      </button>
-      <div className="flex flex-col gap-1.5">
-        <label className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">Front</label>
-        <textarea
-          value={card.front}
-          onChange={(e) => onUpdate('front', e.target.value)}
-          rows={2}
-          className="w-full resize-none rounded-md border border-line bg-paper px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-ink-muted"
-        />
+    <div className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4">
+      <div className="flex items-center justify-between gap-2">
+        <PageTag page={card.sourcePage} />
+        <IconButton label="Delete this card" size="sm" variant="danger" onClick={onDelete} className="ml-auto">
+          <Trash2 className="h-4 w-4" aria-hidden />
+        </IconButton>
       </div>
-      <div className="flex flex-col gap-1.5">
-        <label className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">Back</label>
-        <textarea
-          value={card.back}
-          onChange={(e) => onUpdate('back', e.target.value)}
-          rows={2}
-          className="w-full resize-none rounded-md border border-line bg-paper px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-ink-muted"
-        />
-      </div>
+      <Textarea label="Question" value={card.front} onChange={(e) => onUpdate('front', e.target.value)} />
+      <Textarea label="Answer" value={card.back} onChange={(e) => onUpdate('back', e.target.value)} />
     </div>
   )
 }
@@ -674,14 +661,14 @@ interface DiagramReviewCardProps {
   onUpdateLabel: (labelId: string, field: keyof DraftLabel, value: string | number) => void
   onDeleteLabel: (labelId: string) => void
   onDelete: () => void
-  onLabelDrag: (e: React.MouseEvent<HTMLDivElement>, label: DraftLabel, containerRef: React.RefObject<HTMLDivElement | null>) => void
+  onLabelDrag: (e: React.PointerEvent<HTMLDivElement>, label: DraftLabel, containerRef: React.RefObject<HTMLDivElement | null>) => void
 }
 
 function DiagramReviewCard({ card, onUpdateLabel, onDeleteLabel, onDelete, onLabelDrag }: DiagramReviewCardProps) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   function startResize(
-    e: React.MouseEvent,
+    e: React.PointerEvent,
     corner: 'tl' | 'tr' | 'bl' | 'br',
     label: DraftLabel,
   ) {
@@ -695,7 +682,7 @@ function DiagramReviewCard({ card, onUpdateLabel, onDeleteLabel, onDelete, onLab
     const { x: lx, y: ly, width: lw, height: lh } = label
     const MIN = 2
 
-    function onMove(ev: MouseEvent) {
+    function onMove(ev: PointerEvent) {
       const dx = ((ev.clientX - startX) / rect.width) * 100
       const dy = ((ev.clientY - startY) / rect.height) * 100
       let nx = lx, ny = ly, nw = lw, nh = lh
@@ -712,22 +699,18 @@ function DiagramReviewCard({ card, onUpdateLabel, onDeleteLabel, onDelete, onLab
       onUpdateLabel(label.id, 'x', nx); onUpdateLabel(label.id, 'y', ny)
       onUpdateLabel(label.id, 'width', nw); onUpdateLabel(label.id, 'height', nh)
     }
-    function onUp() { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
-    document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp)
+    function onUp() { document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp) }
+    document.addEventListener('pointermove', onMove); document.addEventListener('pointerup', onUp)
   }
 
   return (
-    <div className="group relative rounded-xl border border-line bg-surface p-4">
-      <button
-        onClick={onDelete}
-        className="absolute right-3 top-3 flex rounded p-1 text-line hover:bg-bad-soft hover:text-bad md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-colors"
-        title="Delete card"
-        aria-label="Delete card"
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      </button>
+    <div className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4">
+      <div className="flex items-center justify-between gap-2">
+        <PageTag page={card.sourcePage} />
+        <IconButton label="Delete this diagram" size="sm" variant="danger" onClick={onDelete} className="ml-auto">
+          <Trash2 className="h-4 w-4" aria-hidden />
+        </IconButton>
+      </div>
 
       <div className="flex flex-col gap-3 lg:flex-row">
         {/* Image with draggable + resizable label boxes */}
@@ -740,8 +723,8 @@ function DiagramReviewCard({ card, onUpdateLabel, onDeleteLabel, onDelete, onLab
           {card.labels.map((label) => (
             <div
               key={label.id}
-              onMouseDown={(e) => onLabelDrag(e, label, containerRef)}
-              className="absolute cursor-move border-2 border-ink bg-scrim"
+              onPointerDown={(e) => onLabelDrag(e, label, containerRef)}
+              className="absolute cursor-move touch-none border-2 border-accent bg-cover/80"
               style={{
                 left: `${label.x}%`,
                 top: `${label.y}%`,
@@ -753,8 +736,8 @@ function DiagramReviewCard({ card, onUpdateLabel, onDeleteLabel, onDelete, onLab
               {(['tl','tr','bl','br'] as const).map((c) => (
                 <div
                   key={c}
-                  onMouseDown={(e) => startResize(e, c, label)}
-                  className="absolute w-2.5 h-2.5 bg-surface border border-ink-muted rounded-sm z-10"
+                  onPointerDown={(e) => startResize(e, c, label)}
+                  className="absolute z-10 h-3.5 w-3.5 touch-none rounded-sm border border-ink-muted bg-surface"
                   style={{
                     cursor: `${c === 'tl' ? 'nw' : c === 'tr' ? 'ne' : c === 'bl' ? 'sw' : 'se'}-resize`,
                     top:    c === 'tl' || c === 'tr' ? -5 : undefined,

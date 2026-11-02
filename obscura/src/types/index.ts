@@ -18,6 +18,8 @@ interface BaseCard {
   set_id: string
   position: number
   created_at: string
+  /** The lecture page a generated card came from (1-based). Hand-made cards have none. */
+  source_page?: number | null
 }
 
 export interface FlashCard extends BaseCard {

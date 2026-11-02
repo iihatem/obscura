@@ -60,6 +60,8 @@ create table public.cards (
   -- diagram fields
   image_url text,
   labels jsonb,
+  -- the lecture page a generated card came from (1-based)
+  source_page integer check (source_page is null or source_page between 1 and 10000),
   created_at timestamptz default now()
 );
 

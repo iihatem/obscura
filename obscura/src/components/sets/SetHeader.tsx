@@ -3,58 +3,75 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { ArrowLeft, Check, Copy, Globe, Link2, Lock, Pencil, Play, Share2, Star } from 'lucide-react'
 import type { Set } from '@/types'
-import Badge from '@/components/ui/Badge'
-import Button from '@/components/ui/Button'
+import Button, { buttonClass } from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
+import Textarea from '@/components/ui/Textarea'
 import Modal from '@/components/ui/Modal'
+import IconButton from '@/components/ui/IconButton'
 import { cn } from '@/lib/utils'
 import { apiFetch, errorMessage } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
-import Icon from '@/components/ui/Icon'
 
-const visibilityOptions = [
-  { value: 'private', label: 'Private' },
-  { value: 'link', label: 'Link only' },
-  { value: 'public', label: 'Public' },
-] as const
+type Visibility = Set['visibility']
+
+const VISIBILITY: { value: Visibility; label: string; detail: string; icon: typeof Lock }[] = [
+  { value: 'private', label: 'Private', detail: 'Only you can see it.', icon: Lock },
+  { value: 'link', label: 'Anyone with the link', detail: "Classmates you send it to can study and copy it. It won't show up in Explore.", icon: Link2 },
+  { value: 'public', label: 'Public', detail: 'Listed in Explore, so any student can find, study and copy it.', icon: Globe },
+]
 
 interface SetHeaderProps {
   set: Set
-  cardCount: number
+  flashcardCount: number
+  diagramCount: number
   isOwner: boolean
   onUpdate: (updated: Set) => void
 }
 
-export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHeaderProps) {
+export default function SetHeader({ set, flashcardCount, diagramCount, isOwner, onUpdate }: SetHeaderProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const cardCount = flashcardCount + diagramCount
+  const vis = VISIBILITY.find((v) => v.value === set.visibility) ?? VISIBILITY[0]
+
+  // ── Edit ──
   const [editOpen, setEditOpen] = useState(false)
   const [title, setTitle] = useState(set.title)
   const [description, setDescription] = useState(set.description ?? '')
   const [subject, setSubject] = useState(set.subject ?? '')
-  const [visibility, setVisibility] = useState<Set['visibility']>(set.visibility)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  // Star state
-  const [starred, setStarred] = useState(false)
-  const [starCount, setStarCount] = useState(0)
-
-  // Share link copy feedback
+  // ── Share ──
+  const [shareOpen, setShareOpen] = useState(false)
+  const [changingVis, setChangingVis] = useState<Visibility | null>(null)
   const [copied, setCopied] = useState(false)
+  const [origin, setOrigin] = useState('')
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- window is only known after mount
+    setOrigin(window.location.origin)
+  }, [])
+  const shareUrl = set.share_token && origin ? `${origin}/s/${set.share_token}` : ''
+
+  // ── Star ──
+  const [starred, setStarred] = useState(false)
+  const [starCount, setStarCount] = useState(set.star_count ?? 0)
 
   useEffect(() => {
+    if (isOwner) return
     apiFetch(`/sets/${set.id}/star`)
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
+        if (!data) return
         setStarred(data.starred)
         setStarCount(data.count)
       })
       .catch(() => {})
-  }, [set.id])
+  }, [set.id, isOwner])
 
   async function handleStarToggle() {
     const wasStarred = starred
@@ -73,47 +90,58 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
     }
   }
 
-  async function copyShareLink() {
-    if (!set.share_token) return
-    const url = `${window.location.origin}/s/${set.share_token}`
-    try {
-      await navigator.clipboard.writeText(url)
-    } catch {
-      // Clipboard can be blocked (permissions, insecure context) — show the link instead.
-      window.prompt('Copy this share link:', url)
-      return
-    }
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
   function openEdit() {
     setTitle(set.title)
     setDescription(set.description ?? '')
     setSubject(set.subject ?? '')
-    setVisibility(set.visibility)
     setError('')
     setEditOpen(true)
   }
 
+  async function patch(body: Partial<Pick<Set, 'title' | 'description' | 'subject' | 'visibility'>>) {
+    const res = await apiFetch(`/sets/${set.id}`, { method: 'PATCH', body: JSON.stringify(body) })
+    if (!res.ok) throw new Error(await errorMessage(res, "Couldn't save the set. Please try again."))
+    const updated: Set = await res.json()
+    onUpdate(updated)
+    return updated
+  }
+
   async function handleSave() {
-    if (!title.trim()) { setError('Title is required'); return }
+    if (!title.trim()) { setError('Give the set a title.'); return }
     setSaving(true)
     setError('')
     try {
-      const res = await apiFetch(`/sets/${set.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ title, description, subject, visibility }),
-      })
-      if (!res.ok) throw new Error(await errorMessage(res, "Couldn't save the set. Please try again."))
-      const updated: Set = await res.json()
-      onUpdate(updated)
+      await patch({ title, description, subject })
       setEditOpen(false)
-      toast('Set saved')
+      toast('Saved')
     } catch (err) {
       setError((err as Error).message)
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function changeVisibility(v: Visibility) {
+    if (v === set.visibility) return
+    setChangingVis(v)
+    try {
+      await patch({ visibility: v })
+    } catch (err) {
+      toast((err as Error).message, 'error')
+    } finally {
+      setChangingVis(null)
+    }
+  }
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Clipboard can be blocked; the link is selectable in the field instead.
+      document.getElementById('share-link')?.focus()
+      toast('Copy the link from the box above.', 'info')
     }
   }
 
@@ -127,173 +155,140 @@ export default function SetHeader({ set, cardCount, isOwner, onUpdate }: SetHead
     } catch (err) {
       toast((err as Error).message, 'error')
       setDeleting(false)
-      setDeleteConfirm(false)
+      setDeleteOpen(false)
     }
   }
 
-  const visLabel = { private: 'Private', link: 'Link only', public: 'Public' }[set.visibility]
-  const visVariant = { private: 'default', link: 'blue', public: 'green' }[set.visibility] as 'default' | 'blue' | 'green'
+  const counts = [
+    flashcardCount ? `${flashcardCount} flashcard${flashcardCount === 1 ? '' : 's'}` : null,
+    diagramCount ? `${diagramCount} diagram${diagramCount === 1 ? '' : 's'}` : null,
+  ].filter(Boolean).join(' · ') || 'No cards yet'
 
   return (
     <>
-      <div className="py-4 sm:py-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              {set.subject && (
-                <span className="text-[10px] font-bold uppercase tracking-widest text-accent">
-                  {set.subject}
+      <header className="flex flex-col gap-5 py-4 sm:py-6">
+        <Link href={isOwner ? '/library' : '/explore'} className="flex w-fit items-center gap-1.5 rounded-full py-1 text-sm font-medium text-ink-muted hover:text-ink">
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+          {isOwner ? 'Library' : 'Explore'}
+        </Link>
+
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0 flex-1">
+            {set.subject && <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-accent">{set.subject}</p>}
+            <h1 className="text-[28px] font-extrabold leading-tight text-ink sm:text-4xl">{set.title}</h1>
+            {set.description && <p className="mt-2 max-w-2xl text-ink-muted">{set.description}</p>}
+            <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
+              <span>{counts}</span>
+              {isOwner && (
+                <span className="inline-flex items-center gap-1">
+                  <vis.icon className="h-3.5 w-3.5" aria-hidden />
+                  {vis.label}
                 </span>
               )}
-              <span className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
-                {visLabel}
-              </span>
-              <span className="text-xs text-ink-muted">{cardCount} {cardCount === 1 ? 'card' : 'cards'}</span>
-            </div>
-            <h1
-              className="font-headline text-2xl font-extrabold text-ink truncate tracking-tight"
-            >
-              {set.title}
-            </h1>
-            {set.description && (
-              <p className="mt-1 text-sm text-ink-muted line-clamp-2">{set.description}</p>
-            )}
+            </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-            {/* Star */}
-            <button
-              onClick={handleStarToggle}
-              aria-pressed={starred}
-              aria-label={`${starred ? 'Unstar' : 'Star'} this set (${starCount} star${starCount === 1 ? '' : 's'})`}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-xs font-bold text-ink-muted hover:bg-paper-2 transition-colors"
-            >
-              <Icon name="star" size={16} filled={starred} className={starred ? 'text-warn' : 'text-ink-muted'} />
-              {starCount}
-            </button>
-
-            {/* Share link (link/public visibility) */}
-            {(set.visibility === 'link' || set.visibility === 'public') && set.share_token && (
-              <button
-                onClick={copyShareLink}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-xs font-bold text-ink hover:bg-paper-2 transition-colors"
-              >
-                <Icon name={copied ? 'check' : 'link'} size={16} />
-                {copied ? 'Copied!' : 'Share link'}
-              </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {cardCount > 0 ? (
+              <Link href={`/sets/${set.id}/study`} className={cn(buttonClass('primary', 'lg'), 'flex-1 sm:flex-none')}>
+                <Play className="h-4 w-4" aria-hidden />
+                Study
+              </Link>
+            ) : (
+              <span className={cn(buttonClass('primary', 'lg'), 'pointer-events-none flex-1 opacity-40 sm:flex-none')} aria-disabled title="Add cards to study this set">
+                <Play className="h-4 w-4" aria-hidden />
+                Study
+              </span>
             )}
-
-            {isOwner && (
-              <button
-                onClick={openEdit}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-xs font-bold text-ink hover:bg-paper-2 transition-colors"
-              >
-                <Icon name="edit" size={16} />
-                Edit
-              </button>
+            {isOwner ? (
+              <>
+                <Button variant="secondary" size="lg" onClick={() => setShareOpen(true)}>
+                  <Share2 className="h-4 w-4" aria-hidden />
+                  Share
+                </Button>
+                <IconButton label="Edit set details" variant="outline" className="h-12 w-12" onClick={openEdit}>
+                  <Pencil className="h-4 w-4" aria-hidden />
+                </IconButton>
+              </>
+            ) : (
+              <Button variant="secondary" size="lg" aria-pressed={starred} onClick={handleStarToggle}>
+                <Star className={cn('h-4 w-4', starred && 'fill-current text-warn')} aria-hidden />
+                {starred ? 'Starred' : 'Star'}
+                <span className="tabular-nums text-ink-muted">{starCount}</span>
+              </Button>
             )}
-            <Link
-              href={`/sets/${set.id}/study`}
-              className={cn(
-                'inline-flex h-9 items-center gap-1.5 rounded-lg px-4 text-xs font-bold transition-all',
-                cardCount === 0
-                  ? 'pointer-events-none bg-paper-2 text-ink-muted'
-                  : 'bg-ink text-on-ink hover:opacity-90 shadow-lg shadow-ink/20'
-              )}
-            >
-              <Icon name="play_arrow" size={16} />
-              Study
-            </Link>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Edit modal */}
-      <Modal
-        open={editOpen}
-        onClose={() => setEditOpen(false)}
-        title="Edit set"
-        className="max-w-lg"
-      >
-        <div className="flex flex-col gap-4 mt-2">
-          <Input
-            label="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            maxLength={200}
-            required
-          />
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="edit-set-description" className="text-xs font-bold uppercase tracking-widest text-ink-muted">Description</label>
-            <textarea
-              id="edit-set-description"
-              maxLength={2000}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              className="w-full rounded-lg bg-paper border-none px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none"
-              placeholder="What is this set about?"
-            />
-          </div>
-          <Input
-            label="Subject"
-            maxLength={100}
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            placeholder="e.g. Anatomy, Physiology"
-          />
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold uppercase tracking-widest text-ink-muted">Visibility</label>
-            <div className="grid grid-cols-3 gap-2">
-              {visibilityOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setVisibility(opt.value)}
-                  aria-pressed={visibility === opt.value}
-                  className={cn(
-                    'rounded-lg border px-3 py-2 text-sm font-bold transition-colors',
-                    visibility === opt.value
-                      ? 'border-ink bg-ink text-on-ink'
-                      : 'border-line text-ink-muted hover:border-accent/40'
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {error && <p role="alert" className="text-sm text-bad bg-bad-soft rounded-lg px-4 py-2">{error}</p>}
-
-          <div className="flex items-center justify-between pt-1">
-            {!deleteConfirm ? (
+      {/* Share */}
+      <Modal open={shareOpen} onClose={() => setShareOpen(false)} title="Share this set" className="sm:max-w-lg">
+        <div className="flex flex-col gap-2" role="radiogroup" aria-label="Who can see this set">
+          {VISIBILITY.map((v) => {
+            const selected = set.visibility === v.value
+            return (
               <button
-                onClick={() => setDeleteConfirm(true)}
-                className="text-xs text-ink-muted hover:text-bad transition-colors"
+                key={v.value}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                disabled={changingVis !== null}
+                onClick={() => changeVisibility(v.value)}
+                className={cn(
+                  'flex items-start gap-3 rounded-2xl border p-4 text-left transition',
+                  selected ? 'border-accent bg-accent-soft/50' : 'border-line hover:border-ink-muted/50'
+                )}
               >
-                Delete set
+                <v.icon className={cn('mt-0.5 h-5 w-5 shrink-0', selected ? 'text-accent-ink' : 'text-ink-muted')} aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold text-ink">{v.label}</span>
+                  <span className="block text-sm text-ink-muted">{v.detail}</span>
+                </span>
+                {changingVis === v.value ? (
+                  <span className="mt-1 h-4 w-4 animate-spin rounded-full border-2 border-accent border-t-transparent" aria-hidden />
+                ) : selected ? (
+                  <Check className="mt-0.5 h-5 w-5 text-accent-ink" aria-hidden />
+                ) : null}
               </button>
-            ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-ink-muted">Are you sure?</span>
-                <Button variant="danger" size="sm" loading={deleting} onClick={handleDelete}>
-                  Delete
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setDeleteConfirm(false)}>
-                  Cancel
-                </Button>
-              </div>
-            )}
+            )
+          })}
+        </div>
+        {set.visibility !== 'private' && shareUrl && (
+          <div className="mt-5 flex gap-2">
+            <input id="share-link" readOnly value={shareUrl} onFocus={(e) => e.target.select()} aria-label="Share link"
+              className="h-11 min-w-0 flex-1 rounded-xl border border-line bg-paper px-3 text-sm text-ink focus:border-accent focus:outline-none" />
+            <Button onClick={copyLink} className="h-11">
+              {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
+              {copied ? 'Copied' : 'Copy link'}
+            </Button>
+          </div>
+        )}
+      </Modal>
+
+      {/* Edit */}
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit set details" className="sm:max-w-lg">
+        <div className="flex flex-col gap-4">
+          <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} required />
+          <Input label="Subject or course" maxLength={100} value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="e.g. BIO 110" />
+          <Textarea label="Description" maxLength={2000} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What is this set about?" />
+          {error && <p role="alert" className="rounded-xl bg-bad-soft px-4 py-2.5 text-sm text-bad">{error}</p>}
+          <div className="flex flex-col-reverse gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
+            <button type="button" onClick={() => { setEditOpen(false); setDeleteOpen(true) }} className="text-sm font-medium text-bad hover:underline">
+              Delete set
+            </button>
             <div className="flex gap-2">
-              <Button variant="secondary" size="sm" onClick={() => setEditOpen(false)}>
-                Cancel
-              </Button>
-              <Button size="sm" loading={saving} onClick={handleSave}>
-                Save
-              </Button>
+              <Button variant="secondary" className="flex-1 sm:flex-none" onClick={() => setEditOpen(false)}>Cancel</Button>
+              <Button loading={saving} className="flex-1 sm:flex-none" onClick={handleSave}>Save</Button>
             </div>
           </div>
+        </div>
+      </Modal>
+
+      {/* Delete */}
+      <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete this set?" description={`“${set.title}” and its ${cardCount} cards will be gone for good. This can't be undone.`}>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="secondary" onClick={() => setDeleteOpen(false)}>Keep it</Button>
+          <Button variant="danger" loading={deleting} onClick={handleDelete}>Delete set</Button>
         </div>
       </Modal>
     </>

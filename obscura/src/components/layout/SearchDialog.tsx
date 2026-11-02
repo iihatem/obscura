@@ -106,7 +106,7 @@ export default function SearchDialog({ open, onClose, userId }: SearchDialogProp
                 <span className="block truncate text-[15px] font-medium text-ink">{h.title}</span>
                 {h.subject && <span className="block truncate text-[13px] text-ink-muted">{h.subject}</span>}
               </span>
-              <span className="shrink-0 text-[13px] text-ink-muted">{h.card_count} cards</span>
+              <span className="shrink-0 text-[13px] text-ink-muted">{h.card_count} {h.card_count === 1 ? 'card' : 'cards'}</span>
             </button>
           )
         })}

@@ -8,6 +8,7 @@ import type { Profile } from '@/types'
 import { ToastProvider } from '@/components/ui/Toast'
 import OnboardingProvider from '@/components/onboarding/OnboardingProvider'
 import { buttonClass } from '@/components/ui/Button'
+import { cn } from '@/lib/utils'
 import IconButton from '@/components/ui/IconButton'
 import PillNav from './PillNav'
 import AvatarMenu from './AvatarMenu'
@@ -93,7 +94,7 @@ export default function AppShell({ profile, children }: AppShellProps) {
               <IconButton label="Search (⌘K)" variant="outline" onClick={() => setSearchOpen(true)}>
                 <Search className="h-[18px] w-[18px]" aria-hidden />
               </IconButton>
-              <Link href="/sets/new" className={`${buttonClass('primary', 'md')} hidden sm:inline-flex`}>
+              <Link href="/sets/new" className={cn(buttonClass('primary', 'md'), 'hidden sm:inline-flex')}>
                 <Plus className="h-4 w-4" aria-hidden />
                 New set
               </Link>

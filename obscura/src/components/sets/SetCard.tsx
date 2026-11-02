@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Clock, EllipsisVertical, Globe, Link2, Lock, Play, Trash2 } from 'lucide-react'
 import type { Set } from '@/types'
-import { cn, proxyImageUrl } from '@/lib/utils'
+import { cn, plural, proxyImageUrl } from '@/lib/utils'
 import { apiFetch, errorMessage } from '@/lib/api'
 import { relativeDate } from '@/lib/library'
 import { useToast } from '@/components/ui/Toast'
@@ -109,12 +109,12 @@ export default function SetCard({ set, hasDraft = false }: { set: LibrarySet; ha
         </Menu>
       </div>
 
-      <Modal open={confirming} onClose={() => setConfirming(false)} title="Delete this set?" description={`“${set.title}” and its ${set.card_count} cards will be gone for good. This can't be undone.`}>
+      {confirming && <Modal open onClose={() => setConfirming(false)} title="Delete this set?" description={`“${set.title}” and its ${plural(set.card_count, 'card')} will be gone for good. This can't be undone.`}>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button variant="secondary" onClick={() => setConfirming(false)}>Keep it</Button>
           <Button variant="danger" loading={deleting} onClick={handleDelete}>Delete set</Button>
         </div>
-      </Modal>
+      </Modal>}
     </div>
   )
 }

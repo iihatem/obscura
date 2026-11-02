@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import OnboardingModal from './OnboardingModal'
-import { isOnboardingDismissed } from '@/lib/onboarding'
+import { dismissOnboarding, isOnboardingDismissed } from '@/lib/onboarding'
 
 interface OnboardingContextValue {
   /** Re-open the walkthrough on demand (sidebar "How it works"). */
@@ -29,7 +29,9 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
   return (
     <OnboardingContext.Provider value={{ openOnboarding }}>
       {children}
-      <OnboardingModal open={open} onClose={() => setOpen(false)} />
+      {/* Shown once on its own: closing it counts as seen. "How Obscura works"
+          in the account menu brings it back. */}
+      <OnboardingModal open={open} onClose={() => { dismissOnboarding(); setOpen(false) }} />
     </OnboardingContext.Provider>
   )
 }

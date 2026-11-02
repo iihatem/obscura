@@ -135,19 +135,19 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
         <div className="flex items-center gap-2">
           <button
             onClick={selectAll}
-            className="text-xs text-stone-500 hover:text-stone-700 underline underline-offset-2 transition-colors"
+            className="text-xs text-ink-muted hover:text-ink-muted underline underline-offset-2 transition-colors"
           >
             Select all
           </button>
-          <span className="text-stone-300">·</span>
+          <span className="text-line">·</span>
           <button
             onClick={deselectAll}
-            className="text-xs text-stone-500 hover:text-stone-700 underline underline-offset-2 transition-colors"
+            className="text-xs text-ink-muted hover:text-ink-muted underline underline-offset-2 transition-colors"
           >
             Deselect all
           </button>
         </div>
-        <span className="text-xs text-stone-500">
+        <span className="text-xs text-ink-muted">
           {selectedCount} of {pages.length} selected
         </span>
       </div>
@@ -163,7 +163,7 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
               key={page.pageIndex}
               className={cn(
                 'group relative flex flex-col overflow-hidden rounded-lg border-2 cursor-pointer transition-all',
-                isSelected ? 'border-stone-900 shadow-sm' : 'border-stone-200 hover:border-stone-300'
+                isSelected ? 'border-ink shadow-sm' : 'border-line hover:border-line'
               )}
             >
               {/* Thumbnail */}
@@ -172,7 +172,7 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
                 tabIndex={0}
                 aria-pressed={isSelected}
                 aria-label={`Page ${page.pageIndex + 1}`}
-                className="relative aspect-[3/4] bg-stone-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#006972]"
+                className="relative aspect-[3/4] bg-paper-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
                 onClick={() => togglePage(page.pageIndex)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -190,7 +190,7 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
 
                 {/* Selection overlay */}
                 {isSelected && (
-                  <div className="absolute inset-0 bg-stone-900/10" />
+                  <div className="absolute inset-0 bg-ink/10" />
                 )}
 
                 {/* Checkmark */}
@@ -198,24 +198,24 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
                   className={cn(
                     'absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all',
                     isSelected
-                      ? 'border-stone-900 bg-stone-900 text-white'
-                      : 'border-white/80 bg-white/60 text-transparent group-hover:border-stone-300'
+                      ? 'border-ink bg-ink text-on-ink'
+                      : 'border-surface/80 bg-surface/60 text-transparent group-hover:border-line'
                   )}
                 >
                   <CheckIcon />
                 </div>
 
                 {/* Page number */}
-                <div className="absolute bottom-2 left-2 rounded px-1.5 py-0.5 text-[10px] font-medium bg-black/40 text-white">
+                <div className="absolute bottom-2 left-2 rounded px-1.5 py-0.5 text-[10px] font-medium bg-scrim text-on-ink">
                   {page.pageIndex + 1}
                 </div>
               </div>
 
               {/* Type selector */}
-              <div className="flex border-t border-stone-100 bg-white">
+              <div className="flex border-t border-paper-2 bg-surface">
                 {detecting && !type ? (
                   <div className="flex w-full items-center justify-center py-1.5">
-                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-stone-200 border-t-stone-500" />
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-line border-t-ink-muted" />
                   </div>
                 ) : (
                   <>
@@ -227,13 +227,13 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
                       className={cn(
                         'flex-1 py-1.5 text-[11px] font-medium transition-colors',
                         type === 'flashcard'
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'text-stone-400 hover:text-stone-600'
+                          ? 'bg-accent-soft text-accent'
+                          : 'text-ink-muted hover:text-ink-muted'
                       )}
                     >
                       Text
                     </button>
-                    <div className="w-px bg-stone-100" />
+                    <div className="w-px bg-paper-2" />
                     <button
                       type="button"
                       aria-pressed={type === 'diagram'}
@@ -242,8 +242,8 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
                       className={cn(
                         'flex-1 py-1.5 text-[11px] font-medium transition-colors',
                         type === 'diagram'
-                          ? 'bg-violet-50 text-violet-700'
-                          : 'text-stone-400 hover:text-stone-600'
+                          ? 'bg-warn-soft text-warn'
+                          : 'text-ink-muted hover:text-ink-muted'
                       )}
                     >
                       Diagram
@@ -259,7 +259,7 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
       {/* Generate button */}
       <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
         {quota && !ownKey && (
-          <p className={cn('text-xs sm:mr-auto', overAllowance ? 'text-[#b45309]' : 'text-stone-500')} role="status">
+          <p className={cn('text-xs sm:mr-auto', overAllowance ? 'text-warn' : 'text-ink-muted')} role="status">
             {!quota.shared_key ? (
               <>AI generation needs your own API key on this server. <a href="/profile" target="_blank" rel="noopener" className="font-bold underline">Add one ↗</a></>
             ) : remaining === null ? (

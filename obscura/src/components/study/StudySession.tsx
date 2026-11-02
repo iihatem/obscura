@@ -9,6 +9,7 @@ import DiagramQuiz from './DiagramQuiz'
 import ResultsSummary from './ResultsSummary'
 import { cn } from '@/lib/utils'
 import { apiFetch, withColdStartRetry } from '@/lib/api'
+import Icon from '@/components/ui/Icon'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -102,34 +103,33 @@ function ModePicker({
           className={cn(
             'flex items-center gap-4 rounded-xl border-2 p-5 text-left transition-all',
             opt.disabled
-              ? 'cursor-not-allowed border-[#e1e3e4] bg-[#f3f4f5] opacity-50'
+              ? 'cursor-not-allowed border-line bg-paper opacity-50'
               : loading === opt.mode
-              ? 'border-[#051125] bg-[#051125]'
-              : 'border-[#e7e8e9] bg-white hover:border-[#006972]/40 hover:shadow-sm'
+              ? 'border-ink bg-ink'
+              : 'border-line bg-surface hover:border-accent/40 hover:shadow-sm'
           )}
         >
           <span
             className={cn(
               'shrink-0',
-              loading === opt.mode ? 'text-white' : opt.disabled ? 'text-[#c5c6cd]' : 'text-[#006972]'
+              loading === opt.mode ? 'text-on-ink' : opt.disabled ? 'text-line' : 'text-accent'
             )}
           >
             {opt.icon}
           </span>
           <div className="flex-1 min-w-0">
             <p
-              className={cn(
+              className={cn("font-headline", 
                 'text-sm font-bold',
-                loading === opt.mode ? 'text-white' : 'text-[#051125]'
+                loading === opt.mode ? 'text-on-ink' : 'text-ink'
               )}
-              style={{ fontFamily: 'var(--font-manrope)' }}
             >
               {opt.label}
             </p>
             <p
               className={cn(
                 'text-xs',
-                loading === opt.mode ? 'text-[#c1c6d6]' : 'text-[#45474d]'
+                loading === opt.mode ? 'text-line' : 'text-ink-muted'
               )}
             >
               {opt.description}
@@ -139,8 +139,8 @@ function ModePicker({
             className={cn(
               'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold',
               loading === opt.mode
-                ? 'bg-white/20 text-white'
-                : 'bg-[#edeeef] text-[#45474d]'
+                ? 'bg-surface/20 text-on-ink'
+                : 'bg-paper-2 text-ink-muted'
             )}
           >
             {opt.count}
@@ -307,19 +307,19 @@ export default function StudySession({ set, cards }: StudySessionProps) {
     ]
 
     return (
-      <div className="p-8 lg:p-12 max-w-lg">
+      <div className="mx-auto max-w-lg px-4 py-8 sm:py-12">
         <Link
           href={`/sets/${set.id}`}
-          className="text-xs font-medium text-[#45474d] hover:text-[#051125] transition-colors flex items-center gap-1"
+          className="text-xs font-medium text-ink-muted hover:text-ink transition-colors flex items-center gap-1"
         >
-          <span className="material-symbols-outlined text-[16px]" aria-hidden>arrow_back</span>
+          <Icon name="arrow_back" size={16} />
           {set.title}
         </Link>
-        <h1 className="text-3xl font-extrabold text-[#051125] mt-4 mb-1" style={{ fontFamily: 'var(--font-manrope)' }}>
+        <h1 className="font-headline text-3xl font-extrabold text-ink mt-4 mb-1">
           How do you want to study?
         </h1>
-        <p className="text-sm text-[#45474d] mb-8">Pick a mode to start your session.</p>
-        {error && <p className="text-sm text-[#ba1a1a] bg-[#ffdad6] rounded-lg px-4 py-2 mb-4">{error}</p>}
+        <p className="text-sm text-ink-muted mb-8">Pick a mode to start your session.</p>
+        {error && <p className="text-sm text-bad bg-bad-soft rounded-lg px-4 py-2 mb-4">{error}</p>}
         <ModePicker options={modeOptions} onSelect={handleModeSelect} loading={loadingMode} />
       </div>
     )
@@ -327,9 +327,9 @@ export default function StudySession({ set, cards }: StudySessionProps) {
 
   if (phase === 'results') {
     return (
-      <div className="p-8 lg:p-12">
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
         {!resultsSaved && (
-          <p role="status" className="mx-auto mb-4 max-w-2xl rounded-lg bg-[#fdf8ef] border border-[#f0d9a8] px-4 py-2 text-sm text-[#45474d]">
+          <p role="status" className="mx-auto mb-4 max-w-2xl rounded-lg bg-warn-soft border border-warn-soft px-4 py-2 text-sm text-ink-muted">
             This score couldn&apos;t be saved to your history — the study server didn&apos;t respond. Your answers above are still accurate.
           </p>
         )}
@@ -350,19 +350,19 @@ export default function StudySession({ set, cards }: StudySessionProps) {
   return (
     <div className="flex flex-col min-h-full">
       {/* Progress header */}
-      <div className="bg-[#f8f9fa]/80 backdrop-blur-md border-b border-[#c5c6cd]/20 px-6 py-4 lg:px-8">
+      <div className="bg-paper/90 backdrop-blur-md border-b border-line px-4 py-3 sm:px-6 pt-[calc(0.75rem+env(safe-area-inset-top))]">
         <div className="flex items-end justify-between mb-3">
           <div className="space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#006972]">
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-accent">
               Current Module
             </span>
-            <h1 className="text-xl font-extrabold text-[#051125] tracking-tight" style={{ fontFamily: 'var(--font-manrope)' }}>
+            <h1 className="font-headline text-xl font-extrabold text-ink tracking-tight">
               {set.title}
             </h1>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm font-semibold text-[#45474d]">
-              Card <span className="text-[#051125]">{currentIndex + 1}</span> of {deck.length}
+            <span className="text-sm font-semibold text-ink-muted">
+              Card <span className="text-ink">{currentIndex + 1}</span> of {deck.length}
             </span>
             <Link
               href={`/sets/${set.id}`}
@@ -371,17 +371,17 @@ export default function StudySession({ set, cards }: StudySessionProps) {
                   e.preventDefault()
                 }
               }}
-              className="text-xs font-medium text-[#45474d] hover:text-[#051125] transition-colors flex items-center gap-1"
+              className="text-xs font-medium text-ink-muted hover:text-ink transition-colors flex items-center gap-1"
             >
-              <span className="material-symbols-outlined text-[16px]" aria-hidden>close</span>
+              <Icon name="close" size={16} />
               Exit
             </Link>
           </div>
         </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-[#e7e8e9]">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-line">
           <div
-            className="h-full bg-[#006972] transition-all duration-300 rounded-full"
-            style={{ width: `${progress}%`, boxShadow: '0 0 10px rgba(0,105,114,0.3)' }}
+            className="h-full bg-accent transition-all duration-300 rounded-full"
+            style={{ width: `${progress}%` }}
           />
         </div>
       </div>

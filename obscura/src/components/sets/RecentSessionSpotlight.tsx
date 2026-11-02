@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
 import type { SessionHistoryItem } from '@/app/(app)/profile/page'
+import Icon from '@/components/ui/Icon'
 
 const modeLabel: Record<string, string> = {
   flashcard: 'Flashcards',
@@ -34,28 +35,28 @@ export default function RecentSessionSpotlight() {
 
   if (!session) return null
 
+  // On the dark ink panel the soft tones read as the light versions of good/warn/bad.
   const scoreColor =
-    session.score_pct >= 80 ? '#9ff0fb' : session.score_pct >= 50 ? '#fcd34d' : '#fca5a5'
+    session.score_pct >= 80 ? 'text-good-soft' : session.score_pct >= 50 ? 'text-warn-soft' : 'text-bad-soft'
 
   return (
-    <section className="relative overflow-hidden rounded-xl scholar-gradient p-8 text-white flex items-center justify-between gap-6">
+    <section className="relative overflow-hidden rounded-xl bg-ink p-8 text-on-ink flex items-center justify-between gap-6">
       {/* Background icon */}
       <div className="absolute right-4 bottom-0 opacity-10 pointer-events-none select-none">
-        <span className="material-symbols-outlined" aria-hidden style={{ fontSize: '9rem' }}>history_edu</span>
+        <Icon name="history_edu" size={144} />
       </div>
 
       {/* Left: info */}
       <div className="relative z-10 space-y-3 min-w-0">
-        <span className="inline-block px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-widest border border-white/10">
+        <span className="inline-block px-3 py-1 bg-surface/10 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-widest border border-surface/10">
           Last session · {relativeDate(session.completed_at)}
         </span>
         <h3
-          className="text-2xl font-extrabold truncate max-w-sm"
-          style={{ fontFamily: 'var(--font-manrope)' }}
+          className="font-headline text-2xl font-extrabold truncate max-w-sm"
         >
           {session.set_title}
         </h3>
-        <p className="text-white/70 text-sm">
+        <p className="text-on-ink/70 text-sm">
           {modeLabel[session.mode]} · {session.total_cards} cards
         </p>
       </div>
@@ -63,19 +64,18 @@ export default function RecentSessionSpotlight() {
       {/* Right: score + CTA */}
       <div className="relative z-10 flex flex-col items-end gap-3 shrink-0">
         <div className="text-right">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-white/60">Score</p>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-on-ink/60">Score</p>
           <p
-            className="text-4xl font-extrabold leading-none"
-            style={{ fontFamily: 'var(--font-manrope)', color: scoreColor }}
+            className={`font-headline text-4xl font-extrabold leading-none ${scoreColor}`}
           >
             {session.score_pct}%
           </p>
         </div>
         <Link
           href={`/sets/${session.set_id}/study`}
-          className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 border border-white/20 rounded-lg px-4 py-2 text-sm font-bold text-white transition-colors"
+          className="inline-flex items-center gap-2 bg-surface/15 hover:bg-surface/25 border border-surface/20 rounded-lg px-4 py-2 text-sm font-bold text-on-ink transition-colors"
         >
-          <span className="material-symbols-outlined text-[16px]" aria-hidden>replay</span>
+          <Icon name="replay" size={16} />
           Study again
         </Link>
       </div>

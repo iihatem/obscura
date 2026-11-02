@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import Icon from '@/components/ui/Icon'
 
 export default function StudyError({
   error,
@@ -19,22 +20,22 @@ export default function StudyError({
 
   return (
     <div className="flex flex-col items-center justify-center py-32 gap-4 text-center px-6">
-      <span className="material-symbols-outlined text-[48px] text-[#ba1a1a]" aria-hidden>psychology_off</span>
-      <h2 className="text-xl font-bold text-[#051125]" style={{ fontFamily: 'var(--font-manrope)' }}>
+      <Icon name="psychology_off" size={48} className="text-bad" />
+      <h2 className="font-headline text-xl font-bold text-ink">
         Study session failed to load
       </h2>
-      <p className="text-sm text-[#45474d] max-w-sm">{error.message || 'Something went wrong.'}</p>
+      <p className="text-sm text-ink-muted max-w-sm">{error.message || 'Something went wrong.'}</p>
       <div className="flex gap-3 mt-2">
         <button
           onClick={reset}
-          className="inline-flex items-center gap-2 px-5 py-2.5 scholar-gradient text-white rounded-lg font-bold text-sm hover:opacity-90 transition-all"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-ink text-on-ink rounded-lg font-bold text-sm hover:opacity-90 transition-all"
         >
           Try again
         </button>
         {params?.id && (
           <Link
             href={`/sets/${params.id}`}
-            className="inline-flex items-center gap-2 px-5 py-2.5 border border-[#e7e8e9] bg-white text-[#051125] rounded-lg font-bold text-sm hover:bg-[#f3f4f5] transition-all"
+            className="inline-flex items-center gap-2 px-5 py-2.5 border border-line bg-surface text-ink rounded-lg font-bold text-sm hover:bg-paper transition-all"
           >
             Back to set
           </Link>

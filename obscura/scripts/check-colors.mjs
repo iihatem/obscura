@@ -14,11 +14,16 @@ export const RULES = [
   { name: 'palette class', re: new RegExp(`\\b(?:${UTILITIES})-(?:${PALETTES})-\\d{2,3}\\b`, 'g') },
   { name: 'white/black class', re: new RegExp(`\\b(?:${UTILITIES})-(?:white|black)\\b`, 'g') },
   { name: 'Material Symbols', re: /material-symbols/g },
+  // Inline style colors (`color: '#e8b400'`). SVG brand fills such as the
+  // Google logo's `fill="#4285F4"` are allowed.
+  { name: 'inline hex color', re: /(?<!fill=)['"]#[0-9a-fA-F]{3,8}['"]/g },
+  { name: 'inline rgb color', re: /rgba?\(\s*\d/g },
 ]
 
 export function findViolations(text) {
   const found = []
   text.split('\n').forEach((line, i) => {
+    if (line.includes('check-colors-allow')) return
     for (const { name, re } of RULES) {
       for (const m of line.matchAll(re)) found.push({ line: i + 1, rule: name, match: m[0] })
     }

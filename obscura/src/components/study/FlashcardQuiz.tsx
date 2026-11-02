@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import type { FlashCard } from '@/types'
 import type { Grade } from '@/lib/scoring'
 import { cn } from '@/lib/utils'
+import Icon from '@/components/ui/Icon'
 
 interface FlashcardQuizProps {
   card: FlashCard
@@ -16,21 +17,21 @@ const gradeButtons: { grade: Grade; label: string; key: string; icon: string; cl
     label: 'Confident',
     key: '1',
     icon: 'verified',
-    className: 'border-[#006972]/20 hover:border-[#006972] text-[#051125]',
+    className: 'border-accent/20 hover:border-accent text-ink',
   },
   {
     grade: 'close',
     label: 'Almost',
     key: '2',
     icon: 'help',
-    className: 'border-[#e7e8e9] hover:border-[#75777d] text-[#051125]',
+    className: 'border-line hover:border-ink-muted text-ink',
   },
   {
     grade: 'wrong',
     label: 'Need Review',
     key: '3',
     icon: 'emergency_home',
-    className: 'border-[#ba1a1a]/20 hover:border-[#ba1a1a] text-[#051125]',
+    className: 'border-bad/20 hover:border-bad text-ink',
   },
 ]
 
@@ -68,31 +69,31 @@ export default function FlashcardQuiz({ card, onAnswer }: FlashcardQuizProps) {
           <div className={cn('flip-card-inner w-full', revealed && 'flipped')}>
             {/* Front */}
             <div
-              className="flip-card-face w-full rounded-xl bg-white shadow-sm border border-[#e7e8e9] cursor-pointer select-none relative overflow-hidden"
+              className="flip-card-face w-full rounded-xl bg-surface shadow-sm border border-line cursor-pointer select-none relative overflow-hidden"
               onClick={() => !revealed && setRevealed(true)}
               style={{ minHeight: '280px' }}
             >
-              <div className="absolute top-4 left-4 bg-[#1b263b] text-[#828da7] px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-[#006972] rounded-full animate-pulse" />
+              <div className="absolute top-4 left-4 bg-ink text-ink-muted px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-accent rounded-full animate-pulse" />
                 Flashcard Mode
               </div>
               <div className="flex flex-col items-center justify-center h-full p-10 text-center" style={{ minHeight: '280px' }}>
-                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#006972] mb-4">Question</p>
-                <p className="text-xl font-medium text-[#191c1d] leading-relaxed">{card.front}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-accent mb-4">Question</p>
+                <p className="text-xl font-medium text-ink leading-relaxed">{card.front}</p>
                 {!revealed && (
-                  <p className="mt-8 text-xs text-[#75777d]">Click card or press Space to reveal</p>
+                  <p className="mt-8 text-xs text-ink-muted">Click card or press Space to reveal</p>
                 )}
               </div>
             </div>
 
             {/* Back */}
             <div
-              className="flip-card-face flip-card-back absolute inset-0 w-full rounded-xl bg-white shadow-sm border border-[#006972]/20"
+              className="flip-card-face flip-card-back absolute inset-0 w-full rounded-xl bg-surface shadow-sm border border-accent/20"
               style={{ minHeight: '280px' }}
             >
               <div className="flex flex-col items-center justify-center h-full p-10 text-center" style={{ minHeight: '280px' }}>
-                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#006972] mb-4">Answer</p>
-                <p className="text-xl text-[#191c1d] leading-relaxed">{card.back}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-accent mb-4">Answer</p>
+                <p className="text-xl text-ink leading-relaxed">{card.back}</p>
               </div>
             </div>
           </div>
@@ -102,9 +103,9 @@ export default function FlashcardQuiz({ card, onAnswer }: FlashcardQuizProps) {
         {!revealed && (
           <button
             onClick={() => setRevealed(true)}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-[#051125] text-white rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all"
+            className="w-full flex items-center justify-center gap-2 py-3 bg-ink text-on-ink rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all"
           >
-            <span className="material-symbols-outlined text-sm" aria-hidden>sync</span>
+            <Icon name="sync" size={14} />
             Flip to See Answer
           </button>
         )}
@@ -112,12 +113,12 @@ export default function FlashcardQuiz({ card, onAnswer }: FlashcardQuizProps) {
 
       {/* Right panel: Self Assessment */}
       <aside className="w-full lg:w-72 flex flex-col gap-6">
-        <div className="bg-[#f3f4f5] rounded-xl p-6 space-y-6">
+        <div className="bg-paper rounded-xl p-6 space-y-6">
           <div>
-            <h3 className="font-bold text-[#051125] text-lg mb-1" style={{ fontFamily: 'var(--font-manrope)' }}>
+            <h3 className="font-headline font-bold text-ink text-lg mb-1">
               Self Assessment
             </h3>
-            <p className="text-sm text-[#45474d] leading-relaxed">
+            <p className="text-sm text-ink-muted leading-relaxed">
               How comfortable do you feel with this card?
             </p>
           </div>
@@ -132,27 +133,21 @@ export default function FlashcardQuiz({ card, onAnswer }: FlashcardQuizProps) {
                 key={grade}
                 onClick={() => onAnswer(grade)}
                 className={cn(
-                  'w-full flex items-center justify-between px-5 py-4 bg-white border rounded-lg transition-all group',
+                  'w-full flex items-center justify-between px-5 py-4 bg-surface border rounded-lg transition-all group',
                   className
                 )}
               >
                 <div className="flex items-center gap-3">
-                  <span
-                    className={cn(
-                      'material-symbols-outlined text-[20px]',
-                      grade === 'correct' ? 'text-[#006972]' : grade === 'wrong' ? 'text-[#ba1a1a]' : 'text-[#75777d]'
-                    )}
-                    style={{ fontVariationSettings: "'FILL' 1" }}
-                  >
-                    {icon}
-                  </span>
-                  <span className="font-bold text-[#051125]">{label}</span>
+                  <Icon
+                    name={icon}
+                    size={20}
+                    className={grade === 'correct' ? 'text-accent' : grade === 'wrong' ? 'text-bad' : 'text-ink-muted'}
+                  />
+                  <span className="font-bold text-ink">{label}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-[#45474d] opacity-50">{key}</span>
-                  <span className="material-symbols-outlined text-[#45474d] group-hover:translate-x-1 transition-transform text-[18px]" aria-hidden>
-                    chevron_right
-                  </span>
+                  <span className="text-xs text-ink-muted opacity-50">{key}</span>
+                  <Icon name="chevron_right" size={18} className="text-ink-muted group-hover:translate-x-1 transition-transform" />
                 </div>
               </button>
             ))}
@@ -160,22 +155,22 @@ export default function FlashcardQuiz({ card, onAnswer }: FlashcardQuizProps) {
         </div>
 
         {/* AI Insight */}
-        <div className="rounded-xl overflow-hidden shadow-xl shadow-[#051125]/5">
-          <div className="p-6 bg-[#1b263b] text-[#828da7] flex flex-col gap-4">
+        <div className="rounded-xl overflow-hidden shadow-xl shadow-ink/5">
+          <div className="p-6 bg-ink text-ink-muted flex flex-col gap-4">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#006972]" aria-hidden>psychology</span>
-              <span className="text-xs font-bold uppercase tracking-widest text-[#828da7]/70">AI Curator Insight</span>
+              <Icon name="psychology" size={20} className="text-accent" />
+              <span className="text-xs font-bold uppercase tracking-widest text-ink-muted/70">AI Curator Insight</span>
             </div>
             <p className="text-sm leading-relaxed">
               Focus on understanding the underlying concept before memorizing specific terms. Active recall strengthens retention.
             </p>
           </div>
-          <div className="bg-[#051125] px-6 py-3 flex justify-between items-center">
-            <span className="text-[10px] text-white/50 font-medium">Spaced Repetition Active</span>
+          <div className="bg-ink px-6 py-3 flex justify-between items-center">
+            <span className="text-[10px] text-on-ink/50 font-medium">Spaced Repetition Active</span>
             <div className="flex gap-1">
-              <div className="w-8 h-1 bg-[#006972] rounded-full" />
-              <div className="w-8 h-1 bg-[#828da7]/30 rounded-full" />
-              <div className="w-8 h-1 bg-[#828da7]/30 rounded-full" />
+              <div className="w-8 h-1 bg-accent rounded-full" />
+              <div className="w-8 h-1 bg-ink-muted/30 rounded-full" />
+              <div className="w-8 h-1 bg-ink-muted/30 rounded-full" />
             </div>
           </div>
         </div>

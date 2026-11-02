@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CircleHelp, LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react'
 import Menu, { MenuItem, MenuSeparator } from '@/components/ui/Menu'
@@ -20,12 +20,12 @@ export function initialsOf(name: string | null | undefined): string {
 export default function AvatarMenu({ profile }: { profile: Profile | null }) {
   const router = useRouter()
   const { openOnboarding } = useOnboarding()
-  const [theme, setTheme] = useState<Theme>('system')
-
-  useEffect(() => {
-    const m = document.cookie.match(new RegExp(`(?:^|; )${THEME_COOKIE}=([^;]*)`))
-    setTheme(parseTheme(m?.[1]))
-  }, [])
+  // The menu's contents only render once it's opened, so reading the cookie
+  // here can't cause a hydration mismatch.
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof document === 'undefined') return 'system'
+    return parseTheme(document.cookie.match(new RegExp(`(?:^|; )${THEME_COOKIE}=([^;]*)`))?.[1])
+  })
 
   function changeTheme(t: Theme) {
     setTheme(t)

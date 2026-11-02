@@ -5,6 +5,7 @@ import SetGrid from '@/components/sets/SetGrid'
 import RecentSessionSpotlight from '@/components/sets/RecentSessionSpotlight'
 import ApiKeyNotice from '@/components/library/ApiKeyNotice'
 import type { Set } from '@/types'
+import Icon from '@/components/ui/Icon'
 
 export default async function LibraryPage() {
   const supabase = await createClient()
@@ -41,27 +42,26 @@ export default async function LibraryPage() {
   const setsWithThumbs = sets.map((s) => ({ ...s, thumbnail_url: thumbMap[s.id] ?? null }))
 
   return (
-    <div className="p-8 lg:p-12 space-y-12">
+    <div className="py-4 sm:py-8 space-y-12">
 
       {/* ── Header ─────────────────────────────────────────────────── */}
       <section className="flex items-end justify-between">
         <div className="space-y-2">
           <h2
-            className="text-4xl font-extrabold tracking-tight text-[#051125]"
-            style={{ fontFamily: 'var(--font-manrope)' }}
+            className="font-headline text-4xl font-extrabold tracking-tight text-ink"
           >
             Library Collections
           </h2>
-          <p className="text-[#45474d] max-w-md">
+          <p className="text-ink-muted max-w-md">
             Curating your intellectual assets. Access and organize your quiz sets with scholarly precision.
           </p>
         </div>
         <div className="flex gap-4">
           <Link
             href="/sets/new"
-            className="inline-flex items-center gap-2 px-5 py-2.5 scholar-gradient text-white rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[#051125]/20"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-ink text-on-ink rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-ink/20"
           >
-            <span className="material-symbols-outlined text-[18px]" aria-hidden>add</span>
+            <Icon name="add" size={18} />
             New Set
           </Link>
         </div>

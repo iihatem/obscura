@@ -51,17 +51,17 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-[#E6E6E2] flex flex-col">
+    <div className="min-h-screen bg-paper-2 flex flex-col">
       {/* Nav */}
       <header className="px-8 py-5 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/frog.svg" alt="Obscura logo" className="w-7 h-7 rounded-md" />
-          <span className="text-xl font-black text-[#2A3741] tracking-tight" style={{ fontFamily: 'var(--font-manrope)' }}>
+          <span className="font-headline text-xl font-black text-ink tracking-tight">
             Obscura
           </span>
         </Link>
-        <Link href={`/signup?redirect=${encodeURIComponent(redirect)}`} className="text-sm text-[#4A5558] hover:text-[#2A3741] transition-colors">
+        <Link href={`/signup?redirect=${encodeURIComponent(redirect)}`} className="text-sm text-ink-muted hover:text-ink transition-colors">
           Create account →
         </Link>
       </header>
@@ -70,20 +70,20 @@ function LoginForm() {
         <div className="w-full max-w-sm">
           {/* Heading */}
           <div className="mb-8">
-            <h1 className="text-3xl font-extrabold text-[#2A3741] mb-2" style={{ fontFamily: 'var(--font-manrope)' }}>
+            <h1 className="font-headline text-3xl font-extrabold text-ink mb-2">
               Welcome back
             </h1>
-            <p className="text-[#4A5558] text-sm">Sign in to continue studying</p>
+            <p className="text-ink-muted text-sm">Sign in to continue studying</p>
           </div>
 
           {/* Card */}
-          <div className="bg-white rounded-xl p-8 border border-[#D8D8D4] shadow-sm relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#2A3741] via-[#60888A] to-[#2A3741]" />
+          <div className="bg-surface rounded-xl p-8 border border-line shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-ink via-accent to-ink" />
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               <GoogleButton redirect={redirect} onError={setError} />
               <div>
-                <label htmlFor="login-email" className="block text-xs font-bold uppercase tracking-widest text-[#4A5558] mb-2">
+                <label htmlFor="login-email" className="block text-xs font-bold uppercase tracking-widest text-ink-muted mb-2">
                   Email
                 </label>
                 <input
@@ -93,12 +93,12 @@ function LoginForm() {
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
                   required
-                  className="w-full bg-[#EAEAE6] border-none rounded-lg px-4 py-3 text-sm text-[#1E2528] placeholder:text-[#6A7A7C] focus:outline-none focus:ring-2 focus:ring-[#60888A]/20 transition-all"
+                  className="w-full bg-paper-2 border-none rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all"
                   placeholder="you@university.edu"
                 />
               </div>
               <div>
-                <label htmlFor="login-password" className="block text-xs font-bold uppercase tracking-widest text-[#4A5558] mb-2">
+                <label htmlFor="login-password" className="block text-xs font-bold uppercase tracking-widest text-ink-muted mb-2">
                   Password
                 </label>
                 <input
@@ -108,28 +108,28 @@ function LoginForm() {
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
                   required
-                  className="w-full bg-[#EAEAE6] border-none rounded-lg px-4 py-3 text-sm text-[#1E2528] placeholder:text-[#6A7A7C] focus:outline-none focus:ring-2 focus:ring-[#60888A]/20 transition-all"
+                  className="w-full bg-paper-2 border-none rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all"
                   placeholder="••••••••"
                 />
               </div>
 
               {error && (
-                <p role="alert" className="text-sm text-[#ba1a1a] bg-[#ffdad6] rounded-lg px-4 py-2">{error}</p>
+                <p role="alert" className="text-sm text-bad bg-bad-soft rounded-lg px-4 py-2">{error}</p>
               )}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full scholar-gradient text-[#E6E6E2] py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 mt-1"
+                className="w-full bg-ink text-paper-2 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 mt-1"
               >
                 {loading ? 'Signing in...' : 'Sign in'}
               </button>
             </form>
           </div>
 
-          <p className="text-center text-sm text-[#4A5558] mt-6">
+          <p className="text-center text-sm text-ink-muted mt-6">
             No account?{' '}
-            <Link href={`/signup?redirect=${encodeURIComponent(redirect)}`} className="text-[#60888A] font-bold hover:underline">
+            <Link href={`/signup?redirect=${encodeURIComponent(redirect)}`} className="text-accent font-bold hover:underline">
               Sign up free
             </Link>
           </p>

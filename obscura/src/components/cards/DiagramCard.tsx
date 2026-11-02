@@ -18,17 +18,17 @@ export default function DiagramCard({ card, onEdit, onDelete, isOwner, className
   return (
     <div
       className={cn(
-        'group relative rounded-xl border border-stone-200 bg-white overflow-hidden',
+        'group relative rounded-xl border border-line bg-surface overflow-hidden',
         className
       )}
     >
       {/* Image with label overlays.
           Must be w-full h-auto (natural aspect ratio) — no object-contain or fixed height —
           so overlay % coordinates align with Claude's output which is % of image dimensions. */}
-      <div className="relative bg-stone-100">
+      <div className="relative bg-paper-2">
         {/* Skeleton shown while image loads */}
         {!imgLoaded && (
-          <div className="w-full aspect-video animate-pulse bg-stone-200" />
+          <div className="w-full aspect-video animate-pulse bg-line" />
         )}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -41,7 +41,7 @@ export default function DiagramCard({ card, onEdit, onDelete, isOwner, className
         {card.labels.map((lbl, i) => (
           <div
             key={i}
-            className="absolute border-2 border-stone-900 bg-black flex items-end"
+            className="absolute border-2 border-ink bg-scrim flex items-end"
             style={{
               left: `${lbl.x}%`,
               top: `${lbl.y}%`,
@@ -49,7 +49,7 @@ export default function DiagramCard({ card, onEdit, onDelete, isOwner, className
               height: `${lbl.height}%`,
             }}
           >
-            <span className="bg-stone-900 text-white text-[9px] font-medium px-1 leading-tight truncate max-w-full">
+            <span className="bg-ink text-on-ink text-[9px] font-medium px-1 leading-tight truncate max-w-full">
               {lbl.label}
             </span>
           </div>
@@ -58,7 +58,7 @@ export default function DiagramCard({ card, onEdit, onDelete, isOwner, className
 
       {/* Footer */}
       <div className="flex items-center justify-between px-4 py-2.5">
-        <span className="text-xs text-stone-500">
+        <span className="text-xs text-ink-muted">
           {card.labels.length} {card.labels.length === 1 ? 'label' : 'labels'}
         </span>
 
@@ -67,7 +67,7 @@ export default function DiagramCard({ card, onEdit, onDelete, isOwner, className
           <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
             <button
               onClick={onEdit}
-              className="flex h-7 w-7 items-center justify-center rounded-lg border border-stone-200 text-stone-500 hover:text-stone-900 transition-colors"
+              className="flex h-7 w-7 items-center justify-center rounded-lg border border-line text-ink-muted hover:text-ink transition-colors"
               aria-label="Edit card"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -77,7 +77,7 @@ export default function DiagramCard({ card, onEdit, onDelete, isOwner, className
             </button>
             <button
               onClick={onDelete}
-              className="flex h-7 w-7 items-center justify-center rounded-lg border border-stone-200 text-stone-400 hover:text-red-600 hover:border-red-200 transition-colors"
+              className="flex h-7 w-7 items-center justify-center rounded-lg border border-line text-ink-muted hover:text-bad hover:border-bad-soft transition-colors"
               aria-label="Delete card"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

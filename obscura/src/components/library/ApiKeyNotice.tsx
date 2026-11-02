@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { hasAnyApiKey } from '@/lib/apiKey'
+import Icon from '@/components/ui/Icon'
 
 /**
  * Tells users without a key of their own that generation runs on the shared key
@@ -21,19 +22,17 @@ export default function ApiKeyNotice() {
   if (!show) return null
 
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-[#006972]/20 bg-[#006972]/[0.04] px-4 py-3">
-      <span className="material-symbols-outlined text-[20px] text-[#006972] shrink-0" aria-hidden>
-        auto_awesome
-      </span>
-      <p className="text-sm text-[#45474d] flex-1 min-w-[16rem]">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-accent/20 bg-accent/[0.04] px-4 py-3">
+      <Icon name="auto_awesome" size={20} className="text-accent shrink-0" />
+      <p className="text-sm text-ink-muted flex-1 min-w-[16rem]">
         AI generation is included — every account gets a free daily allowance. Add your own
         Anthropic or OpenAI key any time to generate without limits.
       </p>
       <Link
         href="/profile"
-        className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-[#006972]/25 bg-white px-3 text-xs font-bold text-[#006972] hover:bg-[#006972]/[0.06] transition-colors"
+        className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-accent/25 bg-surface px-3 text-xs font-bold text-accent hover:bg-accent/[0.06] transition-colors"
       >
-        <span className="material-symbols-outlined text-[14px]" aria-hidden>key</span>
+        <Icon name="key" size={14} />
         Use my own key
       </Link>
     </div>

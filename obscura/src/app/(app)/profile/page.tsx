@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { apiFetch, COLD_START_BACKOFF } from '@/lib/api'
+import { cn } from '@/lib/utils'
 import {
   PROVIDERS,
   PROVIDER_ORDER,
@@ -14,6 +15,7 @@ import {
 } from '@/lib/apiKey'
 import { useToast } from '@/components/ui/Toast'
 import { Skeleton } from '@/components/ui/Skeleton'
+import Icon from '@/components/ui/Icon'
 
 interface ProfileData {
   id: string
@@ -36,13 +38,13 @@ export interface SessionHistoryItem {
 
 function StatCard({ icon, label, value }: { icon: string; label: string; value: number | string }) {
   return (
-    <div className="bg-white rounded-xl border border-[#e7e8e9] p-6 flex flex-col gap-3">
-      <span className="material-symbols-outlined text-[28px] text-[#006972]" aria-hidden>{icon}</span>
+    <div className="bg-surface rounded-xl border border-line p-6 flex flex-col gap-3">
+      <Icon name={icon} size={28} className="text-accent" />
       <div>
-        <p className="text-3xl font-extrabold text-[#051125]" style={{ fontFamily: 'var(--font-manrope)' }}>
+        <p className="font-headline text-3xl font-extrabold text-ink">
           {value}
         </p>
-        <p className="text-xs font-bold uppercase tracking-widest text-[#75777d] mt-1">{label}</p>
+        <p className="text-xs font-bold uppercase tracking-widest text-ink-muted mt-1">{label}</p>
       </div>
     </div>
   )
@@ -98,9 +100,9 @@ function ApiKeySection({ provider }: { provider: Provider }) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-[#e7e8e9] p-6 space-y-4">
+    <div className="bg-surface rounded-xl border border-line p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h4 className="text-sm font-extrabold text-[#051125]" style={{ fontFamily: 'var(--font-manrope)' }}>
+        <h4 className="font-headline text-sm font-extrabold text-ink">
           {label}
         </h4>
         <div className="flex items-center gap-3 text-xs font-bold">
@@ -108,7 +110,7 @@ function ApiKeySection({ provider }: { provider: Provider }) {
             href={links.keys}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#006972] underline underline-offset-2"
+            className="text-accent underline underline-offset-2"
           >
             Get a key
           </a>
@@ -116,7 +118,7 @@ function ApiKeySection({ provider }: { provider: Provider }) {
             href={links.billing}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#006972] underline underline-offset-2"
+            className="text-accent underline underline-offset-2"
           >
             Buy credits
           </a>
@@ -124,7 +126,7 @@ function ApiKeySection({ provider }: { provider: Provider }) {
             href={links.pricing}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#75777d] underline underline-offset-2"
+            className="text-ink-muted underline underline-offset-2"
           >
             Pricing
           </a>
@@ -134,23 +136,21 @@ function ApiKeySection({ provider }: { provider: Provider }) {
       {saved && !editing ? (
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="material-symbols-outlined text-[18px] text-[#16a34a]" aria-hidden>
-              check_circle
-            </span>
-            <code className="text-sm font-mono text-[#051125] truncate">
+            <Icon name="check_circle" size={18} className="text-good" />
+            <code className="text-sm font-mono text-ink truncate">
               {maskApiKey(saved)}
             </code>
           </div>
           <div className="flex gap-2 shrink-0">
             <button
               onClick={() => { setEditing(true); setDraft('') }}
-              className="h-8 px-4 rounded-lg border border-[#e7e8e9] text-xs font-bold text-[#45474d] hover:bg-[#f3f4f5] transition-colors"
+              className="h-8 px-4 rounded-lg border border-line text-xs font-bold text-ink-muted hover:bg-paper transition-colors"
             >
               Replace
             </button>
             <button
               onClick={handleRemove}
-              className="h-8 px-4 rounded-lg border border-[#e7e8e9] text-xs font-bold text-[#dc2626] hover:bg-[#fef2f2] transition-colors"
+              className="h-8 px-4 rounded-lg border border-line text-xs font-bold text-bad hover:bg-bad-soft transition-colors"
             >
               Remove
             </button>
@@ -165,7 +165,7 @@ function ApiKeySection({ provider }: { provider: Provider }) {
             placeholder={`${prefix}...`}
             autoComplete="off"
             spellCheck={false}
-            className="w-full rounded-lg bg-[#f3f4f5] border-none px-3 py-2 text-sm font-mono text-[#191c1d] placeholder:text-[#75777d] focus:outline-none focus:ring-2 focus:ring-[#006972]/20"
+            className="w-full rounded-lg bg-paper border-none px-3 py-2 text-sm font-mono text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20"
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleSave()
               if (e.key === 'Escape' && saved) setEditing(false)
@@ -175,14 +175,14 @@ function ApiKeySection({ provider }: { provider: Provider }) {
             <button
               onClick={handleSave}
               disabled={!draft.trim()}
-              className="h-8 px-4 rounded-lg scholar-gradient text-white text-xs font-bold hover:opacity-90 disabled:opacity-50 transition-all"
+              className="h-8 px-4 rounded-lg bg-ink text-on-ink text-xs font-bold hover:opacity-90 disabled:opacity-50 transition-all"
             >
               Save key
             </button>
             {saved && (
               <button
                 onClick={() => setEditing(false)}
-                className="h-8 px-4 rounded-lg border border-[#e7e8e9] text-xs font-bold text-[#45474d] hover:bg-[#f3f4f5] transition-colors"
+                className="h-8 px-4 rounded-lg border border-line text-xs font-bold text-ink-muted hover:bg-paper transition-colors"
               >
                 Cancel
               </button>
@@ -197,11 +197,11 @@ function ApiKeySection({ provider }: { provider: Provider }) {
 function ApiKeys() {
   return (
     <section className="space-y-4">
-      <h3 className="text-xs font-bold uppercase tracking-widest text-[#45474d]">
+      <h3 className="text-xs font-bold uppercase tracking-widest text-ink-muted">
         Your API keys
       </h3>
 
-      <p className="text-sm text-[#45474d] leading-relaxed">
+      <p className="text-sm text-ink-muted leading-relaxed">
         Without a key you get a shared daily allowance of AI generations. Add a key from either
         provider to generate without limits — usage bills to that account instead. A new key needs
         credits on its account before it will work. With both saved, Anthropic runs first and
@@ -214,7 +214,7 @@ function ApiKeys() {
         ))}
       </div>
 
-      <p className="text-xs text-[#75777d] leading-relaxed">
+      <p className="text-xs text-ink-muted leading-relaxed">
         Stored only in this browser and sent directly to our generation endpoint.
         They never touch our database, and you&apos;ll need to re-enter them on other devices.
       </p>
@@ -300,7 +300,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="p-8 lg:p-12 space-y-10 max-w-2xl">
+      <div className="mx-auto max-w-2xl space-y-10 py-4 sm:py-8">
         <div className="flex items-center gap-5">
           <Skeleton className="h-20 w-20 rounded-full" />
           <div className="space-y-2">
@@ -313,8 +313,8 @@ export default function ProfilePage() {
           <Skeleton className="h-32 rounded-xl" />
         </div>
         {waking && (
-          <p className="text-xs text-[#75777d] flex items-center gap-2">
-            <span className="material-symbols-outlined text-[16px] animate-spin" aria-hidden>progress_activity</span>
+          <p className="text-xs text-ink-muted flex items-center gap-2">
+            <Icon name="progress_activity" size={16} className="animate-spin" />
             Waking the study server — this takes a few seconds after it&apos;s been idle.
           </p>
         )}
@@ -326,22 +326,21 @@ export default function ProfilePage() {
 
   if (!profile) {
     return (
-      <div className="p-8 lg:p-12 max-w-2xl">
-        <div className="bg-white rounded-xl border border-[#e7e8e9] p-8 flex flex-col items-center text-center gap-3">
-          <span className="material-symbols-outlined text-[32px] text-[#d97706]" aria-hidden>cloud_off</span>
+      <div className="mx-auto max-w-2xl py-4 sm:py-8">
+        <div className="bg-surface rounded-xl border border-line p-8 flex flex-col items-center text-center gap-3">
+          <Icon name="cloud_off" size={32} className="text-warn" />
           <h2
-            className="text-xl font-extrabold text-[#051125]"
-            style={{ fontFamily: 'var(--font-manrope)' }}
+            className="font-headline text-xl font-extrabold text-ink"
           >
             Couldn&apos;t reach the study server
           </h2>
-          <p className="text-sm text-[#45474d] max-w-sm">
+          <p className="text-sm text-ink-muted max-w-sm">
             {loadError ?? 'Something went wrong loading your profile.'} Your sets and cards are
             safe — this only affects the stats on this page.
           </p>
           <button
             onClick={() => load()}
-            className="mt-2 h-9 px-5 rounded-lg scholar-gradient text-white text-xs font-bold hover:opacity-90 transition-opacity"
+            className="mt-2 h-9 px-5 rounded-lg bg-ink text-on-ink text-xs font-bold hover:opacity-90 transition-opacity"
           >
             Try again
           </button>
@@ -354,23 +353,22 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="p-8 lg:p-12 space-y-10 max-w-2xl">
+    <div className="mx-auto max-w-2xl space-y-10 py-4 sm:py-8">
       {/* Header */}
       <section className="space-y-2">
         <h2
-          className="text-4xl font-extrabold tracking-tight text-[#051125]"
-          style={{ fontFamily: 'var(--font-manrope)' }}
+          className="font-headline text-4xl font-extrabold tracking-tight text-ink"
         >
           Profile
         </h2>
-        <p className="text-[#45474d]">Manage your account and view your study stats.</p>
+        <p className="text-ink-muted">Manage your account and view your study stats.</p>
       </section>
 
       {/* Identity card */}
-      <div className="bg-white rounded-xl border border-[#e7e8e9] p-6 flex items-start gap-5">
+      <div className="bg-surface rounded-xl border border-line p-6 flex items-start gap-5">
         {/* Avatar */}
-        <div className="h-16 w-16 rounded-full scholar-gradient flex items-center justify-center shrink-0">
-          <span className="text-xl font-black text-white" style={{ fontFamily: 'var(--font-manrope)' }}>
+        <div className="h-16 w-16 rounded-full bg-ink flex items-center justify-center shrink-0">
+          <span className="font-headline text-xl font-black text-on-ink">
             {initials}
           </span>
         </div>
@@ -379,7 +377,7 @@ export default function ProfilePage() {
           {editing ? (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold uppercase tracking-widest text-[#45474d]">
+                <label className="text-xs font-bold uppercase tracking-widest text-ink-muted">
                   Display name
                 </label>
                 <input
@@ -387,7 +385,7 @@ export default function ProfilePage() {
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   autoFocus
-                  className="w-full max-w-xs rounded-lg bg-[#f3f4f5] border-none px-3 py-2 text-sm text-[#191c1d] placeholder:text-[#75777d] focus:outline-none focus:ring-2 focus:ring-[#006972]/20"
+                  className="w-full max-w-xs rounded-lg bg-paper border-none px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent/20"
                   placeholder="Your name"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSave()
@@ -399,13 +397,13 @@ export default function ProfilePage() {
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="h-8 px-4 rounded-lg scholar-gradient text-white text-xs font-bold hover:opacity-90 disabled:opacity-50 transition-all"
+                  className="h-8 px-4 rounded-lg bg-ink text-on-ink text-xs font-bold hover:opacity-90 disabled:opacity-50 transition-all"
                 >
                   {saving ? 'Saving…' : 'Save'}
                 </button>
                 <button
                   onClick={() => { setEditing(false); setDisplayName(profile.display_name ?? '') }}
-                  className="h-8 px-4 rounded-lg border border-[#e7e8e9] text-xs font-bold text-[#45474d] hover:bg-[#f3f4f5] transition-colors"
+                  className="h-8 px-4 rounded-lg border border-line text-xs font-bold text-ink-muted hover:bg-paper transition-colors"
                 >
                   Cancel
                 </button>
@@ -415,18 +413,17 @@ export default function ProfilePage() {
             <div className="flex items-start justify-between gap-2">
               <div>
                 <p
-                  className="text-lg font-extrabold text-[#051125]"
-                  style={{ fontFamily: 'var(--font-manrope)' }}
+                  className="font-headline text-lg font-extrabold text-ink"
                 >
-                  {profile.display_name || <span className="text-[#75777d] font-medium italic">No display name</span>}
+                  {profile.display_name || <span className="text-ink-muted font-medium italic">No display name</span>}
                 </p>
-                <p className="text-sm text-[#75777d] mt-0.5">{profile.email}</p>
+                <p className="text-sm text-ink-muted mt-0.5">{profile.email}</p>
               </div>
               <button
                 onClick={() => setEditing(true)}
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#e7e8e9] bg-white px-3 text-xs font-bold text-[#051125] hover:bg-[#edeeef] transition-colors shrink-0"
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-xs font-bold text-ink hover:bg-paper-2 transition-colors shrink-0"
               >
-                <span className="material-symbols-outlined text-[14px]" aria-hidden>edit</span>
+                <Icon name="edit" size={14} />
                 Edit
               </button>
             </div>
@@ -436,7 +433,7 @@ export default function ProfilePage() {
 
       {/* Stats */}
       <section className="space-y-4">
-        <h3 className="text-xs font-bold uppercase tracking-widest text-[#45474d]">Study stats</h3>
+        <h3 className="text-xs font-bold uppercase tracking-widest text-ink-muted">Study stats</h3>
         <div className="grid grid-cols-2 gap-4">
           <StatCard icon="layers" label="Sets created" value={profile.sets_count} />
           <StatCard icon="school" label="Cards studied" value={profile.cards_studied} />
@@ -449,28 +446,24 @@ export default function ProfilePage() {
       {/* Recent sessions */}
       {sessions.length > 0 && (
         <section className="space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-[#45474d]">Recent sessions</h3>
+          <h3 className="text-xs font-bold uppercase tracking-widest text-ink-muted">Recent sessions</h3>
           <div className="flex flex-col gap-2">
             {sessions.map((s) => (
               <div
                 key={s.id}
-                className="bg-white rounded-xl border border-[#e7e8e9] px-5 py-4 flex items-center justify-between gap-4"
+                className="bg-surface rounded-xl border border-line px-5 py-4 flex items-center justify-between gap-4"
               >
                 <div className="min-w-0">
-                  <p className="font-bold text-sm text-[#051125] truncate" style={{ fontFamily: 'var(--font-manrope)' }}>
+                  <p className="font-headline font-bold text-sm text-ink truncate">
                     {s.set_title}
                   </p>
-                  <p className="text-xs text-[#75777d] mt-0.5">
+                  <p className="text-xs text-ink-muted mt-0.5">
                     {modeLabel[s.mode]} · {s.total_cards} cards · {relativeDate(s.completed_at)}
                   </p>
                 </div>
                 <div className="shrink-0 flex flex-col items-end gap-1">
                   <span
-                    className="text-lg font-extrabold"
-                    style={{
-                      fontFamily: 'var(--font-manrope)',
-                      color: s.score_pct >= 80 ? '#16a34a' : s.score_pct >= 50 ? '#d97706' : '#dc2626',
-                    }}
+                    className={cn('font-headline text-lg font-extrabold', s.score_pct >= 80 ? 'text-good' : s.score_pct >= 50 ? 'text-warn' : 'text-bad')}
                   >
                     {s.score_pct}%
                   </span>

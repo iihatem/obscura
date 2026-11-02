@@ -20,8 +20,8 @@ export default function SearchDialog({ open, onClose, userId }: SearchDialogProp
   const ref = useRef<HTMLDialogElement>(null)
   const input = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState('')
-  const [groups, setGroups] = useState<SearchGroups>(EMPTY)
-  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
+  // The results and the query they answer; while they differ, a search is in flight.
+  const [result, setResult] = useState<{ q: string; groups: SearchGroups; error: boolean }>({ q: '', groups: EMPTY, error: false })
   const [active, setActive] = useState(0)
 
   useEffect(() => {
@@ -38,13 +38,8 @@ export default function SearchDialog({ open, onClose, userId }: SearchDialogProp
   // Debounced search; a newer query cancels the older one's result.
   useEffect(() => {
     const q = cleanQuery(query)
-    if (!open || q.length < 2) {
-      setGroups(EMPTY)
-      setStatus('idle')
-      return
-    }
+    if (!open || q.length < 2) return
     let stale = false
-    setStatus('loading')
     const timer = setTimeout(async () => {
       try {
         const supabase = createClient()
@@ -58,11 +53,10 @@ export default function SearchDialog({ open, onClose, userId }: SearchDialogProp
         const [mine, pub] = await Promise.all([mineReq, publicReq])
         if (stale) return
         if (mine.error || pub.error) throw mine.error ?? pub.error
-        setGroups(groupResults((mine.data ?? []) as SearchHit[], (pub.data ?? []) as SearchHit[]))
+        setResult({ q, groups: groupResults((mine.data ?? []) as SearchHit[], (pub.data ?? []) as SearchHit[]), error: false })
         setActive(0)
-        setStatus('done')
       } catch {
-        if (!stale) setStatus('error')
+        if (!stale) setResult({ q, groups: EMPTY, error: true })
       }
     }, 200)
     return () => { stale = true; clearTimeout(timer) }
@@ -78,6 +72,10 @@ export default function SearchDialog({ open, onClose, userId }: SearchDialogProp
     router.push(`/sets/${hit.id}`)
   }
 
+  const q = cleanQuery(query)
+  const current = result.q === q
+  const groups = current ? result.groups : EMPTY
+  const status = q.length < 2 ? 'idle' : !current ? 'loading' : result.error ? 'error' : 'done'
   const flat = flatten(groups)
 
   function onKeyDown(e: React.KeyboardEvent) {
@@ -116,8 +114,6 @@ export default function SearchDialog({ open, onClose, userId }: SearchDialogProp
     )
   }
 
-  const q = cleanQuery(query)
-
   return (
     <dialog
       ref={ref}
@@ -139,6 +135,7 @@ export default function SearchDialog({ open, onClose, userId }: SearchDialogProp
             placeholder="Search your sets and public sets"
             aria-label="Search sets"
             role="combobox"
+            aria-controls="search-results"
             aria-expanded={flat.length > 0}
             className="h-14 min-w-0 flex-1 bg-transparent text-base text-ink placeholder:text-ink-muted focus:outline-none"
           />
@@ -146,7 +143,7 @@ export default function SearchDialog({ open, onClose, userId }: SearchDialogProp
             <X className="h-5 w-5" aria-hidden />
           </button>
         </div>
-        <div role="listbox" aria-label="Results" className="flex-1 overflow-y-auto p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+        <div id="search-results" role="listbox" aria-label="Results" className="flex-1 overflow-y-auto p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
           {q.length < 2 ? (
             <p className="px-3 py-8 text-center text-sm text-ink-muted">Type a set name or subject, like “Cell biology”.</p>
           ) : status === 'error' ? (

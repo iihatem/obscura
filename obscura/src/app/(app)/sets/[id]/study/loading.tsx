@@ -4,7 +4,7 @@ export default function StudyLoading() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Progress header */}
-      <div className="bg-[#f8f9fa]/80 border-b border-[#c5c6cd]/20 px-6 py-4 lg:px-8">
+      <div className="bg-paper/90 border-b border-line px-4 py-3 sm:px-6">
         <div className="flex items-end justify-between mb-3">
           <div className="space-y-2">
             <Skeleton className="h-2.5 w-24" />

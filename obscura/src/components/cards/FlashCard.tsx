@@ -22,24 +22,24 @@ export default function FlashCard({ card, onEdit, onDelete, isOwner, className }
   return (
     <div
       className={cn(
-        'group relative rounded-xl border border-stone-200 bg-white',
+        'group relative rounded-xl border border-line bg-surface',
         'grid grid-cols-[1fr_1px_1fr] overflow-hidden',
         className
       )}
     >
       {/* Front */}
       <div className="p-4">
-        <p className="text-[11px] font-medium uppercase tracking-widest text-stone-400 mb-2">Front</p>
-        <p className="text-sm text-stone-800 leading-relaxed line-clamp-4">{card.front}</p>
+        <p className="text-[11px] font-medium uppercase tracking-widest text-ink-muted mb-2">Front</p>
+        <p className="text-sm text-ink leading-relaxed line-clamp-4">{card.front}</p>
       </div>
 
       {/* Divider */}
-      <div className="bg-stone-100" />
+      <div className="bg-paper-2" />
 
       {/* Back */}
       <div className="p-4">
-        <p className="text-[11px] font-medium uppercase tracking-widest text-stone-400 mb-2">Back</p>
-        <p className="text-sm text-stone-600 leading-relaxed line-clamp-4">{card.back}</p>
+        <p className="text-[11px] font-medium uppercase tracking-widest text-ink-muted mb-2">Back</p>
+        <p className="text-sm text-ink-muted leading-relaxed line-clamp-4">{card.back}</p>
       </div>
 
       {/* Actions */}
@@ -47,14 +47,14 @@ export default function FlashCard({ card, onEdit, onDelete, isOwner, className }
         <div className="absolute right-2 top-2 flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
           <button
             onClick={onEdit}
-            className="flex h-7 w-7 items-center justify-center rounded-lg bg-white border border-stone-200 text-stone-500 shadow-sm hover:text-stone-900 transition-colors"
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface border border-line text-ink-muted shadow-sm hover:text-ink transition-colors"
             aria-label="Edit card"
           >
             <EditIcon />
           </button>
           <button
             onClick={onDelete}
-            className="flex h-7 w-7 items-center justify-center rounded-lg bg-white border border-stone-200 text-stone-400 shadow-sm hover:text-red-600 hover:border-red-200 transition-colors"
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface border border-line text-ink-muted shadow-sm hover:text-bad hover:border-bad-soft transition-colors"
             aria-label="Delete card"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

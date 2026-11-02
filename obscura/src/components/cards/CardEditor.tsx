@@ -44,7 +44,7 @@ function FlashcardEditor({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="card-front" className="text-sm font-medium text-stone-700">Front</label>
+        <label htmlFor="card-front" className="text-sm font-medium text-ink-muted">Front</label>
         <textarea
           id="card-front"
           maxLength={5000}
@@ -52,11 +52,11 @@ function FlashcardEditor({
           onChange={(e) => setFront(e.target.value)}
           rows={3}
           placeholder="Question or term…"
-          className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-900 resize-none"
+          className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ink resize-none"
         />
       </div>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="card-back" className="text-sm font-medium text-stone-700">Back</label>
+        <label htmlFor="card-back" className="text-sm font-medium text-ink-muted">Back</label>
         <textarea
           id="card-back"
           maxLength={5000}
@@ -64,7 +64,7 @@ function FlashcardEditor({
           onChange={(e) => setBack(e.target.value)}
           rows={3}
           placeholder="Answer or definition…"
-          className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-900 resize-none"
+          className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ink resize-none"
         />
       </div>
       <Button
@@ -266,7 +266,7 @@ function DiagramEditor({
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="text-xs text-stone-400 hover:text-stone-600 underline"
+              className="text-xs text-ink-muted hover:text-ink-muted underline"
             >
               Change image
             </button>
@@ -275,7 +275,7 @@ function DiagramEditor({
           {/* Image + label overlays */}
           <div
             ref={imgContainerRef}
-            className="relative select-none rounded-lg bg-stone-100"
+            className="relative select-none rounded-lg bg-paper-2"
             onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
             onDragLeave={() => setIsDragOver(false)}
             onDrop={handleDrop}
@@ -291,7 +291,7 @@ function DiagramEditor({
               <div
                 key={lbl._key}
                 onMouseDown={(e) => handleLabelDrag(e, lbl)}
-                className="absolute cursor-move border-2 border-stone-900 bg-black flex items-end"
+                className="absolute cursor-move border-2 border-ink bg-scrim flex items-end"
                 style={{
                   left: `${lbl.x}%`,
                   top: `${lbl.y}%`,
@@ -301,7 +301,7 @@ function DiagramEditor({
                 title={lbl.label}
               >
                 {lbl.label && (
-                  <span className="bg-stone-900 text-white text-[9px] font-medium px-1 leading-tight truncate max-w-full">
+                  <span className="bg-ink text-on-ink text-[9px] font-medium px-1 leading-tight truncate max-w-full">
                     {lbl.label}
                   </span>
                 )}
@@ -310,7 +310,7 @@ function DiagramEditor({
                   <div
                     key={c}
                     onMouseDown={(e) => handleLabelResize(e, c, lbl)}
-                    className="absolute w-2.5 h-2.5 bg-white border border-stone-700 rounded-sm z-10"
+                    className="absolute w-2.5 h-2.5 bg-surface border border-ink-muted rounded-sm z-10"
                     style={{
                       cursor: `${c === 'tl' ? 'nw' : c === 'tr' ? 'ne' : c === 'bl' ? 'sw' : 'se'}-resize`,
                       top:    c === 'tl' || c === 'tr' ? -5 : undefined,
@@ -329,39 +329,39 @@ function DiagramEditor({
         <div
           className={cn(
             'flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition-colors cursor-pointer',
-            isDragOver ? 'border-stone-400 bg-stone-50' : 'border-stone-200 hover:border-stone-300'
+            isDragOver ? 'border-ink-muted bg-paper' : 'border-line hover:border-line'
           )}
           onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
           onDragLeave={() => setIsDragOver(false)}
           onDrop={handleDrop}
           onClick={() => fileRef.current?.click()}
         >
-          <svg className="text-stone-300" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg className="text-line" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="3" width="18" height="18" rx="2" />
             <circle cx="8.5" cy="8.5" r="1.5" />
             <polyline points="21 15 16 10 5 21" />
           </svg>
-          <p className="mt-2 text-sm text-stone-500">Drop an image or click to browse</p>
-          <p className="text-xs text-stone-400">PNG, JPG, WebP</p>
+          <p className="mt-2 text-sm text-ink-muted">Drop an image or click to browse</p>
+          <p className="text-xs text-ink-muted">PNG, JPG, WebP</p>
         </div>
       )}
 
       {/* Labels list */}
       <div className="flex flex-col gap-2">
-        <p className="text-sm font-medium text-stone-700">Labels</p>
+        <p className="text-sm font-medium text-ink-muted">Labels</p>
         <div className="flex flex-col gap-1.5">
           {labels.map((lbl) => (
             <div key={lbl._key} className="group/lbl flex items-center gap-2">
-              <div className="h-2.5 w-2.5 rounded-full bg-sky-400 shrink-0" />
+              <div className="h-2.5 w-2.5 rounded-full bg-accent shrink-0" />
               <input
                 value={lbl.label}
                 onChange={(e) => updateLabel(lbl._key, 'label', e.target.value)}
                 placeholder="Label text…"
-                className="flex-1 rounded border border-stone-200 bg-stone-50 px-2 py-1 text-sm text-stone-800 focus:outline-none focus:ring-1 focus:ring-stone-400"
+                className="flex-1 rounded border border-line bg-paper px-2 py-1 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-ink-muted"
               />
               <button
                 onClick={() => removeLabel(lbl._key)}
-                className="text-stone-300 hover:text-red-500 md:opacity-0 md:group-hover/lbl:opacity-100 focus:opacity-100 transition-colors"
+                className="text-line hover:text-bad md:opacity-0 md:group-hover/lbl:opacity-100 focus:opacity-100 transition-colors"
                 aria-label="Remove label"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -371,19 +371,19 @@ function DiagramEditor({
             </div>
           ))}
           {labels.length === 0 && (
-            <p className="text-xs text-stone-400 italic">No labels — drag boxes on the image after adding one.</p>
+            <p className="text-xs text-ink-muted italic">No labels — drag boxes on the image after adding one.</p>
           )}
         </div>
         <button
           type="button"
           onClick={addLabel}
-          className="self-start text-xs font-medium text-stone-500 hover:text-stone-800 transition-colors"
+          className="self-start text-xs font-medium text-ink-muted hover:text-ink transition-colors"
         >
           + Add label
         </button>
       </div>
 
-      {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
+      {uploadError && <p className="text-xs text-bad">{uploadError}</p>}
 
       <Button
         loading={loading || uploading}
@@ -466,14 +466,14 @@ export default function CardEditor({ mode, setId, userId, card, onSave, onDelete
         />
       )}
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-bad">{error}</p>}
 
       {/* Delete */}
       {isEditing && onDelete && (
-        <div className="border-t border-stone-100 pt-3">
+        <div className="border-t border-paper-2 pt-3">
           {confirmDelete ? (
             <div className="flex items-center gap-2">
-              <p className="text-xs text-stone-500 flex-1">Delete this card?</p>
+              <p className="text-xs text-ink-muted flex-1">Delete this card?</p>
               <Button variant="danger" size="sm" loading={deleting} onClick={handleDelete}>
                 Delete
               </Button>
@@ -484,7 +484,7 @@ export default function CardEditor({ mode, setId, userId, card, onSave, onDelete
           ) : (
             <button
               onClick={() => setConfirmDelete(true)}
-              className="text-xs text-stone-400 hover:text-red-600 transition-colors"
+              className="text-xs text-ink-muted hover:text-bad transition-colors"
             >
               Delete card
             </button>

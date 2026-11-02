@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { Card, FlashCard } from '@/types'
 import ForkCTA from './ForkCTA'
+import Icon from '@/components/ui/Icon'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -38,11 +39,11 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
   if (!data) notFound()
   if (data === 'waking') {
     return (
-      <div className="min-h-screen bg-[#f8f9fa] flex flex-col items-center justify-center gap-3 px-6 text-center">
+      <div className="min-h-screen bg-paper flex flex-col items-center justify-center gap-3 px-6 text-center">
         <meta httpEquiv="refresh" content="8" />
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#e7e8e9] border-t-[#006972]" />
-        <h1 className="text-lg font-bold text-[#051125]">Loading this study set…</h1>
-        <p className="max-w-sm text-sm text-[#45474d]">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-accent" />
+        <h1 className="text-lg font-bold text-ink">Loading this study set…</h1>
+        <p className="max-w-sm text-sm text-ink-muted">
           The study server is waking up. This page will refresh by itself in a few seconds.
         </p>
       </div>
@@ -53,23 +54,22 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
   const flashcards = cards.filter((c): c is FlashCard => c.type === 'flashcard').slice(0, 4)
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] flex flex-col">
+    <div className="min-h-screen bg-paper flex flex-col">
       {/* Nav */}
-      <header className="px-8 py-5 flex items-center justify-between border-b border-[#e7e8e9] bg-white">
+      <header className="px-8 py-5 flex items-center justify-between border-b border-line bg-surface">
         <Link
           href="/"
-          className="text-xl font-black text-[#051125] tracking-tight"
-          style={{ fontFamily: 'var(--font-manrope)' }}
+          className="font-headline text-xl font-black text-ink tracking-tight"
         >
           Obscura
         </Link>
         <div className="flex items-center gap-3">
-          <Link href={`/login?redirect=${encodeURIComponent(`/s/${token}`)}`} className="text-sm text-[#45474d] hover:text-[#051125] transition-colors font-medium">
+          <Link href={`/login?redirect=${encodeURIComponent(`/s/${token}`)}`} className="text-sm text-ink-muted hover:text-ink transition-colors font-medium">
             Sign in
           </Link>
           <Link
             href={`/signup?redirect=${encodeURIComponent(`/s/${token}`)}`}
-            className="text-sm font-bold px-4 py-2 rounded-lg scholar-gradient text-white hover:opacity-90 transition-opacity"
+            className="text-sm font-bold px-4 py-2 rounded-lg bg-ink text-on-ink hover:opacity-90 transition-opacity"
           >
             Sign up free
           </Link>
@@ -80,31 +80,30 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
         {/* Set info */}
         <section className="space-y-4">
           {set.subject && (
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#006972]">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-accent">
               {set.subject}
             </span>
           )}
           <h1
-            className="text-3xl font-extrabold text-[#051125] tracking-tight"
-            style={{ fontFamily: 'var(--font-manrope)' }}
+            className="font-headline text-3xl font-extrabold text-ink tracking-tight"
           >
             {set.title}
           </h1>
           {set.description && (
-            <p className="text-[#45474d] leading-relaxed">{set.description}</p>
+            <p className="text-ink-muted leading-relaxed">{set.description}</p>
           )}
-          <div className="flex flex-wrap items-center gap-4 text-sm text-[#75777d] font-medium">
+          <div className="flex flex-wrap items-center gap-4 text-sm text-ink-muted font-medium">
             <div className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[16px]" aria-hidden>quiz</span>
+              <Icon name="quiz" size={16} />
               {set.card_count} {set.card_count === 1 ? 'card' : 'cards'}
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[16px]" aria-hidden style={{ fontVariationSettings: "'FILL' 1", color: '#e8b400' }}>star</span>
+              <Icon name="star" size={16} filled className="text-warn" />
               {set.star_count}
             </div>
             {set.owner_display_name && (
               <div className="flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[16px]" aria-hidden>person</span>
+                <Icon name="person" size={16} />
                 {set.owner_display_name}
               </div>
             )}
@@ -112,13 +111,13 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
         </section>
 
         {/* CTA */}
-        <section className="bg-white rounded-xl border border-[#e7e8e9] p-8 flex flex-col items-center gap-4 text-center shadow-sm">
-          <span className="material-symbols-outlined text-[40px] text-[#006972]" aria-hidden>school</span>
+        <section className="bg-surface rounded-xl border border-line p-8 flex flex-col items-center gap-4 text-center shadow-sm">
+          <Icon name="school" size={40} className="text-accent" />
           <div>
-            <p className="font-bold text-[#051125] text-lg" style={{ fontFamily: 'var(--font-manrope)' }}>
+            <p className="font-headline font-bold text-ink text-lg">
               Study this set
             </p>
-            <p className="text-sm text-[#75777d] mt-1">
+            <p className="text-sm text-ink-muted mt-1">
               Copy it to your library and start studying with flashcards and diagrams.
             </p>
           </div>
@@ -128,22 +127,22 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
         {/* Sample cards preview */}
         {flashcards.length > 0 && (
           <section className="space-y-4">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-[#45474d]">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-ink-muted">
               Preview — {flashcards.length} of {set.card_count} cards
             </h2>
             <div className="space-y-3">
               {flashcards.map((card) => (
                 <div
                   key={card.id}
-                  className="bg-white rounded-xl border border-[#e7e8e9] px-6 py-4 shadow-sm"
+                  className="bg-surface rounded-xl border border-line px-6 py-4 shadow-sm"
                 >
-                  <p className="text-sm font-bold text-[#051125]">{card.front}</p>
-                  <p className="text-sm text-[#45474d] mt-1 pt-2 border-t border-[#edeeef]">{card.back}</p>
+                  <p className="text-sm font-bold text-ink">{card.front}</p>
+                  <p className="text-sm text-ink-muted mt-1 pt-2 border-t border-paper-2">{card.back}</p>
                 </div>
               ))}
             </div>
             {set.card_count > flashcards.length && (
-              <p className="text-xs text-[#75777d] text-center">
+              <p className="text-xs text-ink-muted text-center">
                 +{set.card_count - flashcards.length} more cards after copying
               </p>
             )}

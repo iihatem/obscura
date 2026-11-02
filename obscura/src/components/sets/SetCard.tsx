@@ -7,6 +7,7 @@ import type { Set } from '@/types'
 import { proxyImageUrl } from '@/lib/utils'
 import { apiFetch, errorMessage } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import Icon from '@/components/ui/Icon'
 
 function relativeDate(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -59,7 +60,7 @@ export default function SetCard({ set, hasDraft = false }: { set: Set; hasDraft?
     <div className="relative group">
       <Link
         href={`/sets/${set.id}`}
-        className="flex flex-col gap-4 rounded-xl bg-white p-6 border border-[#e7e8e9] shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300"
+        className="flex flex-col gap-4 rounded-xl bg-surface p-6 border border-line shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300"
       >
         {/* Thumbnail */}
         {set.thumbnail_url && (
@@ -67,14 +68,14 @@ export default function SetCard({ set, hasDraft = false }: { set: Set; hasDraft?
           <img
             src={proxyImageUrl(set.thumbnail_url)}
             alt=""
-            className="w-full h-28 object-cover rounded-lg bg-[#edeeef]"
+            className="w-full h-28 object-cover rounded-lg bg-paper-2"
           />
         )}
 
         {/* Subject tag */}
         <div className="flex items-start justify-between gap-2 pr-6">
           {set.subject && (
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#006972]">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-accent">
               {set.subject}
             </span>
           )}
@@ -82,32 +83,30 @@ export default function SetCard({ set, hasDraft = false }: { set: Set; hasDraft?
 
         {/* Title */}
         <h3
-          className="text-lg font-bold text-[#051125] leading-snug group-hover:text-[#006972] transition-colors line-clamp-2"
-          style={{ fontFamily: 'var(--font-manrope)' }}
+          className="font-headline text-lg font-bold text-ink leading-snug group-hover:text-accent transition-colors line-clamp-2"
         >
           {set.title}
         </h3>
 
         {/* Stats */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[#45474d] font-medium">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-ink-muted font-medium">
           <div className="flex items-center gap-1 whitespace-nowrap">
-            <span className="material-symbols-outlined text-[16px]" aria-hidden>quiz</span>
+            <Icon name="quiz" size={16} />
             {set.card_count} {set.card_count === 1 ? 'card' : 'cards'}
           </div>
           {hasDraft && (
-            <span className="flex items-center gap-1 whitespace-nowrap rounded-full bg-[#006972]/10 px-2 py-0.5 text-[#006972]">
-              <span className="material-symbols-outlined text-[14px]" aria-hidden>pending_actions</span>
+            <span className="flex items-center gap-1 whitespace-nowrap rounded-full bg-accent/10 px-2 py-0.5 text-accent">
+              <Icon name="pending_actions" size={14} />
               Unsaved cards
             </span>
           )}
         </div>
 
         {/* Footer */}
-        <div className="mt-auto pt-4 flex items-center justify-between border-t border-[#edeeef]">
-          <span className="text-xs text-[#75777d]">{relativeDate(set.updated_at)}</span>
+        <div className="mt-auto pt-4 flex items-center justify-between border-t border-paper-2">
+          <span className="text-xs text-ink-muted">{relativeDate(set.updated_at)}</span>
           <span
-            className="text-[10px] font-bold uppercase tracking-widest"
-            style={{ color: set.visibility === 'public' ? '#006972' : '#75777d' }}
+            className={`text-[11px] font-bold uppercase tracking-widest ${set.visibility === 'public' ? 'text-accent' : 'text-ink-muted'}`}
           >
             {set.visibility}
           </span>
@@ -121,35 +120,35 @@ export default function SetCard({ set, hasDraft = false }: { set: Set; hasDraft?
           aria-label={`Options for ${set.title}`}
           aria-haspopup="menu"
           aria-expanded={menuOpen}
-          className="flex items-center justify-center w-7 h-7 rounded-md text-[#c5c6cd] hover:text-[#051125] hover:bg-[#f3f4f5] transition-colors"
+          className="flex items-center justify-center w-7 h-7 rounded-md text-line hover:text-ink hover:bg-paper transition-colors"
         >
-          <span className="material-symbols-outlined text-[18px]" aria-hidden>more_vert</span>
+          <Icon name="more_vert" size={18} />
         </button>
 
         {menuOpen && (
-          <div className="absolute right-0 top-full mt-1 bg-white border border-[#e7e8e9] rounded-xl shadow-lg z-20 min-w-[160px] overflow-hidden">
+          <div className="absolute right-0 top-full mt-1 bg-surface border border-line rounded-xl shadow-lg z-20 min-w-[160px] overflow-hidden">
             {!confirming ? (
               <button
                 onClick={(e) => { e.stopPropagation(); setConfirming(true) }}
-                className="w-full flex items-center gap-2 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors text-left"
+                className="w-full flex items-center gap-2 px-4 py-3 text-sm font-medium text-bad hover:bg-bad-soft transition-colors text-left"
               >
-                <span className="material-symbols-outlined text-[16px]" aria-hidden>delete</span>
+                <Icon name="delete" size={16} />
                 Delete set
               </button>
             ) : (
               <div className="p-4 space-y-3">
-                <p className="text-xs text-[#45474d] font-medium">Delete &quot;{set.title}&quot;? This can&apos;t be undone.</p>
+                <p className="text-xs text-ink-muted font-medium">Delete &quot;{set.title}&quot;? This can&apos;t be undone.</p>
                 <div className="flex gap-2">
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDelete() }}
                     disabled={deleting}
-                    className="flex-1 h-8 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-700 disabled:opacity-50 transition-colors"
+                    className="flex-1 h-8 rounded-lg bg-bad text-on-ink text-xs font-bold hover:bg-bad disabled:opacity-50 transition-colors"
                   >
                     {deleting ? 'Deleting…' : 'Delete'}
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); setConfirming(false) }}
-                    className="flex-1 h-8 rounded-lg border border-[#e7e8e9] text-xs font-bold text-[#45474d] hover:bg-[#f3f4f5] transition-colors"
+                    className="flex-1 h-8 rounded-lg border border-line text-xs font-bold text-ink-muted hover:bg-paper transition-colors"
                   >
                     Cancel
                   </button>

@@ -767,7 +767,7 @@ function DiagramReviewCard({ card, onUpdateLabel, onDeleteLabel, onDelete, onLab
                 />
                 <button
                   onClick={() => onDeleteLabel(label.id)}
-                  className="text-line hover:text-bad md:opacity-0 md:group-hover/label:opacity-100 focus:opacity-100 transition-colors"
+                  className="text-ink-muted hover:text-bad [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/label:opacity-100 focus:opacity-100 transition-colors"
                   title="Remove label"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

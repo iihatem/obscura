@@ -139,7 +139,7 @@ export default function PagePicker({ pages, onGenerate }: PagePickerProps) {
           >
             Select all
           </button>
-          <span className="text-line">·</span>
+          <span className="text-ink-muted" aria-hidden>·</span>
           <button
             onClick={deselectAll}
             className="rounded-full px-2 py-1.5 text-[13px] font-medium text-ink-muted transition-colors hover:bg-paper-2 hover:text-ink"

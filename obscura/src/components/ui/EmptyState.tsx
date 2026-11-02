@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
-import { buttonClass } from './Button'
+import { buttonClass } from './buttonStyles'
 
 interface EmptyStateProps {
   icon?: ReactNode

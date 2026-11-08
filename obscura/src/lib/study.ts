@@ -1,4 +1,4 @@
-import type { Grade } from './scoring'
+import { gradeAnswer, type Grade } from './scoring'
 
 /** A diagram is as good as its weakest label; all blank means skipped. */
 export function aggregateGrades(grades: Grade[]): Grade {
@@ -42,4 +42,50 @@ export function swipeGrade(dx: number): Grade | null {
   if (dx >= SWIPE_THRESHOLD) return 'correct'
   if (dx <= -SWIPE_THRESHOLD) return 'wrong'
   return null
+}
+
+/** Answers this many words or fewer are graded for the student; longer ones they grade themselves. */
+export const SHORT_ANSWER_WORDS = 6
+
+/** The answer without any "(…)" asides, which students rarely type. */
+function coreAnswer(answer: string): string {
+  const core = answer.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim()
+  return core || answer.trim()
+}
+
+/** A one-line answer of a few words, short enough to check a typed reply against. */
+export function isShortAnswer(answer: string): boolean {
+  const core = coreAnswer(answer)
+  if (!core || /\n/.test(answer.trim())) return false
+  return core.split(' ').length <= SHORT_ANSWER_WORDS
+}
+
+const rank: Record<Grade, number> = { correct: 3, close: 2, wrong: 1, empty: 0 }
+
+/**
+ * The suggested grade for a typed flashcard answer, or null when the answer is
+ * too long to check and the student should compare and grade it themselves.
+ * Nothing typed is always Need review.
+ */
+export function typedAnswerGrade(typed: string, answer: string): Grade | null {
+  if (!typed.trim()) return 'wrong'
+  if (!isShortAnswer(answer)) return null
+  const best = [answer, coreAnswer(answer)]
+    .map((a) => gradeAnswer(typed, a))
+    .reduce((a, b) => (rank[b] > rank[a] ? b : a))
+  return best === 'empty' ? 'wrong' : best
+}
+
+const TYPED_KEY = 'obscura:typed-answers'
+
+/** Whether this browser studies flashcards by typing the answer first. */
+export function loadTypedAnswers(): boolean {
+  try { return localStorage.getItem(TYPED_KEY) === '1' } catch { return false }
+}
+
+export function saveTypedAnswers(on: boolean) {
+  try {
+    if (on) localStorage.setItem(TYPED_KEY, '1')
+    else localStorage.removeItem(TYPED_KEY)
+  } catch {}
 }

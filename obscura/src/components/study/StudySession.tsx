@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ArrowRight, Image as ImageIcon, Layers, Shuffle, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Image as ImageIcon, Keyboard, Layers, Shuffle, X } from 'lucide-react'
 import type { Set, Card, FlashCard as FlashCardType, DiagramCard as DiagramCardType } from '@/types'
 import type { Grade } from '@/lib/scoring'
 import FlashcardQuiz from './FlashcardQuiz'
@@ -15,6 +15,8 @@ import Button, { buttonClass } from '@/components/ui/Button'
 import EmptyState from '@/components/ui/EmptyState'
 import ProgressBar from '@/components/ui/ProgressBar'
 import { clearProgress, loadProgress, saveProgress, type SavedProgress } from '@/lib/studyProgress'
+import { loadTypedAnswers, saveTypedAnswers } from '@/lib/study'
+import { cn } from '@/lib/utils'
 
 type StudyMode = 'flashcard' | 'diagram' | 'mixed'
 type Phase = 'starting' | 'resume' | 'picking' | 'studying' | 'results'
@@ -63,6 +65,16 @@ export default function StudySession({ set, cards }: StudySessionProps) {
   // When the current card appeared; a ref, since it never affects what's drawn.
   const cardShownAt = useRef(0)
   const [confirmLeave, setConfirmLeave] = useState(false)
+  const [typedAnswers, setTypedAnswers] = useState(false)
+
+  // A per-browser preference, so it's read after mount.
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- reads browser storage after mount
+  useEffect(() => setTypedAnswers(loadTypedAnswers()), [])
+
+  function toggleTypedAnswers() {
+    saveTypedAnswers(!typedAnswers)
+    setTypedAnswers(!typedAnswers)
+  }
 
   const startRecord = useCallback((mode: StudyMode) => {
     // The cards are already here — don't make studying wait on the API, which
@@ -224,7 +236,7 @@ export default function StudySession({ set, cards }: StudySessionProps) {
   if (phase === 'picking') {
     const options: { mode: StudyMode; title: string; detail: string; count: number; icon: React.ReactNode }[] = [
       { mode: 'mixed', title: 'Everything', detail: 'Flashcards and diagrams, shuffled together', count: cards.length, icon: <Shuffle className="h-5 w-5" aria-hidden /> },
-      { mode: 'flashcard', title: 'Flashcards', detail: 'Read the question, answer in your head, flip', count: flashcards.length, icon: <Layers className="h-5 w-5" aria-hidden /> },
+      { mode: 'flashcard', title: 'Flashcards', detail: typedAnswers ? 'Type each answer, then check it' : 'Read the question, answer in your head, flip', count: flashcards.length, icon: <Layers className="h-5 w-5" aria-hidden /> },
       { mode: 'diagram', title: 'Diagrams', detail: 'Name every covered label', count: diagrams.length, icon: <ImageIcon className="h-5 w-5" aria-hidden /> },
     ]
     return (
@@ -286,6 +298,22 @@ export default function StudySession({ set, cards }: StudySessionProps) {
             <p className="mb-1.5 truncate text-[13px] font-medium text-ink-muted">{set.title}</p>
             <ProgressBar value={currentIndex / deck.length} label="Session progress" />
           </div>
+          {deck.some((c) => c.type === 'flashcard') && (
+            <button
+              type="button"
+              onClick={toggleTypedAnswers}
+              aria-pressed={typedAnswers}
+              aria-label="Type answers"
+              title={typedAnswers ? 'Typing each answer before the card flips' : 'Type each answer before the card flips'}
+              className={cn(
+                'flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium transition-colors',
+                typedAnswers ? 'border-accent/40 bg-accent-soft text-accent-ink' : 'border-line text-ink-muted hover:border-ink-muted hover:text-ink'
+              )}
+            >
+              <Keyboard className="h-4 w-4" aria-hidden />
+              Type
+            </button>
+          )}
           <span className="shrink-0 text-sm font-semibold tabular-nums text-ink">
             {currentIndex + 1}<span className="font-normal text-ink-muted"> / {deck.length}</span>
           </span>
@@ -293,7 +321,7 @@ export default function StudySession({ set, cards }: StudySessionProps) {
       </header>
 
       {currentCard.type === 'flashcard' ? (
-        <FlashcardQuiz key={`${currentCard.id}-${currentIndex}`} card={currentCard} onAnswer={handleAnswer} />
+        <FlashcardQuiz key={`${currentCard.id}-${currentIndex}-${typedAnswers}`} card={currentCard} onAnswer={handleAnswer} typed={typedAnswers} />
       ) : (
         <DiagramQuiz key={`${currentCard.id}-${currentIndex}`} card={currentCard} onAnswer={handleAnswer} />
       )}

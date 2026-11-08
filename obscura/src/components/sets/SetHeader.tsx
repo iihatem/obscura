@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, BookPlus, Check, Copy, Globe, Link2, Lock, Pencil, Play, Share2, Star } from 'lucide-react'
@@ -29,9 +29,11 @@ interface SetHeaderProps {
   diagramCount: number
   isOwner: boolean
   onUpdate: (updated: Set) => void
+  /** The owner's "N suggestions" button, shown with the set's details. */
+  suggestions?: ReactNode
 }
 
-export default function SetHeader({ set, flashcardCount, diagramCount, isOwner, onUpdate }: SetHeaderProps) {
+export default function SetHeader({ set, flashcardCount, diagramCount, isOwner, onUpdate, suggestions }: SetHeaderProps) {
   const router = useRouter()
   const { toast } = useToast()
   const cardCount = flashcardCount + diagramCount
@@ -194,7 +196,7 @@ export default function SetHeader({ set, flashcardCount, diagramCount, isOwner, 
             {set.subject && <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-accent">{set.subject}</p>}
             <h1 className="text-[28px] font-extrabold leading-tight text-ink sm:text-4xl">{set.title}</h1>
             {set.description && <p className="mt-2 max-w-2xl text-ink-muted">{set.description}</p>}
-            <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
               <span>{counts}</span>
               {isOwner && (
                 <span className="inline-flex items-center gap-1">
@@ -202,7 +204,8 @@ export default function SetHeader({ set, flashcardCount, diagramCount, isOwner, 
                   {vis.label}
                 </span>
               )}
-            </p>
+              {isOwner && suggestions}
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">

@@ -6,16 +6,19 @@ import type { DiagramCard as DiagramCardType } from '@/types'
 import { cn, proxyImageUrl } from '@/lib/utils'
 import IconButton from '@/components/ui/IconButton'
 import PageTag from '@/components/ui/PageTag'
+import SuggestFixButton from '@/components/suggestions/SuggestFixButton'
 
 interface DiagramCardProps {
   card: DiagramCardType
   onEdit?: () => void
   onDelete?: () => void
+  /** Offered on other people's sets. */
+  onSuggest?: () => void
   isOwner?: boolean
   className?: string
 }
 
-export default function DiagramCard({ card, onEdit, onDelete, isOwner, className }: DiagramCardProps) {
+export default function DiagramCard({ card, onEdit, onDelete, onSuggest, isOwner, className }: DiagramCardProps) {
   const [imgLoaded, setImgLoaded] = useState(false)
 
   return (
@@ -46,6 +49,7 @@ export default function DiagramCard({ card, onEdit, onDelete, isOwner, className
           {card.labels.length} {card.labels.length === 1 ? 'label' : 'labels'}
         </span>
         <PageTag page={card.source_page} />
+        {!isOwner && onSuggest && <SuggestFixButton onClick={onSuggest} className="ml-auto" />}
         {isOwner && (
           <span className="ml-auto flex gap-0.5">
             <IconButton label="Edit diagram" size="sm" onClick={onEdit}><Pencil className="h-4 w-4" aria-hidden /></IconButton>

@@ -5,16 +5,19 @@ import type { FlashCard as FlashCardType } from '@/types'
 import { cn } from '@/lib/utils'
 import IconButton from '@/components/ui/IconButton'
 import PageTag from '@/components/ui/PageTag'
+import SuggestFixButton from '@/components/suggestions/SuggestFixButton'
 
 interface FlashCardProps {
   card: FlashCardType
   onEdit?: () => void
   onDelete?: () => void
+  /** Offered on other people's sets. */
+  onSuggest?: () => void
   isOwner?: boolean
   className?: string
 }
 
-export default function FlashCard({ card, onEdit, onDelete, isOwner, className }: FlashCardProps) {
+export default function FlashCard({ card, onEdit, onDelete, onSuggest, isOwner, className }: FlashCardProps) {
   return (
     <div className={cn('group rounded-2xl border border-line bg-surface', className)}>
       <div className="grid gap-px overflow-hidden rounded-2xl sm:grid-cols-2">
@@ -27,9 +30,10 @@ export default function FlashCard({ card, onEdit, onDelete, isOwner, className }
           <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-ink-muted">{card.back}</p>
         </div>
       </div>
-      {(isOwner || card.source_page) && (
+      {(isOwner || card.source_page || onSuggest) && (
         <div className="flex items-center gap-1 border-t border-line px-3 py-1.5">
           <PageTag page={card.source_page} />
+          {!isOwner && onSuggest && <SuggestFixButton onClick={onSuggest} className="ml-auto" />}
           {isOwner && (
             <span className="ml-auto flex gap-0.5">
               <IconButton label="Edit card" size="sm" onClick={onEdit}><Pencil className="h-4 w-4" aria-hidden /></IconButton>

@@ -7,6 +7,8 @@ import SetHeader from './SetHeader'
 import FlashCard from '@/components/cards/FlashCard'
 import DiagramCard from '@/components/cards/DiagramCard'
 import CardEditor from '@/components/cards/CardEditor'
+import SuggestFixDialog from '@/components/suggestions/SuggestFixDialog'
+import SuggestionsReview from '@/components/suggestions/SuggestionsReview'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
 import Menu, { MenuItem } from '@/components/ui/Menu'
@@ -45,6 +47,8 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
   useEffect(() => { setSet(initialSet) }, [initialSet])
   const [activeTab, setActiveTab] = useState<TabType>('flashcard')
   const [editor, setEditor] = useState<EditorState>({ open: false, mode: 'flashcard', card: null })
+  // The card a non-owner is suggesting a fix for.
+  const [suggesting, setSuggesting] = useState<Card | null>(null)
 
   // Upload flow state
   const [uploadOpen, setUploadOpen] = useState(false)
@@ -202,6 +206,7 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
         diagramCount={diagrams.length}
         isOwner={isOwner}
         onUpdate={setSet}
+        suggestions={isOwner && <SuggestionsReview setId={set.id} cards={cards} onCardUpdated={(c) => setCards((prev) => prev.map((x) => (x.id === c.id ? c : x)))} />}
       />
 
       {isOwner && uploadInProgress && !uploadOpen && (
@@ -280,7 +285,7 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
             ) : (
               <div className="flex flex-col gap-3">
                 {flashcards.map((card) => (
-                  <FlashCard key={card.id} card={card} isOwner={isOwner} onEdit={() => openEditEditor(card)} onDelete={() => setPendingDelete(card)} />
+                  <FlashCard key={card.id} card={card} isOwner={isOwner} onEdit={() => openEditEditor(card)} onDelete={() => setPendingDelete(card)} onSuggest={() => setSuggesting(card)} />
                 ))}
               </div>
             )
@@ -292,7 +297,7 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {diagrams.map((card) => (
-                  <DiagramCard key={card.id} card={card} isOwner={isOwner} onEdit={() => openEditEditor(card)} onDelete={() => setPendingDelete(card)} />
+                  <DiagramCard key={card.id} card={card} isOwner={isOwner} onEdit={() => openEditEditor(card)} onDelete={() => setPendingDelete(card)} onSuggest={() => setSuggesting(card)} />
                 ))}
               </div>
             )
@@ -317,6 +322,8 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
           onDelete={editor.card ? handleDelete : undefined}
         />
       </Modal>
+
+      {!isOwner && <SuggestFixDialog card={suggesting} onClose={() => setSuggesting(null)} />}
 
       {/* Delete a card */}
       <Modal open={pendingDelete !== null} onClose={() => setPendingDelete(null)} title="Delete this card?" description={pendingDelete?.type === 'flashcard' ? `“${pendingDelete.front.slice(0, 120)}” will be removed from the set.` : 'This diagram and its labels will be removed from the set.'}>

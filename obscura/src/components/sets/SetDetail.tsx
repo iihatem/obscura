@@ -18,7 +18,8 @@ import PagePicker, { type SelectedPage } from '@/components/upload/PagePicker'
 import GenerationProgress, { type GenerationSnapshot } from '@/components/upload/GenerationProgress'
 import { clearDraft, loadDraft } from '@/lib/drafts'
 import { cn } from '@/lib/utils'
-import { Check, Clock, FileUp, Image as ImageIcon, Layers, PenLine, Plus } from 'lucide-react'
+import { Check, Clock, FileUp, Image as ImageIcon, Import, Layers, PenLine, Plus } from 'lucide-react'
+import ImportCardsDialog from './ImportCardsDialog'
 
 type TabType = 'flashcard' | 'diagram'
 
@@ -76,12 +77,15 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
     return () => { cancelled = true }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // A brand-new set arrives with ?upload=1 — go straight to adding material.
+  // A brand-new set arrives with ?upload=1 (or ?import=1) — go straight to adding material.
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [importOpen, setImportOpen] = useState(() => isOwner && searchParams.get('import') === '1')
   useEffect(() => {
     if (isOwner && searchParams.get('upload') === '1') {
       openUpload()
+      router.replace(`/sets/${set.id}`, { scroll: false })
+    } else if (importOpen) {
       router.replace(`/sets/${set.id}`, { scroll: false })
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -238,6 +242,7 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
           <div className="mt-4 flex gap-4 text-sm">
             <button type="button" onClick={() => openNewEditor('flashcard')} className="text-ink-muted hover:text-ink hover:underline">Write a flashcard</button>
             <button type="button" onClick={() => openNewEditor('diagram')} className="text-ink-muted hover:text-ink hover:underline">Add a diagram</button>
+            <button type="button" onClick={() => setImportOpen(true)} className="text-ink-muted hover:text-ink hover:underline">Import cards</button>
           </div>
         </section>
       ) : cards.length === 0 ? (
@@ -268,6 +273,7 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
                     <MenuItem onSelect={() => { close(); openUpload() }} icon={<FileUp className="h-4 w-4 text-ink-muted" aria-hidden />}>Upload a lecture</MenuItem>
                     <MenuItem onSelect={() => { close(); openNewEditor('flashcard') }} icon={<PenLine className="h-4 w-4 text-ink-muted" aria-hidden />}>Write a flashcard</MenuItem>
                     <MenuItem onSelect={() => { close(); openNewEditor('diagram') }} icon={<ImageIcon className="h-4 w-4 text-ink-muted" aria-hidden />}>Add a diagram</MenuItem>
+                    <MenuItem onSelect={() => { close(); setImportOpen(true) }} icon={<Import className="h-4 w-4 text-ink-muted" aria-hidden />}>Import cards</MenuItem>
                   </>
                 )}
               </Menu>
@@ -363,6 +369,15 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
           </div>
         )}
       </Modal>
+
+      {isOwner && (
+        <ImportCardsDialog
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          setId={set.id}
+          onImported={() => { setImportOpen(false); setActiveTab('flashcard'); router.refresh() }}
+        />
+      )}
 
       <Modal open={confirmDiscard} onClose={() => setConfirmDiscard(false)} title="Discard the generated cards?" description="The pages they used still count toward today's allowance.">
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

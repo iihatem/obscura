@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Clock, EllipsisVertical, Globe, Link2, Lock, Play, Trash2 } from 'lucide-react'
+import { Clock, EllipsisVertical, Globe, Link2, Lock, Merge, Play, Trash2 } from 'lucide-react'
 import type { Set } from '@/types'
 import { cn, plural, proxyImageUrl } from '@/lib/utils'
 import { apiFetch, errorMessage } from '@/lib/api'
@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/Toast'
 import Menu, { MenuItem } from '@/components/ui/Menu'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
+import MergeSetDialog from './MergeSetDialog'
 
 export interface LibrarySet extends Set {
   lastStudiedAt?: string | null
@@ -27,6 +28,7 @@ const visibility = {
 export default function SetCard({ set, hasDraft = false }: { set: LibrarySet; hasDraft?: boolean }) {
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [merging, setMerging] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
   const vis = visibility[set.visibility] ?? visibility.private
@@ -103,11 +105,27 @@ export default function SetCard({ set, hasDraft = false }: { set: LibrarySet; ha
               {set.card_count > 0 && (
                 <MenuItem href={`/sets/${set.id}/study`} onSelect={close} icon={<Play className="h-4 w-4 text-ink-muted" aria-hidden />}>Study</MenuItem>
               )}
+              {set.card_count > 0 && (
+                <MenuItem onSelect={() => { close(); setMerging(true) }} icon={<Merge className="h-4 w-4 text-ink-muted" aria-hidden />}>Merge into…</MenuItem>
+              )}
               <MenuItem tone="danger" onSelect={() => { close(); setConfirming(true) }} icon={<Trash2 className="h-4 w-4" aria-hidden />}>Delete set</MenuItem>
             </>
           )}
         </Menu>
       </div>
+
+      {merging && (
+        <MergeSetDialog
+          open
+          onClose={() => setMerging(false)}
+          source={set}
+          onDone={({ destTitle, deletedSource }) => {
+            setMerging(false)
+            if (!deletedSource) toast(`Cards copied to “${destTitle}”`)
+            router.refresh()
+          }}
+        />
+      )}
 
       {confirming && <Modal open onClose={() => setConfirming(false)} title="Delete this set?" description={`“${set.title}” and its ${plural(set.card_count, 'card')} will be gone for good. This can't be undone.`}>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

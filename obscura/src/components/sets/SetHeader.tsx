@@ -13,6 +13,7 @@ import IconButton from '@/components/ui/IconButton'
 import { cn, plural } from '@/lib/utils'
 import { apiFetch, errorMessage } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import MergeSetDialog from './MergeSetDialog'
 
 type Visibility = Set['visibility']
 
@@ -45,6 +46,7 @@ export default function SetHeader({ set, flashcardCount, diagramCount, isOwner, 
   const [error, setError] = useState('')
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [mergeOpen, setMergeOpen] = useState(false)
 
   // ── Share ──
   const [shareOpen, setShareOpen] = useState(false)
@@ -292,9 +294,16 @@ export default function SetHeader({ set, flashcardCount, diagramCount, isOwner, 
           <Textarea label="Description" maxLength={2000} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What is this set about?" />
           {error && <p role="alert" className="rounded-xl bg-bad-soft px-4 py-2.5 text-sm text-bad">{error}</p>}
           <div className="flex flex-col-reverse gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
-            <button type="button" onClick={() => { setEditOpen(false); setDeleteOpen(true) }} className="text-sm font-medium text-bad hover:underline">
-              Delete set
-            </button>
+            <div className="flex gap-4">
+              {cardCount > 0 && (
+                <button type="button" onClick={() => { setEditOpen(false); setMergeOpen(true) }} className="text-sm font-medium text-ink-muted hover:text-ink hover:underline">
+                  Merge into…
+                </button>
+              )}
+              <button type="button" onClick={() => { setEditOpen(false); setDeleteOpen(true) }} className="text-sm font-medium text-bad hover:underline">
+                Delete set
+              </button>
+            </div>
             <div className="flex gap-2">
               <Button variant="secondary" className="flex-1 sm:flex-none" onClick={() => setEditOpen(false)}>Cancel</Button>
               <Button loading={saving} className="flex-1 sm:flex-none" onClick={handleSave}>Save</Button>
@@ -302,6 +311,20 @@ export default function SetHeader({ set, flashcardCount, diagramCount, isOwner, 
           </div>
         </div>
       </Modal>
+
+      {isOwner && (
+        <MergeSetDialog
+          open={mergeOpen}
+          onClose={() => setMergeOpen(false)}
+          source={{ id: set.id, title: set.title, card_count: cardCount }}
+          onDone={({ destId, destTitle, deletedSource }) => {
+            setMergeOpen(false)
+            if (!deletedSource) toast(`Cards copied to “${destTitle}”`)
+            router.push(`/sets/${destId}`)
+            router.refresh()
+          }}
+        />
+      )}
 
       {/* Delete */}
       <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete this set?" description={`“${set.title}” and its ${plural(cardCount, 'card')} will be gone for good. This can't be undone.`}>

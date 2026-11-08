@@ -1,7 +1,7 @@
 'use client'
 
 import { useDeferredValue, useMemo, useRef, useState } from 'react'
-import { ClipboardPaste, FileUp, TriangleAlert } from 'lucide-react'
+import { Check, ClipboardPaste, FileUp, TriangleAlert } from 'lucide-react'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
@@ -325,7 +325,9 @@ export default function ImportCardsDialog({ open, onClose, setId, onImported }: 
               <div className="flex flex-col gap-3 rounded-2xl border border-warn/40 bg-warn-soft/50 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <p className="flex items-start gap-2 text-sm text-ink">
-                    <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warn" aria-hidden />
+                    {unresolved.length > 0
+                      ? <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warn" aria-hidden />
+                      : <Check className="mt-0.5 h-4 w-4 shrink-0 text-good" aria-hidden />}
                     {unresolved.length > 0
                       ? `${plural(unresolved.length, 'card is', 'cards are')} missing a question or an answer. Fill them in or skip them.`
                       : 'All fixed.'}
@@ -365,7 +367,8 @@ export default function ImportCardsDialog({ open, onClose, setId, onImported }: 
 
       <div className="mt-6 flex flex-col-reverse gap-2 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-end">
         {unresolved.length > 0 && !locked && (
-          <p className="text-[13px] text-ink-muted sm:mr-auto">Fix or skip the flagged cards to import.</p>
+          // Column-reverse on phones: order-last puts the hint above the buttons.
+          <p className="order-last text-[13px] text-ink-muted sm:order-none sm:mr-auto">Fix or skip the flagged cards to import.</p>
         )}
         <Button variant="secondary" onClick={close} disabled={saving}>{savedCount > 0 ? 'Close' : 'Cancel'}</Button>
         <Button onClick={handleImport} loading={saving} disabled={!ready.length || unresolved.length > 0}>

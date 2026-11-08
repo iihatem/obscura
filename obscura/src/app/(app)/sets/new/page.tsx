@@ -18,13 +18,18 @@ export default function NewSetPage() {
   const [title, setTitle] = useState('')
   const [subject, setSubject] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  // Which way in the student picked: upload a lecture, or import existing cards.
+  const [loading, setLoading] = useState<'upload' | 'import' | null>(null)
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    create('upload')
+  }
+
+  async function create(next: 'upload' | 'import') {
     if (!title.trim()) { setError('Give the set a name, like the lecture or topic.'); return }
 
-    setLoading(true)
+    setLoading(next)
     setError('')
 
     try {
@@ -34,10 +39,10 @@ export default function NewSetPage() {
       })
       if (!res.ok) throw new Error(await errorMessage(res, "Couldn't create the set. Please try again."))
       const newSet: Set = await res.json()
-      router.push(`/sets/${newSet.id}?upload=1`)
+      router.push(`/sets/${newSet.id}?${next}=1`)
     } catch (err) {
       setError((err as Error).message)
-      setLoading(false)
+      setLoading(null)
     }
   }
 
@@ -68,10 +73,21 @@ export default function NewSetPage() {
           onChange={(e) => setSubject(e.target.value)}
           placeholder="e.g. BIO 110"
         />
-        <Button type="submit" size="lg" loading={loading} className="mt-2 w-full sm:w-auto sm:self-start">
-          Continue to upload
-          <ArrowRight className="h-4 w-4" aria-hidden />
-        </Button>
+        <div className="mt-2 flex flex-col items-center gap-4 sm:flex-row sm:gap-5">
+          <Button type="submit" size="lg" loading={loading === 'upload'} disabled={loading !== null} className="w-full sm:w-auto">
+            Continue to upload
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </Button>
+          <button
+            type="button"
+            onClick={() => create('import')}
+            disabled={loading !== null}
+            className="inline-flex items-center gap-2 text-sm font-medium text-ink-muted hover:text-ink hover:underline disabled:opacity-50"
+          >
+            {loading === 'import' && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />}
+            or import cards from Quizlet or Anki
+          </button>
+        </div>
       </form>
     </div>
   )

@@ -111,7 +111,12 @@ function PlanForm({ onClose, setId, cardIds, history, plan, today, onSaved, save
       {preview && (
         <div className="rounded-xl bg-paper-2 px-4 py-3 text-sm text-ink" aria-live="polite">
           <p>
-            <span className="font-semibold">Today: {plural(preview.planned.length, 'card')}</span>
+            <span className="font-semibold">
+              {/* Count what's already been answered today, e.g. in a practice test. */}
+              {preview.planned.length > 0 && preview.remaining.length === 0
+                ? 'Done for today'
+                : `Today: ${plural(preview.remaining.length, 'card')}${preview.doneToday > 0 ? ' left' : ''}`}
+            </span>
             <span className="text-ink-muted"> · {examLabel(date, today)}, {longDate(date)}</span>
           </p>
           {preview.unseenAtExam > 0 && (

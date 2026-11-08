@@ -108,6 +108,18 @@ describe('StudySession typed answers', () => {
     expect(JSON.parse(localStorage.getItem('obscura:study:s1')!).answers[0].grade).toBe('close')
   })
 
+  it('does not type the grade key into the next card', async () => {
+    localStorage.setItem('obscura:typed-answers', '1')
+    render(<StudySession set={set} cards={[short('a', 'Nucleus'), short('b', 'Nucleus')]} />)
+
+    const box = await screen.findByRole('textbox', { name: 'Your answer' })
+    fireEvent.change(box, { target: { value: 'nucleus' } })
+    fireEvent.submit(box.closest('form')!)
+    const key = new KeyboardEvent('keydown', { key: '1', cancelable: true })
+    window.dispatchEvent(key)
+    expect(key.defaultPrevented).toBe(true)
+  })
+
   it("counts I don't know as Need review", async () => {
     localStorage.setItem('obscura:typed-answers', '1')
     render(<StudySession set={set} cards={cards} />)

@@ -1,4 +1,4 @@
-import { gradeAnswer, type Grade } from './scoring'
+import { gradeAnswer, namesPartOf, type Grade } from './scoring'
 
 /** A diagram is as good as its weakest label; all blank means skipped. */
 export function aggregateGrades(grades: Grade[]): Grade {
@@ -70,10 +70,11 @@ const rank: Record<Grade, number> = { correct: 3, close: 2, wrong: 1, empty: 0 }
 export function typedAnswerGrade(typed: string, answer: string): Grade | null {
   if (!typed.trim()) return 'wrong'
   if (!isShortAnswer(answer)) return null
-  const best = [answer, coreAnswer(answer)]
-    .map((a) => gradeAnswer(typed, a))
-    .reduce((a, b) => (rank[b] > rank[a] ? b : a))
-  return best === 'empty' ? 'wrong' : best
+  const forms = [answer, coreAnswer(answer)]
+  const best = forms.map((a) => gradeAnswer(typed, a)).reduce((a, b) => (rank[b] > rank[a] ? b : a))
+  if (best === 'correct' || best === 'close') return best
+  // Naming part of the answer, and nothing that isn't in it, is Almost.
+  return forms.some((a) => namesPartOf(typed, a)) ? 'close' : 'wrong'
 }
 
 const TYPED_KEY = 'obscura:typed-answers'

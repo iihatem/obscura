@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { isActive } from './PillNav'
 import { isFocusRoute } from './AppShell'
-import { initialsOf } from './AvatarMenu'
+import { initialsOf } from '@/lib/utils'
 
 vi.mock('next/navigation', () => ({ usePathname: () => '/explore', useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }))
 

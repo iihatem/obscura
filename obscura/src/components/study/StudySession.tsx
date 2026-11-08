@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ArrowRight, Image as ImageIcon, Keyboard, Layers, Shuffle, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ClipboardCheck, Image as ImageIcon, Keyboard, Layers, Shuffle, X } from 'lucide-react'
 import type { Set, Card, FlashCard as FlashCardType, DiagramCard as DiagramCardType } from '@/types'
 import type { Grade } from '@/lib/scoring'
 import FlashcardQuiz from './FlashcardQuiz'
@@ -265,6 +265,17 @@ export default function StudySession({ set, cards }: StudySessionProps) {
               <ArrowRight className="h-4 w-4 shrink-0 text-ink-muted transition group-hover:translate-x-0.5 group-hover:text-ink" aria-hidden />
             </button>
           ))}
+          <Link
+            href={`/sets/${set.id}/test`}
+            className="group flex items-center gap-4 rounded-2xl border border-dashed border-line p-5 transition hover:border-accent active:scale-[0.99]"
+          >
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-paper-2 text-ink-muted"><ClipboardCheck className="h-5 w-5" aria-hidden /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-headline text-lg font-bold text-ink">Take a practice test</span>
+              <span className="block text-sm text-ink-muted">No hints until the end, then a full breakdown</span>
+            </span>
+            <ArrowRight className="h-4 w-4 shrink-0 text-ink-muted transition group-hover:translate-x-0.5 group-hover:text-ink" aria-hidden />
+          </Link>
         </div>
       </div>
     )

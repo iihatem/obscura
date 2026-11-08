@@ -11,7 +11,9 @@ import IconButton from '@/components/ui/IconButton'
 
 interface DiagramQuizProps {
   card: DiagramCard
-  onAnswer: (grade: Grade, labelGrades: Grade[]) => void
+  onAnswer?: (grade: Grade, labelGrades: Grade[]) => void
+  /** Practice tests: hand back what was typed, with no marking and no peeking. */
+  onSubmitAnswers?: (answers: string[]) => void
 }
 
 const boxGrade: Record<Grade, string> = {
@@ -21,7 +23,7 @@ const boxGrade: Record<Grade, string> = {
   empty: 'border-bad bg-bad-soft text-bad',
 }
 
-export default function DiagramQuiz({ card, onAnswer }: DiagramQuizProps) {
+export default function DiagramQuiz({ card, onAnswer, onSubmitAnswers }: DiagramQuizProps) {
   if (card.labels.length === 0) {
     return (
       <div className="flex flex-1 flex-col">
@@ -37,7 +39,7 @@ export default function DiagramQuiz({ card, onAnswer }: DiagramQuizProps) {
           </div>
         </div>
         <ActionBar>
-          <Button size="lg" variant="secondary" className="w-full" onClick={() => onAnswer('empty', [])}>
+          <Button size="lg" variant="secondary" className="w-full" onClick={() => onAnswer?.('empty', [])}>
             Skip this diagram
             <ArrowRight className="h-4 w-4" aria-hidden />
           </Button>
@@ -45,7 +47,7 @@ export default function DiagramQuiz({ card, onAnswer }: DiagramQuizProps) {
       </div>
     )
   }
-  return <DiagramQuizInner card={card} onAnswer={onAnswer} />
+  return <DiagramQuizInner card={card} onAnswer={onAnswer} onSubmitAnswers={onSubmitAnswers} />
 }
 
 function ActionBar({ children }: { children: React.ReactNode }) {
@@ -62,7 +64,7 @@ function ActionBar({ children }: { children: React.ReactNode }) {
  * picture, instead of inside tiny boxes on it, keeps phones from zooming in and
  * keeps the whole diagram in view.
  */
-function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
+function DiagramQuizInner({ card, onAnswer, onSubmitAnswers }: DiagramQuizProps) {
   const { labels } = card
   const [answers, setAnswers] = useState<string[]>(() => labels.map(() => ''))
   const [current, setCurrent] = useState(0)
@@ -84,6 +86,7 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
   }
 
   function submit() {
+    if (onSubmitAnswers) return onSubmitAnswers(answers)
     setGrades(answers.map((a, i) => gradeAnswer(a, labels[i].label)))
     setPeek(false)
     requestAnimationFrame(() => continueRef.current?.focus())
@@ -151,9 +154,11 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
                 {filled} answered
               </span>
               <span className="flex items-center gap-1">
-                <IconButton label={peek ? 'Cover the diagram again' : 'Peek at the diagram'} size="sm" onClick={() => setPeek((p) => !p)}>
-                  {peek ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
-                </IconButton>
+                {!onSubmitAnswers && (
+                  <IconButton label={peek ? 'Cover the diagram again' : 'Peek at the diagram'} size="sm" onClick={() => setPeek((p) => !p)}>
+                    {peek ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
+                  </IconButton>
+                )}
                 <IconButton label="Previous label" size="sm" onClick={() => select((current - 1 + labels.length) % labels.length)}>
                   <ChevronLeft className="h-4 w-4" aria-hidden />
                 </IconButton>
@@ -176,10 +181,17 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
                 enterKeyHint={filled >= labels.length - 1 ? 'done' : 'next'}
                 className="h-12 min-w-0 flex-1 rounded-xl border border-line bg-surface px-4 text-base text-ink placeholder:text-ink-muted focus:border-accent focus:outline-none focus:ring-3 focus:ring-accent/20"
               />
-              <Button size="lg" onClick={submit} disabled={filled === 0}>
-                <Check className="h-4 w-4" aria-hidden />
-                Check
-              </Button>
+              {onSubmitAnswers ? (
+                <Button size="lg" onClick={submit}>
+                  {filled === 0 ? 'Skip' : 'Next'}
+                  <ArrowRight className="h-4 w-4" aria-hidden />
+                </Button>
+              ) : (
+                <Button size="lg" onClick={submit} disabled={filled === 0}>
+                  <Check className="h-4 w-4" aria-hidden />
+                  Check
+                </Button>
+              )}
             </div>
           </>
         ) : (
@@ -201,7 +213,7 @@ function DiagramQuizInner({ card, onAnswer }: DiagramQuizProps) {
             ) : (
               <p className="text-sm font-semibold text-good">All {labels.length} labels right.</p>
             )}
-            <Button ref={continueRef} size="lg" className="w-full" onClick={() => onAnswer(aggregateGrades(grades), grades)}>
+            <Button ref={continueRef} size="lg" className="w-full" onClick={() => onAnswer?.(aggregateGrades(grades), grades)}>
               Continue
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Button>

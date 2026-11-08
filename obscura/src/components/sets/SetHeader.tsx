@@ -3,7 +3,7 @@
 import { useState, useEffect, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, BookPlus, Check, Copy, Globe, Link2, Lock, Pencil, Play, Share2, Star } from 'lucide-react'
+import { ArrowLeft, BookPlus, Check, ClipboardCheck, Copy, Globe, Link2, Lock, Pencil, Play, Share2, Star } from 'lucide-react'
 import type { Set } from '@/types'
 import Button, { buttonClass } from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
@@ -219,6 +219,13 @@ export default function SetHeader({ set, flashcardCount, diagramCount, isOwner, 
                 <Play className="h-4 w-4" aria-hidden />
                 Study
               </span>
+            )}
+            {cardCount > 0 && (
+              <Link href={`/sets/${set.id}/test`} className={buttonClass('secondary', 'lg')}>
+                <ClipboardCheck className="h-4 w-4" aria-hidden />
+                <span className="sm:hidden">Test</span>
+                <span className="hidden sm:inline">Practice test</span>
+              </Link>
             )}
             {isOwner ? (
               <>

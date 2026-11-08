@@ -19,9 +19,9 @@ interface AppShellProps {
   children: React.ReactNode
 }
 
-/** Study sessions take the whole screen: no bar, no pill. */
+/** Study sessions and practice tests take the whole screen: no bar, no pill. */
 export function isFocusRoute(pathname: string) {
-  return /^\/sets\/[^/]+\/study(\/|$)/.test(pathname)
+  return /^\/sets\/[^/]+\/(study|test)(\/|$)/.test(pathname)
 }
 
 export function Logo() {

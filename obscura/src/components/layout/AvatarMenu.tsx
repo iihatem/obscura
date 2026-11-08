@@ -9,14 +9,9 @@ import { createClient } from '@/lib/supabase/client'
 import { clearAllDrafts } from '@/lib/drafts'
 import { clearAllProgress } from '@/lib/studyProgress'
 import { applyTheme, parseTheme, THEME_COOKIE, type Theme } from '@/lib/theme'
+import { initialsOf } from '@/lib/utils'
 import { useOnboarding } from '@/components/onboarding/OnboardingProvider'
 import type { Profile } from '@/types'
-
-export function initialsOf(name: string | null | undefined): string {
-  const words = (name ?? '').trim().split(/\s+/).filter(Boolean)
-  if (!words.length) return '?'
-  return (words.length === 1 ? words[0].slice(0, 2) : words[0][0] + words[words.length - 1][0]).toUpperCase()
-}
 
 export default function AvatarMenu({ profile }: { profile: Profile | null }) {
   const router = useRouter()

@@ -59,6 +59,15 @@ describe('ExamPlanPanel', () => {
     expect(container.textContent).toBe('')
   })
 
+  it("counts cards already answered today in the preview", () => {
+    // A practice test this morning went over all eight cards.
+    renderPanel({ cardIds: ids(8), history: ids(8).map((id) => graded(id, 'correct', 0)) })
+    fireEvent.click(screen.getByRole('button', { name: /Plan for an exam/ }))
+    const dialog = screen.getByRole('dialog', { hidden: true })
+    fireEvent.change(within(dialog).getByLabelText('Exam date'), { target: { value: '2026-11-18' } })
+    expect(within(dialog).getByText('Done for today')).toBeTruthy()
+  })
+
   it('sets a plan with the picked date and limit', async () => {
     api.saveExamPlan.mockImplementation(async (setId: string, exam_date: string, daily_cap: number) => ({ set_id: setId, exam_date, daily_cap, created_at: new Date().toISOString() }))
     renderPanel()

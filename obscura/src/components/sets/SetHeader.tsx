@@ -210,7 +210,7 @@ export default function SetHeader({ set, flashcardCount, diagramCount, isOwner, 
 
           <div className="flex flex-wrap items-center gap-2">
             {cardCount > 0 ? (
-              <Link href={`/sets/${set.id}/study`} className={cn(buttonClass('primary', 'lg'), 'flex-1 sm:flex-none')}>
+              <Link href={`/sets/${set.id}/study`} className={cn(buttonClass('primary', 'lg'), 'flex-1 px-5 sm:flex-none sm:px-6')}>
                 <Play className="h-4 w-4" aria-hidden />
                 Study
               </Link>
@@ -221,7 +221,7 @@ export default function SetHeader({ set, flashcardCount, diagramCount, isOwner, 
               </span>
             )}
             {cardCount > 0 && (
-              <Link href={`/sets/${set.id}/test`} className={buttonClass('secondary', 'lg')}>
+              <Link href={`/sets/${set.id}/test`} className={cn(buttonClass('secondary', 'lg'), 'px-5 sm:px-6')}>
                 <ClipboardCheck className="h-4 w-4" aria-hidden />
                 <span className="sm:hidden">Test</span>
                 <span className="hidden sm:inline">Practice test</span>
@@ -229,9 +229,10 @@ export default function SetHeader({ set, flashcardCount, diagramCount, isOwner, 
             )}
             {isOwner ? (
               <>
-                <Button variant="secondary" size="lg" onClick={() => setShareOpen(true)}>
+                {/* Icon-only on phones, so Study, Test, Share and Edit fit on one row. */}
+                <Button variant="secondary" size="lg" aria-label="Share" className="w-12 px-0 sm:w-auto sm:px-6" onClick={() => setShareOpen(true)}>
                   <Share2 className="h-4 w-4" aria-hidden />
-                  Share
+                  <span className="hidden sm:inline">Share</span>
                 </Button>
                 <IconButton label="Edit set details" variant="outline" className="h-12 w-12" onClick={openEdit}>
                   <Pencil className="h-4 w-4" aria-hidden />

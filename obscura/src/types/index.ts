@@ -60,7 +60,7 @@ export interface StudySession {
   id: string
   user_id: string
   set_id: string
-  mode: 'flashcard' | 'diagram' | 'mixed'
+  mode: 'flashcard' | 'diagram' | 'mixed' | 'test'
   started_at: string
   completed_at: string | null
 }

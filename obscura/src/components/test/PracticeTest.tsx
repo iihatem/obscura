@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ClipboardCheck, Timer, X } from 'lucide-react'
 import type { Card, Set } from '@/types'
 import type { Grade } from '@/lib/scoring'
+import { apiFetch, withColdStartRetry } from '@/lib/api'
 import {
   blankResponse,
   buildTest,
@@ -34,6 +35,7 @@ import SelfCheck from './SelfCheck'
 import TestResults from './TestResults'
 
 type Phase = 'setup' | 'testing' | 'check' | 'results' | 'study'
+export type SaveState = 'saving' | 'saved' | 'failed'
 
 function clock(ms: number): string {
   const s = Math.max(0, Math.ceil(ms / 1000))
@@ -67,6 +69,12 @@ export default function PracticeTest({ set, cards }: PracticeTestProps) {
   // The question already answered. A double press can submit twice before
   // re-render; both calls would see the same state and skip a question.
   const answered = useRef(-1)
+  // The history record for this sitting, created as the test starts so saving
+  // at the end doesn't wait on a cold API. Resolves to null if it couldn't be made.
+  const sessionRef = useRef<Promise<string | null> | null>(null)
+  const shownAt = useRef(0)
+  const times = useRef<number[]>([])
+  const [saveState, setSaveState] = useState<SaveState>('saving')
 
   const index = results.length
 
@@ -76,6 +84,14 @@ export default function PracticeTest({ set, cards }: PracticeTestProps) {
     const qs = buildTest(cards, { count, kinds: choice.kinds })
     const minutes = timerMinutes(choice, resolveCount(count, pool))
     answered.current = -1
+    times.current = []
+    shownAt.current = Date.now()
+    setSaveState('saving')
+    sessionRef.current = withColdStartRetry(() =>
+      apiFetch('/sessions', { method: 'POST', body: JSON.stringify({ set_id: set.id, mode: 'test' }) })
+    )
+      .then(async (res) => (res.ok ? ((await res.json()).id as string) : null))
+      .catch(() => null)
     setQuestions(qs)
     setResults([])
     setTimedOut(false)
@@ -98,6 +114,8 @@ export default function PracticeTest({ set, cards }: PracticeTestProps) {
   function answer(response: TestResponse) {
     if (answered.current === index) return
     answered.current = index
+    times.current[index] = Date.now() - shownAt.current
+    shownAt.current = Date.now()
     const next = [...results, gradeResponse(questions[index], response)]
     if (next.length >= questions.length) finish(next, false)
     else {
@@ -120,6 +138,34 @@ export default function PracticeTest({ set, cards }: PracticeTestProps) {
     }, 1000)
     return () => clearInterval(id)
   }, [phase, endsAt])
+
+  // Save the sitting to the student's history once it's marked. Best-effort:
+  // the score on screen stands either way.
+  const pendingSave = useRef<Promise<string | null> | null>(null)
+  useEffect(() => {
+    if (phase !== 'results' || !sessionRef.current || pendingSave.current === sessionRef.current) return
+    const session = (pendingSave.current = sessionRef.current)
+    const rows = results.map((r, i) => ({
+      card_id: r.question.card.id,
+      grade: r.grade ?? 'empty',
+      time_taken_ms: times.current[i] ?? null,
+    }))
+    ;(async () => {
+      const id = await session
+      let ok = false
+      if (id) {
+        try {
+          const res = await withColdStartRetry(() =>
+            apiFetch('/results', { method: 'POST', body: JSON.stringify({ session_id: id, results: rows }) })
+          )
+          ok = res.ok
+        } catch {
+          ok = false
+        }
+      }
+      setSaveState(ok ? 'saved' : 'failed')
+    })()
+  }, [phase, results])
 
   function applyMarks(marks: Map<number, Grade>) {
     setResults((prev) => prev.map((r, i) => (marks.has(i) ? { ...r, grade: marks.get(i)! } : r)))
@@ -161,6 +207,7 @@ export default function PracticeTest({ set, cards }: PracticeTestProps) {
         set={set}
         results={results}
         timedOut={timedOut}
+        saveState={saveState}
         onStudyMissed={studyMissed}
         onRetake={start}
         onChangeSettings={() => setPhase('setup')}

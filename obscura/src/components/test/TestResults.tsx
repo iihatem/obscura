@@ -15,6 +15,8 @@ interface TestResultsProps {
   timedOut: boolean
   onStudyMissed: () => void
   onRetake: () => void
+  /** Whether the score made it into the student's history. */
+  saveState?: 'saving' | 'saved' | 'failed'
   onChangeSettings: () => void
 }
 
@@ -142,7 +144,7 @@ function RightItem({ r }: { r: QuestionResult }) {
   )
 }
 
-export default function TestResults({ set, results, timedOut, onStudyMissed, onRetake, onChangeSettings }: TestResultsProps) {
+export default function TestResults({ set, results, timedOut, saveState = 'saving', onStudyMissed, onRetake, onChangeSettings }: TestResultsProps) {
   const t = scoreTest(results)
   const groups = groupByPage(results)
   const byPage = results.some((r) => r.question.card.source_page)
@@ -188,7 +190,9 @@ export default function TestResults({ set, results, timedOut, onStudyMissed, onR
           </Button>
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-          <p className="text-xs text-ink-muted">Practice test scores aren&apos;t saved to your history yet.</p>
+          <p role="status" className="text-xs text-ink-muted">
+            {saveState === 'saved' ? 'Saved to your history.' : saveState === 'failed' ? "This score couldn't be saved to your history, but the results here are right." : 'Saving to your history…'}
+          </p>
           <button type="button" onClick={onChangeSettings} className="flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink">
             <SlidersHorizontal className="h-4 w-4" aria-hidden />
             Change settings

@@ -1,6 +1,9 @@
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import SetDetail from '@/components/sets/SetDetail'
+import ExamPlanPanel from '@/components/plan/ExamPlanPanel'
+import { fetchExamPlans, fetchGradeHistory } from '@/lib/examPlans'
+import type { ReactNode } from 'react'
 import type { Set, Card } from '@/types'
 
 interface PageProps {
@@ -37,13 +40,22 @@ export default async function SetDetailPage({ params }: PageProps) {
     .order('position', { ascending: true })
 
   const cards: Card[] = cardsData ?? []
+  const isOwner = typedSet.owner_id === user.id
+
+  // The owner's exam plan. Left out when plans aren't switched on yet.
+  let plan: ReactNode = null
+  if (isOwner && cards.length) {
+    const [plans, history] = await Promise.all([fetchExamPlans(supabase, user.id, id), fetchGradeHistory(supabase, user.id, [id])])
+    if (plans) plan = <ExamPlanPanel setId={id} cardIds={cards.map((c) => c.id)} history={history} plan={plans[0] ?? null} />
+  }
 
   return (
     <SetDetail
       initialSet={typedSet}
       initialCards={cards}
-      isOwner={typedSet.owner_id === user.id}
+      isOwner={isOwner}
       userId={user.id}
+      plan={plan}
     />
   )
 }

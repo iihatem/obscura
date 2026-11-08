@@ -15,11 +15,13 @@ describe('isActive', () => {
 })
 
 describe('isFocusRoute', () => {
-  it('hides the shell only in study sessions', () => {
+  it('hides the shell only in study sessions and practice tests', () => {
     expect(isFocusRoute('/sets/abc/study')).toBe(true)
     expect(isFocusRoute('/sets/abc/study/')).toBe(true)
+    expect(isFocusRoute('/sets/abc/test')).toBe(true)
     expect(isFocusRoute('/sets/abc')).toBe(false)
     expect(isFocusRoute('/sets/study-guide')).toBe(false)
+    expect(isFocusRoute('/sets/test')).toBe(false)
   })
 })
 

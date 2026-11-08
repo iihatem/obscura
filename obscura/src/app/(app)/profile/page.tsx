@@ -10,7 +10,7 @@ import NameEditor from '@/components/profile/NameEditor'
 import ThemePicker from '@/components/profile/ThemePicker'
 import SignOutButton from '@/components/profile/SignOutButton'
 
-const MODE: Record<string, string> = { flashcard: 'Flashcards', diagram: 'Diagrams', mixed: 'Everything' }
+const MODE: Record<string, string> = { flashcard: 'Flashcards', diagram: 'Diagrams', mixed: 'Everything', test: 'Practice test' }
 
 export default async function ProfilePage() {
   const supabase = await createClient()

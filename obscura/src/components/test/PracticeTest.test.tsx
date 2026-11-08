@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import type { Card, FlashCard, Set } from '@/types'
 import PracticeTest from './PracticeTest'
+import { apiFetch } from '@/lib/api'
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }) }))
 vi.mock('@/lib/api', () => ({
@@ -114,7 +115,8 @@ describe('PracticeTest', () => {
 
   it('hands the test in when the timer runs out', () => {
     vi.useFakeTimers()
-    render(<PracticeTest set={set} cards={cards.slice(0, 4)} />)
+    // Only cards with a right answer on file, so the first one always counts.
+    render(<PracticeTest set={set} cards={[cards[0], cards[1], cards[3]]} />)
     fireEvent.click(screen.getByRole('radio', { name: '5 min' }))
     fireEvent.click(screen.getByRole('button', { name: /Start/ }))
     expect(screen.getByRole('timer').textContent).toContain('5:00')
@@ -125,7 +127,7 @@ describe('PracticeTest', () => {
 
     act(() => { vi.advanceTimersByTime(5 * 60_000 + 1000) })
     expect(screen.getByText(/Time ran out/)).toBeTruthy()
-    expect(screen.getByText('1 of 4 right')).toBeTruthy()
+    expect(screen.getByText('1 of 3 right')).toBeTruthy()
     expect(screen.getAllByText('No answer').length).toBeGreaterThan(0)
   })
 })
@@ -143,5 +145,46 @@ describe('PracticeTest keyboard', () => {
     expect(screen.getByText(/\/ 4/).parentElement?.textContent).toBe('1 / 4')
     fireEvent.click(screen.getByRole('button', { name: /Skip/ }))
     expect(screen.getByText(/\/ 4/).parentElement?.textContent).toBe('2 / 4')
+  })
+})
+
+describe('PracticeTest history', () => {
+  beforeEach(() => {
+    window.matchMedia = vi.fn(() => ({ matches: true }) as unknown as MediaQueryList)
+  })
+
+  it('saves the sitting as a practice test with a grade for every card', async () => {
+    const api = vi.mocked(apiFetch)
+    api.mockReset()
+    api.mockImplementation((path: string) =>
+      Promise.resolve(path === '/sessions'
+        ? new Response(JSON.stringify({ id: 'sess-1' }), { status: 201 })
+        : new Response(null, { status: 204 }))
+    )
+    render(<PracticeTest set={set} cards={cards.slice(0, 4)} />)
+    fireEvent.click(screen.getByRole('button', { name: /Start/ }))
+    for (let i = 0; i < 4; i++) {
+      const box = screen.getByRole('textbox', { name: 'Your answer' })
+      fireEvent.change(box, { target: { value: answers[currentQuestion()] } })
+      fireEvent.submit(box.closest('form')!)
+    }
+
+    expect(await screen.findByText('Saved to your history.')).toBeTruthy()
+    const [, created] = api.mock.calls.find(([p]) => p === '/sessions')!
+    expect(JSON.parse(created!.body as string)).toEqual({ set_id: 's1', mode: 'test' })
+    const saves = api.mock.calls.filter(([p]) => p === '/results')
+    expect(saves).toHaveLength(1)
+    const body = JSON.parse(saves[0][1]!.body as string)
+    expect(body.session_id).toBe('sess-1')
+    expect(body.results.map((r: { card_id: string; grade: string }) => `${r.card_id}:${r.grade}`).sort())
+      .toEqual(['a:correct', 'b:correct', 'c:wrong', 'd:correct'])
+  })
+
+  it('says so when the score could not be saved', async () => {
+    vi.mocked(apiFetch).mockReset().mockImplementation(() => Promise.reject(new Error('offline')))
+    render(<PracticeTest set={set} cards={cards.slice(0, 4)} />)
+    fireEvent.click(screen.getByRole('button', { name: /Start/ }))
+    for (let i = 0; i < 4; i++) fireEvent.click(screen.getByRole('button', { name: /Skip/ }))
+    await waitFor(() => expect(screen.getByText(/couldn't be saved to your history/)).toBeTruthy())
   })
 })

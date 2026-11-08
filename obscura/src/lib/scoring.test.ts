@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { gradeAnswer } from './scoring'
+import { gradeAnswer, namesPartOf } from './scoring'
 
 describe('gradeAnswer', () => {
   it('accepts exact answers and tiny slips', () => {
@@ -39,5 +39,18 @@ describe('gradeAnswer', () => {
 
   it('handles empty input', () => {
     expect(gradeAnswer('   ', 'Nucleus')).toBe('empty')
+  })
+})
+
+describe('namesPartOf', () => {
+  it('is true when every word typed is in the answer', () => {
+    expect(namesPartOf('surgical', 'Surgical intervention')).toBe(true)
+    expect(namesPartOf('infection and atelectasis', 'Increased atelectasis and infection')).toBe(true)
+    expect(namesPartOf('surgicle', 'Surgical intervention')).toBe(true)
+  })
+
+  it('is false for a word not in the answer, or nothing but filler', () => {
+    expect(namesPartOf('surgical drugs', 'Surgical intervention')).toBe(false)
+    expect(namesPartOf('the', 'Surgical intervention')).toBe(false)
   })
 })

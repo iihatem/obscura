@@ -71,6 +71,16 @@ describe('typedAnswerGrade', () => {
     expect(typedAnswerGrade('ribosome', 'Mitochondria')).toBe('wrong')
   })
 
+  it('counts naming part of the answer as almost', () => {
+    expect(typedAnswerGrade('surgical', 'Surgical intervention')).toBe('close')
+    expect(typedAnswerGrade('atelectasis and infection', 'Decreased ventilation, increased atelectasis and infection')).toBe('close')
+  })
+
+  it('gives no credit when any word typed is not in the answer', () => {
+    expect(typedAnswerGrade('pneumonia and atelectasis', 'Decreased ventilation, increased atelectasis and infection')).toBe('wrong')
+    expect(typedAnswerGrade('the', 'Surgical intervention')).toBe('wrong')
+  })
+
   it('accepts the answer without its bracketed aside', () => {
     expect(typedAnswerGrade('mitochondria', 'Mitochondria (the site of respiration)')).toBe('correct')
   })

@@ -71,9 +71,11 @@ export default function StudySession({ set, cards }: StudySessionProps) {
   // eslint-disable-next-line react-hooks/set-state-in-effect -- reads browser storage after mount
   useEffect(() => setTypedAnswers(loadTypedAnswers()), [])
 
-  function toggleTypedAnswers() {
+  function toggleTypedAnswers(e: React.MouseEvent<HTMLButtonElement>) {
     saveTypedAnswers(!typedAnswers)
     setTypedAnswers(!typedAnswers)
+    // After a click, let Space flip the card instead of pressing this again.
+    if (e.detail > 0) e.currentTarget.blur()
   }
 
   const startRecord = useCallback((mode: StudyMode) => {

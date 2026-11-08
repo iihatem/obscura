@@ -40,6 +40,24 @@ function sameWord(a: string, b: string): boolean {
 }
 
 /**
+ * Every word typed is in the answer, in any order. Used to give a sentence
+ * answer partial credit when the student names part of it ("surgical" for
+ * "Surgical intervention"), which gradeAnswer alone calls wrong.
+ */
+export function namesPartOf(input: string, correct: string): boolean {
+  const typed = words(normalize(input))
+  const wanted = words(normalize(correct))
+  if (!typed.length) return false
+  const matched = new Set<number>()
+  for (const w of typed) {
+    const hit = wanted.findIndex((x, i) => !matched.has(i) && sameWord(w, x))
+    if (hit === -1) return false
+    matched.add(hit)
+  }
+  return true
+}
+
+/**
  * How well a typed answer names a label.
  *
  * The whole answer is compared first, forgiving small slips. Failing that, an

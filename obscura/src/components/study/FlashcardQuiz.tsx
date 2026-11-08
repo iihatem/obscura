@@ -71,7 +71,11 @@ export default function FlashcardQuiz({ card, onAnswer, typed = false }: Flashca
         return
       }
       const hit = GRADE_BUTTONS.find((b) => b.key === e.key)
-      if (hit) onAnswer(hit.grade)
+      if (hit) {
+        // Otherwise the key also lands in the next card's answer box, which takes focus.
+        e.preventDefault()
+        onAnswer(hit.grade)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)

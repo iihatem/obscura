@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, RotateCcw, Target } from 'lucide-react'
 import type { Card, Set } from '@/types'
@@ -21,6 +22,8 @@ interface ResultsSummaryProps {
   saved: boolean
   onReview: (cards: Card[]) => void
   onStudyAgain: () => void
+  /** Shown under the score, e.g. what's next in an exam plan. */
+  children?: ReactNode
 }
 
 const groups: { key: string; title: string; grades: Grade[]; dot: string }[] = [
@@ -34,7 +37,7 @@ function cardLabel(card: Card): string {
   return `Diagram · ${card.labels.length} label${card.labels.length === 1 ? '' : 's'}`
 }
 
-export default function ResultsSummary({ set, answers, saved, onReview, onStudyAgain }: ResultsSummaryProps) {
+export default function ResultsSummary({ set, answers, saved, onReview, onStudyAgain, children }: ResultsSummaryProps) {
   const t = tally(answers.map((a) => a.grade))
   // Almost isn't known yet, so it goes back in the review pile too.
   const toReview = answers.filter((a) => a.grade !== 'correct').map((a) => a.card)
@@ -91,6 +94,8 @@ export default function ResultsSummary({ set, answers, saved, onReview, onStudyA
           )}
         </div>
       </section>
+
+      {children}
 
       <section className="mt-8 flex flex-col gap-6">
         {groups.map((g) => {

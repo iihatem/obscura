@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Image as ImageIcon, Keyboard, Layers, Shuffle, X } from 'lucide-react'
@@ -37,17 +37,29 @@ function detectMode(cards: Card[]): StudyMode {
   return hasDiag ? 'diagram' : 'flashcard'
 }
 
+/** Studying the exam plan's cards for today (see components/plan/TodayStudy). */
+export interface StudyPlanMode {
+  /** Keeps an unfinished session apart from free study of the same set. */
+  progressKey: string
+  /** Called with the answers each time a deck is finished. */
+  onFinish: (answers: CardAnswer[]) => void
+  /** Shown with the results. */
+  done: ReactNode
+}
+
 interface StudySessionProps {
   set: Set
   cards: Card[]
+  plan?: StudyPlanMode
 }
 
-export default function StudySession({ set, cards }: StudySessionProps) {
+export default function StudySession({ set, cards, plan }: StudySessionProps) {
+  const progressKey = plan?.progressKey ?? set.id
   const router = useRouter()
   const flashcards = cards.filter((c): c is FlashCardType => c.type === 'flashcard')
   const diagrams = cards.filter((c): c is DiagramCardType => c.type === 'diagram')
-  // With only one kind of card there's nothing to choose — go straight in.
-  const onlyMode: StudyMode | null = cards.length && (!flashcards.length || !diagrams.length) ? detectMode(cards) : null
+  // With only one kind of card, or today's planned cards, there's nothing to choose — go straight in.
+  const onlyMode: StudyMode | null = cards.length && (plan || !flashcards.length || !diagrams.length) ? detectMode(cards) : null
 
   // Decided after mount, once this browser's saved progress can be read.
   const [phase, setPhase] = useState<Phase>('starting')
@@ -100,7 +112,7 @@ export default function StudySession({ set, cards }: StudySessionProps) {
   useEffect(() => {
     if (started.current || !cards.length) return
     started.current = true
-    const saved = loadProgress(set.id, new Set(cards.map((c) => c.id)))
+    const saved = loadProgress(progressKey, new Set(cards.map((c) => c.id)))
     /* eslint-disable react-hooks/set-state-in-effect -- reads browser storage after mount */
     if (saved) {
       setResumable(saved)
@@ -114,7 +126,7 @@ export default function StudySession({ set, cards }: StudySessionProps) {
       setPhase('picking')
     }
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [cards, onlyMode, set.id, startRecord])
+  }, [cards, onlyMode, progressKey, startRecord])
 
   function resume(saved: SavedProgress) {
     const byId = new Map(cards.map((c) => [c.id, c]))
@@ -129,7 +141,7 @@ export default function StudySession({ set, cards }: StudySessionProps) {
   }
 
   function beginStudy(mode: StudyMode, cardList: Card[]) {
-    clearProgress(set.id)
+    clearProgress(progressKey)
     modeRef.current = mode
     setResultsSaved(true)
     startRecord(mode)
@@ -151,7 +163,8 @@ export default function StudySession({ set, cards }: StudySessionProps) {
       setAnswers(newAnswers)
 
       if (currentIndex + 1 >= deck.length) {
-        clearProgress(set.id)
+        clearProgress(progressKey)
+        plan?.onFinish(newAnswers)
         // Show the score straight away; recording it is best-effort.
         setPhase('results')
         window.scrollTo(0, 0)
@@ -175,7 +188,7 @@ export default function StudySession({ set, cards }: StudySessionProps) {
         }
         setResultsSaved(ok)
       } else {
-        saveProgress(set.id, {
+        saveProgress(progressKey, {
           mode: modeRef.current,
           deck: deck.map((c) => c.id),
           answers: newAnswers.map((a) => ({ cardId: a.card.id, grade: a.grade, time_taken_ms: a.time_taken_ms, labelGrades: a.labelGrades })),
@@ -224,7 +237,7 @@ export default function StudySession({ set, cards }: StudySessionProps) {
             <ArrowRight className="h-4 w-4" aria-hidden />
           </Button>
           <Button size="lg" variant="secondary" onClick={() => {
-            clearProgress(set.id)
+            clearProgress(progressKey)
             if (onlyMode) beginStudy(onlyMode, cards)
             else setPhase('picking')
           }}>
@@ -278,7 +291,9 @@ export default function StudySession({ set, cards }: StudySessionProps) {
         saved={resultsSaved}
         onReview={(missed) => beginStudy(detectMode(missed), missed)}
         onStudyAgain={() => (onlyMode ? beginStudy(onlyMode, cards) : setPhase('picking'))}
-      />
+      >
+        {plan?.done}
+      </ResultsSummary>
     )
   }
 

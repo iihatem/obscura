@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import SetGrid from '@/components/sets/SetGrid'
 import ContinueStudying from '@/components/sets/ContinueStudying'
 import ApiKeyNotice from '@/components/library/ApiKeyNotice'
+import TodayPanel, { type TodayItem } from '@/components/plan/TodayPanel'
+import { fetchCardIds, fetchExamPlans, fetchGradeHistory } from '@/lib/examPlans'
 import { statsBySet, type SessionRow } from '@/lib/library'
 import type { Set } from '@/types'
 
@@ -17,7 +19,7 @@ export default async function LibraryPage() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deliberate escape hatch for Supabase SDK generic inference
   const db = supabase as any
-  const [{ data: setRows }, { data: sessionRows }] = await Promise.all([
+  const [{ data: setRows }, { data: sessionRows }, plans] = await Promise.all([
     db.from('sets').select('*').eq('owner_id', user.id).order('updated_at', { ascending: false }),
     db.from('study_sessions')
       .select('set_id, completed_at, card_results(grade)')
@@ -25,6 +27,7 @@ export default async function LibraryPage() {
       .not('completed_at', 'is', null)
       .order('completed_at', { ascending: false })
       .limit(200),
+    fetchExamPlans(db, user.id),
   ])
 
   const sets: Set[] = setRows ?? []
@@ -51,6 +54,24 @@ export default async function LibraryPage() {
     lastScore: stats.get(s.id)?.lastScore ?? null,
   }))
 
+  // Exam plans on the student's own sets, for the Today panel.
+  const planned = (plans ?? []).filter((p) => sets.some((s) => s.id === p.set_id && s.card_count > 0))
+  let today: TodayItem[] = []
+  if (planned.length) {
+    const ids = planned.map((p) => p.set_id)
+    const [cardIds, history] = await Promise.all([fetchCardIds(db, ids), fetchGradeHistory(db, user.id, ids)])
+    const setOfCard = new Map([...cardIds].flatMap(([setId, cards]) => cards.map((c) => [c, setId] as const)))
+    today = planned.map((plan) => {
+      const s = sets.find((x) => x.id === plan.set_id)!
+      return {
+        set: { id: s.id, title: s.title, subject: s.subject },
+        plan,
+        cardIds: cardIds.get(s.id) ?? [],
+        history: history.filter((e) => setOfCard.get(e.cardId) === s.id),
+      }
+    })
+  }
+
   // The set studied most recently that still has cards to study.
   const resume = items
     .filter((s) => s.lastStudiedAt && s.card_count > 0)
@@ -66,6 +87,8 @@ export default async function LibraryPage() {
           </p>
         )}
       </header>
+
+      <TodayPanel items={today} />
 
       {resume && (
         <ContinueStudying

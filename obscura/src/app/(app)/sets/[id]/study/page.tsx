@@ -1,14 +1,18 @@
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import StudySession from '@/components/study/StudySession'
+import TodayStudy from '@/components/plan/TodayStudy'
+import { fetchExamPlans, fetchGradeHistory } from '@/lib/examPlans'
 import type { Set, Card } from '@/types'
 
 interface PageProps {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ plan?: string }>
 }
 
-export default async function StudyPage({ params }: PageProps) {
+export default async function StudyPage({ params, searchParams }: PageProps) {
   const { id } = await params
+  const { plan: planParam } = await searchParams
   const supabase = await createClient()
 
   const {
@@ -37,6 +41,14 @@ export default async function StudyPage({ params }: PageProps) {
     .order('position', { ascending: true })
 
   const cards: Card[] = cardsData ?? []
+
+  // ?plan=today studies just today's cards from the student's exam plan.
+  if (planParam === 'today') {
+    const [plan] = (await fetchExamPlans(supabase, user.id, id)) ?? []
+    if (!plan) redirect(`/sets/${id}/study`)
+    const history = await fetchGradeHistory(supabase, user.id, [id])
+    return <TodayStudy set={typedSet} cards={cards} plan={plan} history={history} />
+  }
 
   return <StudySession set={typedSet} cards={cards} />
 }

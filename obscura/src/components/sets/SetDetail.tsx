@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { Set, Card, FlashCard as FlashCardType, DiagramCard as DiagramCardType } from '@/types'
 import SetHeader from './SetHeader'
@@ -38,9 +38,11 @@ interface SetDetailProps {
   initialCards: Card[]
   isOwner: boolean
   userId: string
+  /** The exam plan panel, shown under the header. */
+  plan?: ReactNode
 }
 
-export default function SetDetail({ initialSet, initialCards, isOwner, userId }: SetDetailProps) {
+export default function SetDetail({ initialSet, initialCards, isOwner, userId, plan }: SetDetailProps) {
   const [set, setSet] = useState<Set>(initialSet)
   const [cards, setCards] = useState<Card[]>(initialCards)
   // router.refresh() (after saving generated cards) sends fresh server props.
@@ -212,6 +214,8 @@ export default function SetDetail({ initialSet, initialCards, isOwner, userId }:
         onUpdate={setSet}
         suggestions={isOwner && <SuggestionsReview setId={set.id} cards={cards} onCardUpdated={(c) => setCards((prev) => prev.map((x) => (x.id === c.id ? c : x)))} />}
       />
+
+      {plan}
 
       {isOwner && uploadInProgress && !uploadOpen && (
         <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-accent/30 bg-accent-soft/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">

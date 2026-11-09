@@ -130,7 +130,9 @@ function DiagramQuizInner({ card, onAnswer, onSubmitAnswers }: DiagramQuizProps)
                   g
                     ? boxGrade[g]
                     : active
-                      ? 'z-10 border-accent bg-cover text-on-cover ring-4 ring-accent/30'
+                      ? peek
+                        ? 'z-10 border-accent bg-cover/35 text-transparent ring-4 ring-accent/30'
+                        : 'z-10 border-accent bg-cover text-on-cover ring-4 ring-accent/30'
                       : peek
                         ? 'border-ink-muted bg-cover/35 text-transparent'
                         : 'border-cover bg-cover text-on-cover/80'

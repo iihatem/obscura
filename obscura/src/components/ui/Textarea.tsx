@@ -1,6 +1,6 @@
 'use client'
 
-import { forwardRef, useCallback, useId, useLayoutEffect, useRef, type TextareaHTMLAttributes } from 'react'
+import { forwardRef, useCallback, useEffect, useId, useLayoutEffect, useRef, type TextareaHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 import { fieldClass } from './Input'
 
@@ -23,12 +23,31 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
       else if (forwarded) forwarded.current = el
     }, [forwarded])
 
-    useLayoutEffect(() => {
+    const fit = useCallback(() => {
       const el = inner.current
       if (!el) return
       el.style.height = 'auto'
+      // Inside a dialog that hasn't opened yet there's nothing to measure. Keep
+      // the rows height rather than shrinking to a sliver; it's fitted on open.
+      if (!el.scrollHeight || !el.clientWidth) return
       el.style.height = `${el.scrollHeight + 2}px`
-    }, [value])
+    }, [])
+
+    useLayoutEffect(fit, [value, fit])
+
+    // Fit again when it gets a size or a new width: a dialog opening, a phone turning.
+    useEffect(() => {
+      const el = inner.current
+      if (!el || typeof ResizeObserver === 'undefined') return
+      let width = el.clientWidth
+      const observer = new ResizeObserver(() => {
+        if (el.clientWidth === width) return
+        width = el.clientWidth
+        fit()
+      })
+      observer.observe(el)
+      return () => observer.disconnect()
+    }, [fit])
 
     return (
       <div className="flex flex-col gap-1.5">
